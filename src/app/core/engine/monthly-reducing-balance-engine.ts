@@ -21,3 +21,4 @@ export class MonthlyReducingBalanceEngine implements InterestEngine {
     return paise(Number(interestBigInt));
   }
 }
+

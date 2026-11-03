@@ -27,3 +27,4 @@ export class DailyReducingBalanceEngineStub implements InterestEngine {
     return paise(Number(interestBigInt));
   }
 }
+

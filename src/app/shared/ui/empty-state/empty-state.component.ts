@@ -66,3 +66,4 @@ export class EmptyStateComponent {
   readonly actionLabel = input<string | undefined>(undefined);
   readonly actionClicked = output<void>();
 }
+

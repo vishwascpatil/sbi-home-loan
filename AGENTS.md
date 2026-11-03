@@ -21,3 +21,4 @@ Design (premium fintech, Pinterest-style visual feel)
 - Motion: staggered card entrance (70 ms steps), balance count-up (~1 s ease-out), animated progress bars and charts, bottom-sheet slide-up.
 - Layout: iPhone 17 Pro Max first (~440 px wide), viewport-fit=cover, safe-area insets, 44 px minimum touch targets. Bottom tab bar: Home · Members · ＋ (raised centre action) · Insights · Settings. From 900 px up use a side rail and a two-column dashboard; the content column maxes at 560 px on tablets.
 - Accessibility: WCAG AA contrast in both themes, visible focus, labelled controls, semantic landmarks.
+

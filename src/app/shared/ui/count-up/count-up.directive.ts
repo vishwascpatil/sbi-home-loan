@@ -95,3 +95,4 @@ export class CountUpDirective implements OnChanges, OnDestroy {
     this.el.nativeElement.textContent = `${sign}${this.prefix()}${text}`;
   }
 }
+

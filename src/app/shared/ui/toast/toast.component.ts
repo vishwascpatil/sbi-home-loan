@@ -77,3 +77,4 @@ import { ToastService } from './toast.service';
 export class ToastComponent {
   readonly toastService = inject(ToastService);
 }
+

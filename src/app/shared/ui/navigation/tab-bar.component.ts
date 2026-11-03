@@ -157,3 +157,4 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 export class TabBarComponent {
   readonly openAdd = output<void>();
 }
+

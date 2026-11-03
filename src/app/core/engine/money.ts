@@ -151,3 +151,4 @@ export function formatCompactPaise(p: Paise, prefix = '₹'): string {
 
   return `${sign}${prefix}${rupees.toLocaleString('en-IN')}`;
 }
+

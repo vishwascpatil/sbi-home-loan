@@ -154,3 +154,4 @@ export class LocalStorageLedgerRepository implements LedgerRepository {
     throw new Error('Unrecognized schema version or corrupt data');
   }
 }
+

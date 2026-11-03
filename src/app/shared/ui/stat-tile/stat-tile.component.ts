@@ -60,3 +60,4 @@ export class StatTileComponent {
   readonly subtext = input<string | undefined>(undefined);
   readonly glass = input<boolean>(false);
 }
+

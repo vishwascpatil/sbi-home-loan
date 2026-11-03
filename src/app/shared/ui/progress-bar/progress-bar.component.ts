@@ -58,3 +58,4 @@ export class ProgressBarComponent {
 
   readonly fillColor = computed(() => this.color() || undefined);
 }
+

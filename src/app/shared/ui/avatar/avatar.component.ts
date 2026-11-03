@@ -69,3 +69,4 @@ export class AvatarComponent {
     return n.slice(0, 2).toUpperCase();
   });
 }
+

@@ -9,3 +9,4 @@ export interface LedgerRepository {
   exportCsv(): Promise<string>;
   isStorageDegraded(): boolean;
 }
+

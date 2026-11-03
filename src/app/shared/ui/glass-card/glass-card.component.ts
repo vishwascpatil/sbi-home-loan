@@ -48,3 +48,4 @@ export class GlassCardComponent {
   readonly variant = input<'default' | 'hero' | 'inset'>('default');
   readonly staggerIndex = input<number | undefined>(undefined);
 }
+

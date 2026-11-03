@@ -77,3 +77,4 @@ export class SegmentedControlComponent<T = string> {
     }
   }
 }
+

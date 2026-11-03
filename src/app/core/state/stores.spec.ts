@@ -90,3 +90,4 @@ describe('LedgerStore and SettingsStore', () => {
     expect(settingsStore.isDark()).toBe(false);
   });
 });
+

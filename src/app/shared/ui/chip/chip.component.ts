@@ -70,3 +70,4 @@ export class ChipComponent {
   readonly glass = input<boolean>(false);
   readonly clicked = output<void>();
 }
+

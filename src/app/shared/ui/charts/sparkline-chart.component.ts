@@ -100,3 +100,4 @@ export class SparklineChartComponent {
     return `M ${coords} L ${w} ${h} L 0 ${h} Z`;
   });
 }
+

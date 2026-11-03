@@ -11,3 +11,4 @@ export interface InterestEngine {
    */
   calculateInterest(principal: Paise, rateBps: number, period: string): Paise;
 }
+

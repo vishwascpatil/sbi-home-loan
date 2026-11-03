@@ -115,3 +115,4 @@ export function generateLedgerCsv(ledger: LedgerState): string {
   // Prepend UTF-8 Byte Order Mark (BOM)
   return `\uFEFF${csvContent}`;
 }
+

@@ -213,3 +213,4 @@ export class SideRailComponent {
   readonly settings = inject(SettingsStore);
   readonly openAdd = output<void>();
 }
+

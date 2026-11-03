@@ -36,3 +36,4 @@ The Group Loan Tracker is an Angular 22 local-first Progressive Web Application 
 - **Phase 3 (Daily Balance Engine)**: Implement `DailyBalanceEngine` adhering to the `InterestEngine` interface for sub-day compound interest calculation.
 
 *(This document will be fully detailed in Step 7).*
+

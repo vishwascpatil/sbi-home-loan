@@ -6,3 +6,4 @@ test.describe('Smoke Test', () => {
     await expect(page).toHaveTitle(/Loan Tracker/i);
   });
 });
+

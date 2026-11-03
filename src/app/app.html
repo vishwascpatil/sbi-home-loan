@@ -12,4 +12,10 @@
 
   <!-- Global Toast Notifications -->
   <app-toast-container />
+
+  <!-- Global Add Transaction Sheet -->
+  <app-add-edit-transaction-sheet
+    [isOpen]="isAddSheetOpen()"
+    (dismissed)="isAddSheetOpen.set(false)"
+  />
 </div>

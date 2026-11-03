@@ -146,6 +146,27 @@ export interface Settings {
   defaultPaymentMode: PaymentMode;
 }
 
+export function getTransactionAmount(tx: Transaction): Paise {
+  if (tx.type === 'manualCorrection') {
+    return Math.abs(tx.variance) as Paise;
+  }
+  return tx.amount;
+}
+
+export function getTransactionMode(tx: Transaction): string {
+  if ('mode' in tx && tx.mode) {
+    return tx.mode;
+  }
+  return 'System';
+}
+
+export function getTransactionReference(tx: Transaction): string | undefined {
+  if ('reference' in tx) {
+    return tx.reference;
+  }
+  return undefined;
+}
+
 export interface LedgerState {
   loan: Loan;
   members: Member[];

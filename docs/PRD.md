@@ -129,3 +129,4 @@ Each member has customizable display names and active/inactive status.
 - **AC-10**: Full PWA functionality with service worker caching and standalone manifest.
 - **AC-11**: Lighthouse Performance $\ge 90$ and Accessibility $\ge 95$.
 - **AC-12**: 100% unit test coverage on core engine.
+
