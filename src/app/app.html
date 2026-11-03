@@ -1,3 +1,15 @@
-<main class="app-root-shell">
-  <router-outlet />
-</main>
+<div class="app-layout-shell">
+  <!-- Desktop Side Rail (>= 900px) -->
+  <app-side-rail (openAdd)="openAddTransaction()" />
+
+  <!-- Main Content Container -->
+  <main class="main-viewport-content">
+    <router-outlet />
+  </main>
+
+  <!-- Mobile Bottom Tab Bar (< 900px) -->
+  <app-tab-bar (openAdd)="openAddTransaction()" />
+
+  <!-- Global Toast Notifications -->
+  <app-toast-container />
+</div>
