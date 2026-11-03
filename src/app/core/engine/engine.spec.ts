@@ -5,6 +5,7 @@ import {
   closeMonth,
   closedFormMonths,
   compareScenarios,
+  DailyReducingBalanceEngine,
   DailyReducingBalanceEngineStub,
   formatCompactPaise,
   formatPaise,
@@ -491,5 +492,209 @@ describe('Member Statistics & Reconciliation', () => {
     // February 2025 has 28 days
     const febInterest = dailyEngine.calculateInterest(principal, rateBps, '2025-02');
     expect(febInterest).toBeLessThan(janInterest);
+  });
+
+  describe('DailyReducingBalanceEngine (Phase 3 Golden Tests & Bank Rules)', () => {
+    const dailyEngine = new DailyReducingBalanceEngine();
+
+    it('Golden Test 1: ₹10,00,000 at 8.00%, actual/365, 31 days, no movements -> ₹6,794.52', () => {
+      const principal = toPaise(1000000); // 100,000,000 paise
+      const rateBps = 800; // 8.00%
+      const period = '2025-01'; // 31 days
+
+      const result = dailyEngine.calculateDailyInterest({
+        period,
+        openingPrincipal: principal,
+        annualRateBps: rateBps,
+        bankRules: { dayCountBasis: 'actual/365' },
+      });
+
+      // 679452 paise = ₹6,794.52
+      expect(result.totalInterest).toBe(paise(679452));
+      expect(formatPaise(result.totalInterest)).toBe('₹6,794.52');
+      expect(result.dailyLedger.length).toBe(31);
+    });
+
+    it('Golden Test 2: ₹10,00,000 for 10 days then ₹9,00,000 for 21 days at 8.00% -> ₹6,334.25', () => {
+      const principal = toPaise(1000000); // ₹10,00,000
+      const rateBps = 800; // 8.00%
+      const period = '2025-01'; // 31 days
+
+      // On day 11, a bank payment reduces principal by ₹1,00,000
+      // So days 1..10 (10 days) close at ₹10,00,000 and days 11..31 (21 days) close at ₹9,00,000
+      const transactions: Transaction[] = [
+        {
+          id: 'bp1',
+          type: 'bankPayment',
+          amount: toPaise(110000),
+          interestPortion: toPaise(10000),
+          principalPortion: toPaise(100000),
+          isEstimatedSplit: false,
+          date: '2025-01-11',
+          forMonth: '2025-01',
+          mode: 'Bank transfer',
+          createdAt: '2025-01-11T00:00:00Z',
+          updatedAt: '2025-01-11T00:00:00Z',
+        },
+      ];
+
+      const result = dailyEngine.calculateDailyInterest({
+        period,
+        openingPrincipal: principal,
+        annualRateBps: rateBps,
+        transactions,
+        bankRules: { dayCountBasis: 'actual/365' },
+      });
+
+      // 633425 paise = ₹6,334.25
+      expect(result.totalInterest).toBe(paise(633425));
+      expect(formatPaise(result.totalInterest)).toBe('₹6,334.25');
+      expect(result.dailyLedger[9].closing).toBe(toPaise(1000000)); // Day 10
+      expect(result.dailyLedger[10].closing).toBe(toPaise(900000)); // Day 11
+    });
+
+    it('handles mid-month rate changes correctly across daily accrual', () => {
+      const principal = toPaise(1000000);
+      const period = '2025-01';
+
+      // Rate changes to 8.50% from Jan 16
+      const rateChanges = [
+        {
+          id: 'rc1',
+          effectiveFrom: '2025-01-16',
+          rateBps: 850,
+          previousRateBps: 800,
+          createdAt: '2025-01-16T00:00:00Z',
+          updatedAt: '2025-01-16T00:00:00Z',
+        },
+      ];
+
+      const result = dailyEngine.calculateDailyInterest({
+        period,
+        openingPrincipal: principal,
+        annualRateBps: 800,
+        rateChanges,
+        bankRules: { dayCountBasis: 'actual/365' },
+      });
+
+      // Days 1..15 at 8.00%, Days 16..31 at 8.50%
+      expect(result.dailyLedger[14].rateBps).toBe(800); // Day 15
+      expect(result.dailyLedger[15].rateBps).toBe(850); // Day 16
+      expect(result.totalInterest).toBeGreaterThan(paise(679452));
+    });
+
+    it('handles leap year in actual/actual basis', () => {
+      const principal = toPaise(1000000);
+
+      // 2024 is a leap year (Feb has 29 days, year has 366 days)
+      const leapRes = dailyEngine.calculateDailyInterest({
+        period: '2024-02',
+        openingPrincipal: principal,
+        annualRateBps: 800,
+        bankRules: { dayCountBasis: 'actual/actual' },
+      });
+      expect(leapRes.dailyLedger.length).toBe(29);
+      expect(leapRes.basisDays).toBe(366);
+
+      // 2025 is a non-leap year (Feb has 28 days, year has 365 days)
+      const nonLeapRes = dailyEngine.calculateDailyInterest({
+        period: '2025-02',
+        openingPrincipal: principal,
+        annualRateBps: 800,
+        bankRules: { dayCountBasis: 'actual/actual' },
+      });
+      expect(nonLeapRes.dailyLedger.length).toBe(28);
+      expect(nonLeapRes.basisDays).toBe(365);
+    });
+
+    it('handles day-count basis 360', () => {
+      const principal = toPaise(1000000);
+      const res360 = dailyEngine.calculateDailyInterest({
+        period: '2025-01',
+        openingPrincipal: principal,
+        annualRateBps: 800,
+        bankRules: { dayCountBasis: '360' },
+      });
+      expect(res360.basisDays).toBe(360);
+      // Denominator 360 is smaller than 365, so interest is higher
+      expect(res360.totalInterest).toBeGreaterThan(paise(679452));
+    });
+
+    it('handles same-day payment and principal adjustment', () => {
+      const principal = toPaise(1000000);
+      const transactions: Transaction[] = [
+        {
+          id: 'bp1',
+          type: 'bankPayment',
+          amount: toPaise(60000),
+          interestPortion: toPaise(10000),
+          principalPortion: toPaise(50000),
+          isEstimatedSplit: false,
+          date: '2025-01-15',
+          forMonth: '2025-01',
+          mode: 'Bank transfer',
+          createdAt: '2025-01-15T00:00:00Z',
+          updatedAt: '2025-01-15T00:00:00Z',
+        },
+        {
+          id: 'pa1',
+          type: 'principalAdjustment',
+          amount: toPaise(10000), // Additional principal reduction
+          reason: 'Bank correction',
+          date: '2025-01-15',
+          forMonth: '2025-01',
+          createdAt: '2025-01-15T00:00:00Z',
+          updatedAt: '2025-01-15T00:00:00Z',
+        },
+      ];
+
+      const result = dailyEngine.calculateDailyInterest({
+        period: '2025-01',
+        openingPrincipal: principal,
+        annualRateBps: 800,
+        transactions,
+      });
+
+      // Total movement on day 15 = -50,000 - 10,000 = -60,000
+      expect(result.dailyLedger[14].movements).toBe(toPaise(-60000));
+      expect(result.dailyLedger[14].closing).toBe(toPaise(940000));
+    });
+
+    it('supersedes previous interest entries on recalculation in closeMonth', () => {
+      const ledger = createMockLedger();
+      ledger.loan.calculationMethod = 'daily';
+
+      const firstClose = closeMonth('2025-01', dailyEngine, ledger);
+      expect(firstClose.isNew).toBe(true);
+      expect(firstClose.entry.status).toBe('active');
+      expect(firstClose.entry.dailyLedger?.length).toBe(31);
+
+      // Now add existing entry into ledger state
+      ledger.interestEntries.push(firstClose.entry);
+
+      // Calling again without data changes returns existing
+      const duplicateClose = closeMonth('2025-01', dailyEngine, ledger);
+      expect(duplicateClose.isNew).toBe(false);
+
+      // Add a transaction that alters interest
+      ledger.transactions.push({
+        id: 'bp_new',
+        type: 'bankPayment',
+        amount: toPaise(100000),
+        interestPortion: toPaise(10000),
+        principalPortion: toPaise(90000),
+        isEstimatedSplit: false,
+        date: '2025-01-05',
+        forMonth: '2025-01',
+        mode: 'Bank transfer',
+        createdAt: '2025-01-05T00:00:00Z',
+        updatedAt: '2025-01-05T00:00:00Z',
+      });
+
+      const recalculatedClose = closeMonth('2025-01', dailyEngine, ledger);
+      expect(recalculatedClose.isNew).toBe(true);
+      expect(recalculatedClose.supersededEntries.length).toBe(1);
+      expect(recalculatedClose.supersededEntries[0].status).toBe('superseded');
+    });
   });
 });

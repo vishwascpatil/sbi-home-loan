@@ -20,6 +20,7 @@ import {
   Transaction,
 } from '../../core/engine';
 import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-transaction-sheet.component';
+import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.component';
 
 @Component({
   selector: 'app-home',
@@ -33,6 +34,7 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
     SparklineChartComponent,
     AvatarComponent,
     AddEditTransactionSheetComponent,
+    DailyLedgerSheetComponent,
   ],
   template: `
     <div class="home-page">
@@ -84,7 +86,14 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       <app-glass-card [staggerIndex]="1">
         <div class="card-header-row">
           <h2 class="card-title">This Month</h2>
-          <span class="method-tag">{{ methodLabel() }}</span>
+          <button
+            type="button"
+            class="method-tag clickable"
+            (click)="isDailyLedgerOpen.set(true)"
+            aria-label="View daily interest breakdown"
+          >
+            {{ methodLabel() }} 📊
+          </button>
         </div>
 
         <div class="key-value-list">
@@ -230,6 +239,12 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
         [initialType]="initialSheetType()"
         (dismissed)="isSheetOpen.set(false); selectedTxForEdit.set(null)"
       />
+
+      <!-- Daily Ledger Sheet Instance -->
+      <app-daily-ledger-sheet
+        [isOpen]="isDailyLedgerOpen()"
+        (dismissed)="isDailyLedgerOpen.set(false)"
+      />
     </div>
   `,
   styles: `
@@ -304,6 +319,24 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       font-size: 11px;
       font-weight: 700;
       color: var(--muted);
+    }
+
+    .method-tag.clickable {
+      background: rgba(108, 76, 255, 0.1);
+      color: var(--brand-a);
+      border: 1px solid rgba(108, 76, 255, 0.2);
+      border-radius: var(--radius-pill, 99px);
+      padding: 4px 10px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s ease;
+    }
+
+    .method-tag.clickable:hover {
+      background: rgba(108, 76, 255, 0.18);
+      transform: translateY(-1px);
     }
 
     .key-value-list {
@@ -498,6 +531,7 @@ export class HomeComponent {
   readonly getTransactionMode = getTransactionMode;
 
   readonly isSheetOpen = signal<boolean>(false);
+  readonly isDailyLedgerOpen = signal<boolean>(false);
   readonly selectedTxForEdit = signal<Transaction | null>(null);
   readonly initialSheetType = signal<'contribution' | 'bankPayment'>('contribution');
 
@@ -509,8 +543,11 @@ export class HomeComponent {
   });
 
   readonly methodLabel = computed(() => {
-    const meth = this.ledgerStore.loan().calculationMethod;
-    return meth === 'daily' ? 'Daily balance · est.' : 'Monthly reducing · est.';
+    const loan = this.ledgerStore.loan();
+    const basis = loan.bankRules?.dayCountBasis || 'actual/365';
+    return loan.calculationMethod === 'daily'
+      ? `Daily OD (${basis}) · est.`
+      : 'Monthly reducing · est.';
   });
 
   readonly simulationResult = computed(() => {

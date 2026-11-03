@@ -21,6 +21,11 @@ export function getInitialSeedData(): LedgerState {
     currentRateBps: 790, // 7.90%
     monthlyTarget: toPaise(240000), // ₹2,40,000.00
     calculationMethod: 'monthly',
+    bankRules: {
+      dayCountBasis: 'actual/365',
+      debitFrequency: 'monthlyLastDay',
+      isCapitalised: true,
+    },
     createdAt: '2024-06-12T00:00:00.000Z',
     updatedAt: '2024-06-12T00:00:00.000Z',
   };

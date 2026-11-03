@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   inject,
   signal,
 } from '@angular/core';
@@ -13,7 +14,20 @@ import {
   SegmentOption,
   ToastService,
 } from '../../shared/ui';
-import { CalculationMethod, formatPaise, Member, toPaise, toRupees } from '../../core/engine';
+import {
+  CalculationMethod,
+  DayCountBasis,
+  DebitFrequency,
+  formatPaise,
+  Member,
+  monthlySummary,
+  Paise,
+  paise,
+  subPaise,
+  toPaise,
+  toRupees,
+} from '../../core/engine';
+import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.component';
 
 @Component({
   selector: 'app-settings',
@@ -23,6 +37,7 @@ import { CalculationMethod, formatPaise, Member, toPaise, toRupees } from '../..
     GlassCardComponent,
     SegmentedControlComponent,
     ConfirmSheetComponent,
+    DailyLedgerSheetComponent,
   ],
   template: `
     <div class="settings-page">
@@ -231,8 +246,117 @@ import { CalculationMethod, formatPaise, Member, toPaise, toRupees } from '../..
         </div>
       </app-glass-card>
 
-      <!-- Backup, Restore & Data Reset -->
+      <!-- Bank Rules Settings (Day-Count & Accrual Rules) -->
       <app-glass-card [staggerIndex]="5">
+        <div class="card-title-row">
+          <h2 class="card-title">Bank Rules & Day-Count Basis</h2>
+          <button type="button" class="view-ledger-pill-btn" (click)="isDailyLedgerOpen.set(true)">
+            📊 View Daily Ledger
+          </button>
+        </div>
+        <p class="section-sub">Bank calculation conventions for Overdraft (OD) interest accrual.</p>
+
+        <div class="setting-group" style="margin-top: 14px">
+          <span class="setting-label">Day-Count Basis</span>
+          <app-segmented-control
+            [options]="dayCountOptions"
+            [selectedValue]="loan().bankRules?.dayCountBasis || 'actual/365'"
+            (changed)="updateDayCountBasis($any($event))"
+          />
+        </div>
+
+        <div class="setting-group" style="margin-top: 16px">
+          <span class="setting-label">Interest Debit Frequency</span>
+          <app-segmented-control
+            [options]="debitFreqOptions"
+            [selectedValue]="loan().bankRules?.debitFrequency || 'monthlyLastDay'"
+            (changed)="updateDebitFrequency($any($event))"
+          />
+        </div>
+
+        <div class="checkbox-setting-row" style="margin-top: 16px">
+          <label class="checkbox-label" for="capitalise-interest">
+            <input
+              id="capitalise-interest"
+              type="checkbox"
+              class="setting-checkbox"
+              [ngModel]="loan().bankRules?.isCapitalised ?? true"
+              (ngModelChange)="toggleCapitalisation($event)"
+            />
+            <span>Capitalise debited interest into outstanding principal</span>
+          </label>
+        </div>
+
+        <div class="info-note-box" style="margin-top: 14px">
+          <span class="note-icon">ℹ️</span>
+          <div class="note-text">
+            <strong>Value Date & Fixed-Point Accrual:</strong>
+            Transactions take effect from their recorded <code>valueDate</code> (or transaction date).
+            Accrual runs on unrounded fixed-point BigInt (scale 10⁶ paise) daily, rounding half-up only when interest is debited to the account.
+          </div>
+        </div>
+      </app-glass-card>
+
+      <!-- Estimated vs Bank-Actual Interest Variance -->
+      <app-glass-card [staggerIndex]="6">
+        <h2 class="card-title">Interest Verification & Variance</h2>
+        <p class="section-sub">Compare ledger computed interest with bank passbook debits.</p>
+
+        <div class="reconcile-interest-form">
+          <div class="setting-row">
+            <div class="setting-item" style="flex: 1">
+              <label class="setting-label" for="verify-period">Period (Month)</label>
+              <input
+                id="verify-period"
+                type="month"
+                class="setting-input"
+                [(ngModel)]="verificationPeriod"
+              />
+            </div>
+            <div class="setting-item" style="flex: 1">
+              <label class="setting-label" for="actual-interest-input">Actual Bank Debit (₹)</label>
+              <input
+                id="actual-interest-input"
+                type="number"
+                step="0.01"
+                class="setting-input tabular-nums"
+                placeholder="e.g. 79692.49"
+                [(ngModel)]="actualInterestInput"
+              />
+            </div>
+          </div>
+
+          <div class="variance-display-row" style="margin-top: 14px">
+            <div class="variance-item">
+              <span class="var-sub">Estimated Interest</span>
+              <span class="var-val tabular-nums">{{ formatPaise(computedPeriodInterest()) }}</span>
+            </div>
+            <div class="variance-item">
+              <span class="var-sub">Bank Actual</span>
+              <span class="var-val tabular-nums">{{ actualInterestInput ? '₹' + actualInterestInput : '—' }}</span>
+            </div>
+            <div class="variance-item">
+              <span class="var-sub">Variance</span>
+              <span class="var-val tabular-nums" [class.highlight]="interestVariance() !== 0">
+                {{ formatPaise(interestVariance()) }}
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="reconcile-btn"
+            style="margin-top: 14px"
+            [disabled]="!actualInterestInput"
+            (click)="recordActualInterestSnapshot()"
+          >
+            Record Verified Bank Interest
+          </button>
+        </div>
+      </app-glass-card>
+
+      <!-- Backup, Restore & Data Reset -->
+      <app-glass-card [staggerIndex]="7">
         <h2 class="card-title">Data & Backup</h2>
         <p class="section-sub">Download your complete encrypted ledger or restore from a JSON backup.</p>
 
@@ -274,6 +398,12 @@ import { CalculationMethod, formatPaise, Member, toPaise, toRupees } from '../..
         [isDanger]="true"
         (confirmed)="clearAllData()"
         (cancelled)="isConfirmClearOpen.set(false)"
+      />
+
+      <!-- Daily Ledger Sheet -->
+      <app-daily-ledger-sheet
+        [isOpen]="isDailyLedgerOpen()"
+        (dismissed)="isDailyLedgerOpen.set(false)"
       />
     </div>
   `,
@@ -517,6 +647,103 @@ import { CalculationMethod, formatPaise, Member, toPaise, toRupees } from '../..
       color: var(--muted);
       line-height: 1.45;
     }
+
+    .view-ledger-pill-btn {
+      padding: 6px 12px;
+      border-radius: var(--radius-pill, 99px);
+      border: 1px solid rgba(108, 76, 255, 0.25);
+      background: rgba(108, 76, 255, 0.1);
+      color: var(--brand-a);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .view-ledger-pill-btn:hover {
+      background: rgba(108, 76, 255, 0.18);
+    }
+
+    .checkbox-setting-row {
+      display: flex;
+      align-items: center;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    .setting-checkbox {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--brand-a);
+      cursor: pointer;
+    }
+
+    .info-note-box {
+      display: flex;
+      gap: 10px;
+      padding: 12px;
+      border-radius: var(--radius-tile, 16px);
+      background: var(--bg);
+      border: 1px solid var(--line);
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .note-icon {
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .note-text code {
+      font-family: monospace;
+      color: var(--brand-a);
+    }
+
+    .reconcile-interest-form {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .variance-display-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .variance-item {
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-tile, 16px);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .var-sub {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .var-val {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--ink);
+    }
+
+    .var-val.highlight {
+      color: var(--danger);
+    }
   `,
 })
 export class SettingsComponent {
@@ -530,10 +757,14 @@ export class SettingsComponent {
 
   readonly loan = this.ledgerStore.loan;
   readonly isConfirmClearOpen = signal<boolean>(false);
+  readonly isDailyLedgerOpen = signal<boolean>(false);
 
   newRateInput: number | null = null;
   rateEffectiveDate = new Date().toISOString().slice(0, 10);
   actualBalanceInput: number | null = null;
+
+  verificationPeriod = new Date().toISOString().slice(0, 7);
+  actualInterestInput: number | null = null;
 
   readonly themeOptions: SegmentOption<'auto' | 'light' | 'dark'>[] = [
     { label: 'Auto (System)', value: 'auto' },
@@ -543,8 +774,65 @@ export class SettingsComponent {
 
   readonly methodOptions: SegmentOption<CalculationMethod>[] = [
     { label: 'Monthly Reducing', value: 'monthly' },
-    { label: 'Daily Balance (Stub)', value: 'daily' },
+    { label: 'Daily OD (Day-Accurate)', value: 'daily' },
   ];
+
+  readonly dayCountOptions: SegmentOption<DayCountBasis>[] = [
+    { label: 'Actual/365 (SBI/HDFC)', value: 'actual/365' },
+    { label: '360 (US)', value: '360' },
+    { label: 'Actual/Actual (ISMA)', value: 'actual/actual' },
+  ];
+
+  readonly debitFreqOptions: SegmentOption<DebitFrequency>[] = [
+    { label: 'Monthly (Last Day)', value: 'monthlyLastDay' },
+    { label: 'Quarterly', value: 'quarterly' },
+    { label: 'Custom Day', value: 'customDay' },
+  ];
+
+  readonly computedPeriodInterest = computed<Paise>(() => {
+    return monthlySummary(this.verificationPeriod, this.ledgerStore.ledgerState()).interestIncurredEst;
+  });
+
+  readonly interestVariance = computed<Paise>(() => {
+    if (!this.actualInterestInput) return paise(0);
+    const actual = toPaise(this.actualInterestInput);
+    const computedEst = this.computedPeriodInterest();
+    return subPaise(actual, computedEst);
+  });
+
+  async updateDayCountBasis(basis: DayCountBasis): Promise<void> {
+    await this.ledgerStore.updateBankRules({ dayCountBasis: basis });
+    this.toast.show(`Day-count basis set to ${basis}`, 'info');
+  }
+
+  async updateDebitFrequency(freq: DebitFrequency): Promise<void> {
+    await this.ledgerStore.updateBankRules({ debitFrequency: freq });
+    this.toast.show(`Debit frequency set to ${freq}`, 'info');
+  }
+
+  async toggleCapitalisation(capitalise: boolean): Promise<void> {
+    await this.ledgerStore.updateBankRules({ isCapitalised: capitalise });
+    this.toast.show(`Interest capitalisation ${capitalise ? 'enabled' : 'disabled'}`, 'info');
+  }
+
+  async recordActualInterestSnapshot(): Promise<void> {
+    if (!this.actualInterestInput) return;
+    const actual = toPaise(this.actualInterestInput);
+    const est = this.computedPeriodInterest();
+    const variance = subPaise(actual, est);
+
+    await this.ledgerStore.recordBankPayment({
+      amount: actual,
+      interestPortion: actual,
+      date: `${this.verificationPeriod}-28`,
+      forMonth: this.verificationPeriod,
+      mode: 'Bank transfer',
+      notes: `Verified Bank Interest Debit (Variance: ${formatPaise(variance)})`,
+    });
+
+    this.toast.show(`Verified bank interest recorded (Variance: ${formatPaise(variance)})`, 'success');
+    this.actualInterestInput = null;
+  }
 
   async updateLoanParam(key: string, value: unknown): Promise<void> {
     await this.ledgerStore.updateLoanDetails({ [key]: value });

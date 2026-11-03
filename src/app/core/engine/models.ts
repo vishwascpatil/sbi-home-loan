@@ -4,6 +4,33 @@ export type PaymentMode = 'UPI' | 'Bank transfer' | 'Cash' | 'Cheque' | 'NEFT/RT
 
 export type CalculationMethod = 'monthly' | 'daily';
 
+export type DayCountBasis = 'actual/365' | '360' | 'actual/actual';
+export type DebitFrequency = 'monthlyLastDay' | 'quarterly' | 'customDay';
+
+export interface BankRuleSettings {
+  dayCountBasis: DayCountBasis;
+  debitFrequency: DebitFrequency;
+  customDebitDay?: number;
+  isCapitalised: boolean;
+}
+
+export interface DailyLedgerRecord {
+  date: string; // YYYY-MM-DD
+  opening: Paise;
+  movements: Paise;
+  closing: Paise;
+  rateBps: number;
+  dailyAccruedPaise: Paise;
+  cumulativeAccruedPaise: Paise;
+}
+
+export interface DailyInterestResult {
+  totalInterest: Paise;
+  dailyLedger: DailyLedgerRecord[];
+  accruedUnrounded: bigint;
+  basisDays: number;
+}
+
 export interface BaseEntity {
   id: string;
   createdAt: string;
@@ -21,6 +48,8 @@ export interface Loan extends BaseEntity {
   currentRateBps: number; // e.g. 790 = 7.90%
   monthlyTarget: Paise; // e.g. 24,000,000 paise = ₹2,40,000
   calculationMethod: CalculationMethod;
+  bankRules?: BankRuleSettings;
+  lockedUntilPeriod?: string; // YYYY-MM
 }
 
 export interface Member extends BaseEntity {
@@ -35,6 +64,7 @@ export interface ContributionTransaction extends BaseEntity {
   memberId: string;
   amount: Paise;
   date: string; // YYYY-MM-DD
+  valueDate?: string; // YYYY-MM-DD
   forMonth: string; // YYYY-MM
   mode: PaymentMode;
   reference?: string;
@@ -48,6 +78,7 @@ export interface BankPaymentTransaction extends BaseEntity {
   principalPortion: Paise;
   isEstimatedSplit: boolean;
   date: string; // YYYY-MM-DD
+  valueDate?: string; // YYYY-MM-DD
   forMonth: string; // YYYY-MM
   mode: PaymentMode;
   reference?: string;
@@ -59,6 +90,7 @@ export interface WithdrawalTransaction extends BaseEntity {
   memberId?: string;
   amount: Paise;
   date: string; // YYYY-MM-DD
+  valueDate?: string; // YYYY-MM-DD
   forMonth: string; // YYYY-MM
   mode: PaymentMode;
   reference?: string;
@@ -71,6 +103,7 @@ export interface InterestChargeTransaction extends BaseEntity {
   method: CalculationMethod;
   isEstimated: boolean;
   date: string; // YYYY-MM-DD
+  valueDate?: string; // YYYY-MM-DD
   forMonth: string; // YYYY-MM
   notes?: string;
 }
@@ -80,6 +113,7 @@ export interface PrincipalAdjustmentTransaction extends BaseEntity {
   amount: Paise; // Can be positive or negative
   reason: string;
   date: string; // YYYY-MM-DD
+  valueDate?: string; // YYYY-MM-DD
   forMonth: string; // YYYY-MM
   notes?: string;
 }
@@ -91,6 +125,7 @@ export interface ManualCorrectionTransaction extends BaseEntity {
   variance: Paise;
   reason: string;
   date: string; // YYYY-MM-DD
+  valueDate?: string; // YYYY-MM-DD
   forMonth: string; // YYYY-MM
   notes?: string;
 }
@@ -126,7 +161,11 @@ export interface InterestEntry {
   openingPrincipal: Paise;
   calculatedInterest: Paise;
   rateBps: number;
+  status: 'active' | 'superseded';
   createdAt: string;
+  supersededAt?: string;
+  accruedUnrounded?: string;
+  dailyLedger?: DailyLedgerRecord[];
 }
 
 export interface AuditEntry {

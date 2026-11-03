@@ -2,7 +2,13 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import {
   AuditEntry,
   BalanceSnapshot,
+  BankRuleSettings,
   bankPaymentSplit,
+  CalculationMethod,
+  closeMonth,
+  DailyLedgerRecord,
+  getDailyLedger,
+  getEngineForMethod,
   GroupFundsSummary,
   InterestEntry,
   LedgerState,
@@ -320,6 +326,71 @@ export class LedgerStore {
     this.members.update((prev) => [...prev, newMember]);
     await this.logAuditAndSave('create', 'member', newMember.id, undefined, newMember);
     return newMember;
+  }
+
+  async updateBankRules(rules: Partial<BankRuleSettings>): Promise<void> {
+    const currentLoan = this.loan();
+    const updatedRules: BankRuleSettings = {
+      ...(currentLoan.bankRules || {
+        dayCountBasis: 'actual/365',
+        debitFrequency: 'monthlyLastDay',
+        customDebitDay: 31,
+        isCapitalised: true,
+      }),
+      ...rules,
+    };
+    await this.updateLoanDetails({ bankRules: updatedRules });
+  }
+
+  async setCalculationMethod(method: CalculationMethod): Promise<void> {
+    await this.updateLoanDetails({ calculationMethod: method });
+  }
+
+  getDailyBreakdown(period: string): DailyLedgerRecord[] {
+    return getDailyLedger(period, this.ledgerState());
+  }
+
+  isPeriodLocked(dateOrMonth: string): boolean {
+    const lockedUntil = this.loan().lockedUntilPeriod;
+    if (!lockedUntil) return false;
+    const period = dateOrMonth.slice(0, 7);
+    return period <= lockedUntil;
+  }
+
+  async closeMonthPeriod(period: string): Promise<{ entry: InterestEntry; isNew: boolean }> {
+    const engine = getEngineForMethod(this.loan().calculationMethod);
+    const result = closeMonth(period, engine, this.ledgerState());
+
+    if (result.isNew) {
+      const filtered = this.interestEntries().filter(
+        (e) => !(e.period === period && e.method === engine.method && e.status === 'active')
+      );
+      this.interestEntries.set([...result.supersededEntries.filter(e => e.period === period && e.method === engine.method), result.entry, ...filtered]);
+    }
+
+    const currentLocked = this.loan().lockedUntilPeriod || '';
+    if (period > currentLocked) {
+      await this.updateLoanDetails({ lockedUntilPeriod: period });
+    }
+
+    await this.logAuditAndSave('create', 'loan', `closeMonth-${period}`, undefined, result.entry);
+    return { entry: result.entry, isNew: result.isNew };
+  }
+
+  async unlockPeriod(period: string, reason: string): Promise<void> {
+    const prev = this.loan().lockedUntilPeriod;
+    const [year, month] = period.split('-').map(Number);
+    const prevDate = new Date(year, (month || 1) - 2, 1);
+    const prevPeriod = prevDate.toISOString().slice(0, 7);
+
+    await this.updateLoanDetails({ lockedUntilPeriod: prevPeriod });
+    await this.logAuditAndSave(
+      'update',
+      'loan',
+      `unlock-${period}`,
+      { lockedUntilPeriod: prev, reason },
+      { lockedUntilPeriod: prevPeriod }
+    );
   }
 
   async loadSampleData(): Promise<void> {

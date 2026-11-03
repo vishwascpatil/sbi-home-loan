@@ -1,7 +1,10 @@
 import { InterestEngine } from './interest-engine.interface';
 import { MonthlyReducingBalanceEngine } from './monthly-reducing-balance-engine';
+import { DailyReducingBalanceEngine } from './daily-reducing-balance-engine';
 import {
+  CalculationMethod,
   ContributionTransaction,
+  DailyLedgerRecord,
   InterestEntry,
   LedgerState,
   Loan,
@@ -51,7 +54,12 @@ export interface ReconciliationResult {
   variance: Paise; // actual - calculated
 }
 
-const defaultEngine = new MonthlyReducingBalanceEngine();
+const defaultMonthlyEngine = new MonthlyReducingBalanceEngine();
+const defaultDailyEngine = new DailyReducingBalanceEngine();
+
+export function getEngineForMethod(method: CalculationMethod): InterestEngine {
+  return method === 'daily' ? defaultDailyEngine : defaultMonthlyEngine;
+}
 
 /**
  * Filter out soft-deleted records.
@@ -154,8 +162,9 @@ export function outstandingAt(dateOrMonth: string, ledger: LedgerState): Paise {
 export function monthlySummary(
   month: string,
   ledger: LedgerState,
-  engine: InterestEngine = defaultEngine
+  engine?: InterestEngine
 ): MonthlySummary {
+  const activeEngine = engine || getEngineForMethod(ledger.loan.calculationMethod);
   const [yearStr, monthStr] = month.split('-');
   const year = parseInt(yearStr || '2025', 10);
   const monthNum = parseInt(monthStr || '1', 10);
@@ -163,7 +172,21 @@ export function monthlySummary(
 
   const openingOutstanding = outstandingAt(prevMonthDate, ledger);
   const rateBps = getEffectiveRateBps(month, ledger.loan, ledger.rateChanges);
-  const interestIncurredEst = engine.calculateInterest(openingOutstanding, rateBps, month);
+
+  let interestIncurredEst: Paise;
+  if (activeEngine instanceof DailyReducingBalanceEngine) {
+    const dailyRes = activeEngine.calculateDailyInterest({
+      period: month,
+      openingPrincipal: openingOutstanding,
+      annualRateBps: rateBps,
+      transactions: ledger.transactions,
+      rateChanges: ledger.rateChanges,
+      bankRules: ledger.loan.bankRules,
+    });
+    interestIncurredEst = dailyRes.totalInterest;
+  } else {
+    interestIncurredEst = activeEngine.calculateInterest(openingOutstanding, rateBps, month);
+  }
 
   const activeTx = activeOnly(ledger.transactions).filter((tx) => tx.forMonth === month);
 
@@ -292,34 +315,107 @@ export function reconcile(
 }
 
 /**
- * Idempotently close a month: creates exactly one InterestEntry per (period, method).
+ * Mark superseded interest entries when recalculating for a period.
+ */
+export function markSupersededInterestEntries(
+  period: string,
+  method: CalculationMethod,
+  entries: InterestEntry[]
+): InterestEntry[] {
+  const now = new Date().toISOString();
+  return entries.map((entry) => {
+    if (entry.period === period && entry.method === method && entry.status === 'active') {
+      return {
+        ...entry,
+        status: 'superseded',
+        supersededAt: now,
+      };
+    }
+    return entry;
+  });
+}
+
+/**
+ * Idempotently close a month: creates exactly one active InterestEntry per (period, method).
  */
 export function closeMonth(
   period: string,
-  method: InterestEngine,
+  engine: InterestEngine,
   ledger: LedgerState
-): { entry: InterestEntry; isNew: boolean } {
-  const existing = ledger.interestEntries.find(
-    (e) => e.period === period && e.method === method.method
+): { entry: InterestEntry; isNew: boolean; supersededEntries: InterestEntry[] } {
+  const existingActive = ledger.interestEntries.find(
+    (e) => e.period === period && e.method === engine.method && e.status === 'active'
   );
-
-  if (existing) {
-    return { entry: existing, isNew: false };
-  }
 
   const openingPrincipal = outstandingAt(`${period}-01`, ledger);
   const rateBps = getEffectiveRateBps(period, ledger.loan, ledger.rateChanges);
-  const calculatedInterest = method.calculateInterest(openingPrincipal, rateBps, period);
 
-  const entry: InterestEntry = {
-    id: crypto.randomUUID(),
+  let calculatedInterest: Paise;
+  let accruedUnrounded: string | undefined;
+  let dailyLedger: DailyLedgerRecord[] | undefined;
+
+  if (engine instanceof DailyReducingBalanceEngine || engine.method === 'daily') {
+    const dailyEngine = engine instanceof DailyReducingBalanceEngine ? engine : defaultDailyEngine;
+    const dailyRes = dailyEngine.calculateDailyInterest({
+      period,
+      openingPrincipal,
+      annualRateBps: rateBps,
+      transactions: ledger.transactions,
+      rateChanges: ledger.rateChanges,
+      bankRules: ledger.loan.bankRules,
+    });
+    calculatedInterest = dailyRes.totalInterest;
+    accruedUnrounded = dailyRes.accruedUnrounded.toString();
+    dailyLedger = dailyRes.dailyLedger;
+  } else {
+    calculatedInterest = engine.calculateInterest(openingPrincipal, rateBps, period);
+  }
+
+  if (
+    existingActive &&
+    existingActive.calculatedInterest === calculatedInterest &&
+    existingActive.openingPrincipal === openingPrincipal &&
+    existingActive.rateBps === rateBps
+  ) {
+    return { entry: existingActive, isNew: false, supersededEntries: [] };
+  }
+
+  const supersededEntries = markSupersededInterestEntries(
     period,
-    method: method.method,
+    engine.method,
+    ledger.interestEntries
+  );
+
+  const deterministicId = `${period}_${engine.method}_${Date.now()}`;
+  const entry: InterestEntry = {
+    id: deterministicId,
+    period,
+    method: engine.method,
     openingPrincipal,
     calculatedInterest,
     rateBps,
+    status: 'active',
     createdAt: new Date().toISOString(),
+    accruedUnrounded,
+    dailyLedger,
   };
 
-  return { entry, isNew: true };
+  return { entry, isNew: true, supersededEntries };
+}
+
+/**
+ * Get daily ledger breakdown for a given period.
+ */
+export function getDailyLedger(period: string, ledger: LedgerState): DailyLedgerRecord[] {
+  const openingPrincipal = outstandingAt(`${period}-01`, ledger);
+  const rateBps = getEffectiveRateBps(period, ledger.loan, ledger.rateChanges);
+  const res = defaultDailyEngine.calculateDailyInterest({
+    period,
+    openingPrincipal,
+    annualRateBps: rateBps,
+    transactions: ledger.transactions,
+    rateChanges: ledger.rateChanges,
+    bankRules: ledger.loan.bankRules,
+  });
+  return res.dailyLedger;
 }
