@@ -157,3 +157,10 @@ button, a, input, select, textarea, .touch-target {
     scroll-behavior: auto !important;
   }
 }
+
+/* Visible focus indicators for accessibility (WCAG AA) */
+:focus-visible {
+  outline: 2px solid var(--brand-a);
+  outline-offset: 2px;
+}
+

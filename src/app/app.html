@@ -18,4 +18,14 @@
     [isOpen]="isAddSheetOpen()"
     (dismissed)="isAddSheetOpen.set(false)"
   />
+
+  <!-- Offline Service Worker Update Prompt -->
+  @if (updateAvailable()) {
+    <aside class="sw-update-banner" role="status" aria-live="polite">
+      <span class="sw-update-text">New version available</span>
+      <button type="button" class="sw-reload-btn" (click)="reloadApp()">
+        Reload
+      </button>
+    </aside>
+  }
 </div>

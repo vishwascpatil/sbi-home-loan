@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad512" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f35ff" />
+      <stop offset="50%" stop-color="#6c4cff" />
+      <stop offset="100%" stop-color="#ff5f9e" />
+    </linearGradient>
+    <linearGradient id="glyphGrad512" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#f2f3fb" />
+    </linearGradient>
+    <filter id="shadow512" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#000000" flood-opacity="0.35" />
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad512)" />
+  <circle cx="256" cy="256" r="170" fill="rgba(255, 255, 255, 0.12)" />
+  <!-- Rupee Symbol -->
+  <g filter="url(#shadow512)" fill="none" stroke="url(#glyphGrad512)" stroke-width="22" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M192 170 h128" />
+    <path d="M192 212 h128" />
+    <path d="M192 170 v90 a48 48 0 0 0 96 0 c0 -48 -96 -36 -96 -36" />
+    <path d="M224 256 l96 106" />
+  </g>
+</svg>
