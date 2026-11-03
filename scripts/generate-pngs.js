@@ -108,3 +108,4 @@ fs.writeFileSync(path.join(iconsDir, 'icon-maskable-512.png'), createPng(512, 51
 fs.writeFileSync(path.join(iconsDir, 'apple-touch-icon.png'), createPng(180, 180, (x, y, w, h) => brandPixel(x, y, w, h, false)));
 
 console.log('Successfully generated PNG icons in public/icons/');
+

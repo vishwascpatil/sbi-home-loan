@@ -29,7 +29,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm start',
+    command: 'node -r C:/Users/vishw/.node-version-patch.js ./node_modules/@angular/cli/bin/ng.js serve',
     url: 'http://localhost:4200',
     reuseExistingServer: !process.env['CI'],
     timeout: 120 * 1000,

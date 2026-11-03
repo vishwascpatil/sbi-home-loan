@@ -28,16 +28,13 @@ export class SettingsStore {
   constructor() {
     // Synchronize DOM attributes and theme-color meta tag
     effect(() => {
-      const currentTheme = this.theme();
+      // Track theme signal dependency
+      this.theme();
       const dark = this.isDark();
 
       if (typeof document !== 'undefined') {
         const root = document.documentElement;
-        if (currentTheme === 'light' || currentTheme === 'dark') {
-          root.dataset['theme'] = currentTheme;
-        } else {
-          delete root.dataset['theme'];
-        }
+        root.dataset['theme'] = dark ? 'dark' : 'light';
 
         const metaThemeColor = document.querySelector('meta[name="theme-color"]');
         if (metaThemeColor) {

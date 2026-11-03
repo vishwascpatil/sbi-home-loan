@@ -7,7 +7,7 @@ import { ToastService } from './toast.service';
   template: `
     <div class="toast-wrapper" aria-live="polite">
       @for (t of toastService.toasts(); track t.id) {
-        <div class="toast-item" [class.success]="t.type === 'success'" [class.danger]="t.type === 'danger'">
+        <div class="toast-item toast-card" [class.success]="t.type === 'success'" [class.danger]="t.type === 'danger'">
           <span class="toast-text">{{ t.message }}</span>
           <button type="button" class="toast-close" (click)="toastService.dismiss(t.id)" aria-label="Dismiss toast">
             ×
