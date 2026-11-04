@@ -145,18 +145,23 @@ import { NotificationsStore } from '../../../core/state';
       height: 42px;
       border-radius: 50%;
       border: 1px solid rgba(0, 0, 0, 0.08);
-      background: var(--color-card, #ffffff);
-      color: var(--color-ink, #15172b);
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--ink, #1d1d1f);
       display: grid;
       place-items: center;
       cursor: pointer;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-      backdrop-filter: blur(12px);
-      transition: all 0.2s ease;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 
       &:hover {
-        transform: scale(1.05);
-        border-color: #6c4cff;
+        transform: scale(1.08);
+        border-color: rgba(0, 113, 227, 0.3);
+      }
+
+      &:active {
+        transform: scale(0.94);
       }
     }
 
@@ -168,18 +173,18 @@ import { NotificationsStore } from '../../../core/state';
       position: absolute;
       top: -2px;
       right: -2px;
-      background: linear-gradient(135deg, #ee4d6b, #ff5f9e);
+      background: #ff3b30;
       color: #ffffff;
       font-size: 0.68rem;
       font-weight: 800;
       min-width: 18px;
       height: 18px;
       padding: 0 4px;
-      border-radius: 99px;
+      border-radius: var(--radius-pill, 9999px);
       display: grid;
       place-items: center;
       border: 2px solid #ffffff;
-      box-shadow: 0 2px 6px rgba(238, 77, 107, 0.4);
+      box-shadow: 0 2px 6px rgba(255, 59, 48, 0.4);
     }
 
     /* Backdrop & Drawer */

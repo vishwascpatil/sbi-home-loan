@@ -389,25 +389,30 @@ import {
 
     .back-link {
       font-size: 0.85rem;
-      color: var(--color-brand-start, #6c4cff);
+      color: var(--brand-a, #0071e3);
       text-decoration: none;
-      font-weight: 600;
+      font-weight: 700;
+      transition: all 0.2s ease;
+    }
+
+    .back-link:hover {
+      text-decoration: underline;
     }
 
     .header-title {
       font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--color-ink, #15172b);
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      color: var(--ink, #1d1d1f);
       margin: 4px 0 0;
     }
 
     .tab-toggle {
       display: flex;
-      background: var(--color-card, #ffffff);
-      padding: 4px;
-      border-radius: 99px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: rgba(0, 0, 0, 0.05);
+      padding: 3px;
+      border-radius: var(--radius-pill, 9999px);
+      border: 1px solid rgba(0, 0, 0, 0.04);
       width: fit-content;
     }
 
@@ -415,17 +420,22 @@ import {
       padding: 8px 18px;
       border: none;
       background: transparent;
-      border-radius: 99px;
+      border-radius: var(--radius-pill, 9999px);
       font-size: 0.9rem;
       font-weight: 600;
-      color: var(--color-muted, #767a90);
+      color: var(--muted, #86868b);
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &:active {
+        transform: scale(0.96);
+      }
 
       &.active {
-        background: linear-gradient(135deg, #6c4cff, #ff5f9e);
-        color: #ffffff;
-        box-shadow: 0 2px 6px rgba(108, 76, 255, 0.25);
+        background: #ffffff;
+        color: var(--ink, #1d1d1f);
+        font-weight: 700;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
       }
     }
 
@@ -435,11 +445,11 @@ import {
       justify-content: space-between;
       align-items: center;
       gap: 14px;
-      background: var(--color-card, #ffffff);
-      padding: 12px 18px;
-      border-radius: 18px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-      border: 1px solid rgba(0, 0, 0, 0.06);
+      background: var(--card, #ffffff);
+      padding: 14px 20px;
+      border-radius: var(--radius-card, 22px);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--line);
     }
 
     .control-group {
@@ -451,16 +461,24 @@ import {
     .control-label {
       font-size: 0.85rem;
       font-weight: 600;
-      color: var(--color-muted, #767a90);
+      color: var(--muted, #86868b);
     }
 
     .month-picker {
-      padding: 6px 12px;
+      padding: 8px 14px;
       border-radius: 12px;
-      border: 1px solid rgba(0, 0, 0, 0.15);
+      border: 1px solid var(--line);
       font-size: 0.9rem;
-      background: var(--color-bg, #f4f1ec);
-      color: var(--color-ink, #15172b);
+      font-weight: 600;
+      background: var(--bg-subtle, #f5f5f7);
+      color: var(--ink, #1d1d1f);
+      outline: none;
+      transition: all 0.2s ease;
+
+      &:focus {
+        border-color: var(--brand-a);
+        box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+      }
     }
 
     .action-buttons {
@@ -470,27 +488,34 @@ import {
     }
 
     .btn {
-      padding: 8px 14px;
-      border-radius: 12px;
+      padding: 8px 16px;
+      border-radius: var(--radius-pill, 9999px);
       font-size: 0.85rem;
-      font-weight: 600;
-      border: none;
+      font-weight: 700;
+      border: 1px solid var(--line);
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       display: inline-flex;
       align-items: center;
       gap: 6px;
 
+      &:active {
+        transform: scale(0.96);
+      }
+
       &.btn-primary {
-        background: linear-gradient(135deg, #6c4cff, #9b4dff);
+        background: linear-gradient(135deg, #0071e3 0%, #0056b3 100%);
         color: #fff;
-        &:hover { opacity: 0.95; }
+        border: none;
+        box-shadow: 0 4px 14px rgba(0, 113, 227, 0.3);
+        &:hover { opacity: 0.94; transform: translateY(-1px); }
       }
 
       &.btn-secondary {
-        background: rgba(0, 0, 0, 0.05);
-        color: var(--color-ink, #15172b);
-        &:hover { background: rgba(0, 0, 0, 0.08); }
+        background: #ffffff;
+        color: var(--ink, #1d1d1f);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+        &:hover { background: rgba(0, 0, 0, 0.03); transform: translateY(-1px); }
       }
     }
 

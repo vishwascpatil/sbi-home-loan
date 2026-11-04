@@ -28,15 +28,20 @@ export interface ShareSegment {
       display: flex;
       height: 10px;
       width: 100%;
-      border-radius: 99px;
+      border-radius: 9999px;
       overflow: hidden;
-      background: var(--line);
-      gap: 1px;
+      background: rgba(0, 0, 0, 0.06);
+      gap: 1.5px;
     }
 
     .share-fill {
       height: 100%;
-      transition: width 1s cubic-bezier(0.2, 0.8, 0.2, 1);
+      transition: width 1s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+      cursor: pointer;
+    }
+
+    .share-fill:hover {
+      opacity: 0.85;
     }
   `,
 })

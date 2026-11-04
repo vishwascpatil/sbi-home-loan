@@ -26,7 +26,7 @@ export class SettingsStore {
 
         const metaThemeColor = document.querySelector('meta[name="theme-color"]');
         if (metaThemeColor) {
-          metaThemeColor.setAttribute('content', '#f4f1ec');
+          metaThemeColor.setAttribute('content', '#fbfbfd');
         }
       }
     });

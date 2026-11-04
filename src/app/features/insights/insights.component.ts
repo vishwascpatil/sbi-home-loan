@@ -37,7 +37,7 @@ import {
   toRupees,
 } from '../../core/engine';
 
-const MEMBER_COLORS = ['#6c4cff', '#ff5f9e', '#0fb27c', '#f59f00', '#2e90ff'];
+const MEMBER_COLORS = ['#0071e3', '#4338ca', '#059669', '#d97706', '#e11d48'];
 
 @Component({
   selector: 'app-insights',
@@ -454,18 +454,23 @@ const MEMBER_COLORS = ['#6c4cff', '#ff5f9e', '#0fb27c', '#f59f00', '#2e90ff'];
 
     .save-scenario-btn {
       padding: 6px 14px;
-      border-radius: var(--radius-pill, 99px);
-      border: 1px solid var(--brand-a);
-      background: rgba(108, 76, 255, 0.1);
+      border-radius: var(--radius-pill, 9999px);
+      border: 1px solid rgba(0, 113, 227, 0.2);
+      background: rgba(0, 113, 227, 0.08);
       color: var(--brand-a);
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .save-scenario-btn:hover {
-      background: rgba(108, 76, 255, 0.2);
+      background: rgba(0, 113, 227, 0.16);
+      transform: translateY(-1px);
+    }
+
+    .save-scenario-btn:active {
+      transform: scale(0.96);
     }
 
     .saved-scenarios-bar {
@@ -494,15 +499,26 @@ const MEMBER_COLORS = ['#6c4cff', '#ff5f9e', '#0fb27c', '#f59f00', '#2e90ff'];
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 6px 12px;
-      border-radius: var(--radius-pill, 99px);
-      background: var(--bg);
+      padding: 6px 14px;
+      border-radius: var(--radius-pill, 9999px);
+      background: var(--card);
       border: 1px solid var(--line);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
       font-size: 12px;
       font-weight: 700;
       color: var(--ink);
       cursor: pointer;
       white-space: nowrap;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .saved-chip:hover {
+      transform: translateY(-1.5px);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+    }
+
+    .saved-chip:active {
+      transform: scale(0.96);
     }
 
     .del-scenario-icon {

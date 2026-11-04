@@ -33,13 +33,13 @@ import { formatPaise } from '../../../core/engine/money';
       >
         <defs>
           <linearGradient id="principalGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#0fb27c" stop-opacity="0.65" />
-            <stop offset="100%" stop-color="#0fb27c" stop-opacity="0.05" />
+            <stop offset="0%" stop-color="#34c759" stop-opacity="0.65" />
+            <stop offset="100%" stop-color="#34c759" stop-opacity="0.05" />
           </linearGradient>
 
           <linearGradient id="interestGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#ee4d6b" stop-opacity="0.65" />
-            <stop offset="100%" stop-color="#ee4d6b" stop-opacity="0.05" />
+            <stop offset="0%" stop-color="#ff3b30" stop-opacity="0.65" />
+            <stop offset="100%" stop-color="#ff3b30" stop-opacity="0.05" />
           </linearGradient>
         </defs>
 
@@ -54,8 +54,8 @@ import { formatPaise } from '../../../core/engine/money';
         <path [attr.d]="principalAreaPath()" fill="url(#principalGradient)" />
 
         <!-- Stroke Outlines -->
-        <path [attr.d]="combinedStrokePath()" fill="none" stroke="#ee4d6b" stroke-width="2.5" />
-        <path [attr.d]="principalStrokePath()" fill="none" stroke="#0fb27c" stroke-width="2.5" />
+        <path [attr.d]="combinedStrokePath()" fill="none" stroke="#ff3b30" stroke-width="2.5" />
+        <path [attr.d]="principalStrokePath()" fill="none" stroke="#34c759" stroke-width="2.5" />
 
         <!-- Interactive Hover Hit Columns -->
         @for (pt of chartPoints(); track pt.raw.period) {
@@ -77,7 +77,7 @@ import { formatPaise } from '../../../core/engine/money';
             y1="20"
             [attr.x2]="hoveredPoint()!.x"
             y2="210"
-            stroke="#6c4cff"
+            stroke="#0071e3"
             stroke-width="1.5"
             stroke-dasharray="3 3"
           />
@@ -85,7 +85,7 @@ import { formatPaise } from '../../../core/engine/money';
             [attr.cx]="hoveredPoint()!.x"
             [attr.cy]="hoveredPoint()!.combinedY"
             r="4.5"
-            fill="#ee4d6b"
+            fill="#ff3b30"
             stroke="#fff"
             stroke-width="2"
           />
@@ -93,7 +93,7 @@ import { formatPaise } from '../../../core/engine/money';
             [attr.cx]="hoveredPoint()!.x"
             [attr.cy]="hoveredPoint()!.principalY"
             r="4.5"
-            fill="#0fb27c"
+            fill="#34c759"
             stroke="#fff"
             stroke-width="2"
           />
@@ -151,8 +151,8 @@ import { formatPaise } from '../../../core/engine/money';
       border-radius: 50%;
     }
 
-    .principal-dot { background: #0fb27c; }
-    .interest-dot { background: #ee4d6b; }
+    .principal-dot { background: #34c759; }
+    .interest-dot { background: #ff3b30; }
 
     .area-chart-svg {
       width: 100%;

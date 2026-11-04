@@ -5,11 +5,11 @@ import { formatCompactPaise, formatPaise } from '../../core/engine';
 import { ProgressBarComponent } from '../../shared/ui';
 
 const MEMBER_GRADIENTS = [
-  'linear-gradient(135deg, #6c4cff, #a78bfa)',
-  'linear-gradient(135deg, #ff5f9e, #ff9a8b)',
-  'linear-gradient(135deg, #0fb27c, #6ee7b7)',
-  'linear-gradient(135deg, #f59f00, #ffd166)',
-  'linear-gradient(135deg, #2e90ff, #7dd3fc)',
+  'linear-gradient(135deg, #0071e3, #60a5fa)',
+  'linear-gradient(135deg, #4338ca, #818cf8)',
+  'linear-gradient(135deg, #059669, #34d399)',
+  'linear-gradient(135deg, #d97706, #fbbf24)',
+  'linear-gradient(135deg, #e11d48, #fb7185)',
 ];
 
 @Component({
@@ -114,19 +114,23 @@ const MEMBER_GRADIENTS = [
       width: 100%;
       background: var(--card);
       border: 1px solid var(--line);
-      border-radius: var(--radius-card, 26px);
+      border-radius: var(--radius-card, 22px);
       box-shadow: var(--shadow-sm);
       margin-bottom: 12px;
       padding: 0;
       text-align: left;
       cursor: pointer;
       overflow: hidden;
-      transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s ease;
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .masonry-card:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-md);
+      transform: translateY(-3px) scale(1.015);
+      box-shadow: var(--shadow-tv-hover);
+    }
+
+    .masonry-card:active {
+      transform: scale(0.97);
     }
 
     .card-cover-banner {
@@ -135,13 +139,20 @@ const MEMBER_GRADIENTS = [
       display: grid;
       place-items: center;
       transition: height 0.3s ease;
+      position: relative;
+      overflow: hidden;
     }
 
     .cover-initials {
-      font-size: 32px;
+      font-size: 30px;
       font-weight: 800;
       color: #ffffff;
       opacity: 0.95;
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .masonry-card:hover .cover-initials {
+      transform: scale(1.12);
     }
 
     .card-body {

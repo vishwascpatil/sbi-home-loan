@@ -245,8 +245,9 @@ import { ToastService } from '../../shared/ui';
     .sheet-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(10, 12, 21, 0.65);
+      background: rgba(0, 0, 0, 0.35);
       backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       display: grid;
       place-items: center;
       z-index: 1050;
@@ -254,18 +255,18 @@ import { ToastService } from '../../shared/ui';
     }
 
     .sheet-container {
-      background: var(--color-card, #ffffff);
-      color: var(--color-ink, #15172b);
+      background: #ffffff;
+      color: var(--ink, #1d1d1f);
       width: 100%;
       max-width: 720px;
       max-height: 90vh;
       border-radius: 26px;
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.16);
       border: 1px solid rgba(0, 0, 0, 0.08);
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      animation: sheetPop 0.25s ease-out;
+      animation: sheetPop 0.28s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     @keyframes sheetPop {
@@ -285,10 +286,10 @@ import { ToastService } from '../../shared/ui';
       font-size: 0.72rem;
       font-weight: 800;
       letter-spacing: 0.06em;
-      color: #6c4cff;
-      background: rgba(108, 76, 255, 0.1);
+      color: #0071e3;
+      background: rgba(0, 113, 227, 0.08);
       padding: 3px 10px;
-      border-radius: 99px;
+      border-radius: var(--radius-pill, 9999px);
       display: inline-block;
       margin-bottom: 4px;
     }
@@ -344,8 +345,8 @@ import { ToastService } from '../../shared/ui';
 
     /* Drag & Drop Zone */
     .drop-zone {
-      border: 2px dashed rgba(108, 76, 255, 0.35);
-      background: rgba(108, 76, 255, 0.03);
+      border: 2px dashed rgba(0, 113, 227, 0.35);
+      background: rgba(0, 113, 227, 0.02);
       border-radius: 20px;
       padding: 36px 20px;
       text-align: center;
@@ -354,11 +355,11 @@ import { ToastService } from '../../shared/ui';
       align-items: center;
       gap: 8px;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 
       &.drag-over {
-        border-color: #6c4cff;
-        background: rgba(108, 76, 255, 0.08);
+        border-color: #0071e3;
+        background: rgba(0, 113, 227, 0.08);
       }
     }
 
@@ -374,25 +375,30 @@ import { ToastService } from '../../shared/ui';
 
     .or-divider {
       font-size: 0.75rem;
-      color: #9499ad;
+      color: var(--muted);
       font-weight: 600;
     }
 
     .file-picker-btn {
       padding: 8px 18px;
-      background: linear-gradient(135deg, #6c4cff, #9b4dff);
+      background: linear-gradient(135deg, #0071e3 0%, #0056b3 100%);
       color: #fff;
       font-size: 0.85rem;
       font-weight: 700;
-      border-radius: 99px;
+      border-radius: var(--radius-pill, 9999px);
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(108, 76, 255, 0.25);
+      box-shadow: 0 4px 14px rgba(0, 113, 227, 0.28);
+      transition: all 0.2s ease;
+
+      &:active {
+        transform: scale(0.96);
+      }
     }
 
     .sample-box {
       text-align: center;
       font-size: 0.82rem;
-      color: var(--color-muted, #767a90);
+      color: var(--muted, #86868b);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -402,7 +408,7 @@ import { ToastService } from '../../shared/ui';
     .sample-link {
       background: none;
       border: none;
-      color: #6c4cff;
+      color: var(--brand-a, #0071e3);
       font-weight: 700;
       cursor: pointer;
       text-decoration: underline;
@@ -638,22 +644,29 @@ import { ToastService } from '../../shared/ui';
     }
 
     .btn {
-      padding: 10px 18px;
-      border-radius: 12px;
+      padding: 10px 20px;
+      border-radius: var(--radius-pill, 9999px);
       font-size: 0.88rem;
       font-weight: 700;
       border: none;
       cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &:active {
+        transform: scale(0.96);
+      }
 
       &.btn-primary {
-        background: linear-gradient(135deg, #6c4cff, #9b4dff);
+        background: linear-gradient(135deg, #0071e3 0%, #0056b3 100%);
         color: #fff;
-        &:disabled { opacity: 0.5; cursor: not-allowed; }
+        box-shadow: 0 4px 14px rgba(0, 113, 227, 0.3);
+        &:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
       }
 
       &.btn-secondary {
-        background: rgba(0, 0, 0, 0.06);
-        color: var(--color-ink, #15172b);
+        background: var(--bg-subtle, #f5f5f7);
+        color: var(--ink, #1d1d1f);
+        border: 1px solid var(--line);
       }
     }
   `],

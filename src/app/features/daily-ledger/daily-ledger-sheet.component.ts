@@ -121,10 +121,10 @@ import { DailyLedgerRecord, formatPaise, Paise, paise } from '../../core/engine'
       font-weight: 700;
       text-transform: uppercase;
       padding: 4px 10px;
-      border-radius: 99px;
-      background: rgba(108, 76, 255, 0.12);
-      color: #6c4cff;
-      border: 1px solid rgba(108, 76, 255, 0.2);
+      border-radius: var(--radius-pill, 9999px);
+      background: rgba(0, 113, 227, 0.08);
+      color: var(--brand-a);
+      border: 1px solid rgba(0, 113, 227, 0.2);
     }
 
     .summary-cards-row {
@@ -134,25 +134,31 @@ import { DailyLedgerRecord, formatPaise, Paise, paise } from '../../core/engine'
     }
 
     .sum-card {
-      background: var(--color-card);
-      border: 1px solid var(--color-line);
+      background: var(--card);
+      border: 1px solid var(--line);
       border-radius: 14px;
       padding: 10px 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
       display: flex;
       flex-direction: column;
       gap: 4px;
+      transition: transform 0.2s ease;
+    }
+
+    .sum-card:hover {
+      transform: translateY(-1px);
     }
 
     .sum-label {
       font-size: 11px;
-      color: var(--color-muted);
-      font-weight: 500;
+      color: var(--muted);
+      font-weight: 600;
     }
 
     .sum-value {
       font-size: 14px;
-      font-weight: 700;
-      color: var(--color-ink);
+      font-weight: 800;
+      color: var(--ink);
       font-variant-numeric: tabular-nums;
     }
 
@@ -160,8 +166,9 @@ import { DailyLedgerRecord, formatPaise, Paise, paise } from '../../core/engine'
       max-height: 55vh;
       overflow-y: auto;
       border-radius: 16px;
-      border: 1px solid var(--color-line);
-      background: var(--color-card);
+      border: 1px solid var(--line);
+      background: var(--card);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
     }
 
     .daily-table {
@@ -174,42 +181,42 @@ import { DailyLedgerRecord, formatPaise, Paise, paise } from '../../core/engine'
     .daily-table th {
       position: sticky;
       top: 0;
-      background: var(--color-card);
+      background: var(--bg-subtle, #f5f5f7);
       z-index: 2;
       padding: 8px 10px;
-      color: var(--color-muted);
-      font-weight: 600;
-      border-bottom: 1px solid var(--color-line);
+      color: var(--muted);
+      font-weight: 700;
+      border-bottom: 1px solid var(--line);
       white-space: nowrap;
     }
 
     .daily-table td {
       padding: 7px 10px;
-      border-bottom: 1px solid var(--color-line);
+      border-bottom: 1px solid var(--line);
       white-space: nowrap;
     }
 
     .date-cell {
-      font-weight: 600;
-      color: var(--color-ink);
+      font-weight: 700;
+      color: var(--ink);
     }
 
     .closing-cell {
-      font-weight: 600;
-      color: var(--color-ink);
+      font-weight: 700;
+      color: var(--ink);
     }
 
     .movement-cell.negative {
-      color: var(--color-success);
+      color: var(--success);
     }
 
     .movement-cell.positive {
-      color: var(--color-danger);
+      color: var(--danger);
     }
 
     .accrued-cell {
-      color: #9b4dff;
-      font-weight: 600;
+      color: var(--brand-a);
+      font-weight: 700;
     }
 
     .cumulative-cell {

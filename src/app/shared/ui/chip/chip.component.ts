@@ -21,47 +21,57 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
       justify-content: center;
       gap: 6px;
       padding: 8px 16px;
-      border-radius: var(--radius-pill, 99px);
-      border: 1px solid var(--line);
-      background: var(--card);
+      border-radius: var(--radius-pill, 9999px);
+      border: 1px solid rgba(0, 0, 0, 0.07);
+      background: #ffffff;
       color: var(--ink);
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 600;
       white-space: nowrap;
       cursor: pointer;
-      box-shadow: var(--shadow-sm);
-      transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-      min-height: 44px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      min-height: 40px;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .chip-button:hover {
-      border-color: var(--brand-a);
-      transform: translateY(-1px);
+      border-color: rgba(0, 0, 0, 0.14);
+      transform: translateY(-1.5px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    .chip-button:active {
+      transform: scale(0.95);
     }
 
     .chip-button.active {
       background: var(--ink);
-      color: var(--bg);
+      color: #ffffff;
       border-color: var(--ink);
-      box-shadow: 0 4px 14px rgba(21, 23, 43, 0.2);
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(29, 29, 31, 0.22);
     }
 
     .chip-button.glass {
-      background: rgba(255, 255, 255, 0.18);
-      color: #ffffff;
-      border: 1px solid rgba(255, 255, 255, 0.25);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      box-shadow: none;
+      background: rgba(255, 255, 255, 0.88);
+      color: var(--ink);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
     }
 
     .chip-button.glass:hover {
-      background: rgba(255, 255, 255, 0.28);
+      background: #ffffff;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
     }
 
     .chip-button.glass.active {
-      background: #ffffff;
-      color: var(--brand-a);
+      background: var(--brand-a);
+      color: #ffffff;
+      border-color: var(--brand-a);
     }
   `,
 })

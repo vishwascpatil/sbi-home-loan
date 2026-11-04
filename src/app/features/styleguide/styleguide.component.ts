@@ -333,11 +333,11 @@ export class StyleguideComponent {
   ];
 
   readonly shareSegments = [
-    { name: 'Member 1', percentage: 22, color: '#6c4cff' },
-    { name: 'Member 2', percentage: 18, color: '#ff5f9e' },
-    { name: 'Member 3', percentage: 26, color: '#0fb27c' },
-    { name: 'Member 4', percentage: 19, color: '#f59f00' },
-    { name: 'Member 5', percentage: 15, color: '#2e90ff' },
+    { name: 'Member 1', percentage: 22, color: '#0071e3' },
+    { name: 'Member 2', percentage: 18, color: '#4338ca' },
+    { name: 'Member 3', percentage: 26, color: '#059669' },
+    { name: 'Member 4', percentage: 19, color: '#d97706' },
+    { name: 'Member 5', percentage: 15, color: '#e11d48' },
   ];
 
   showToast(): void {

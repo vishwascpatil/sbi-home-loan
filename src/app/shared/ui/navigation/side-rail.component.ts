@@ -83,10 +83,13 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         position: fixed;
         left: 0;
         top: 0;
-        background: var(--card);
-        border-right: 1px solid var(--line);
+        background: var(--card-glass-dock);
+        backdrop-filter: var(--blur-dock);
+        -webkit-backdrop-filter: var(--blur-dock);
+        border-right: 0.5px solid var(--line);
         padding: 24px 18px;
         z-index: 800;
+        box-shadow: 2px 0 16px rgba(0, 0, 0, 0.02);
       }
     }
 
@@ -99,29 +102,31 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
     }
 
     .brand-avatar {
-      width: 42px;
-      height: 42px;
-      border-radius: 14px;
-      background: var(--brand-gradient);
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #0071e3 0%, #4338ca 100%);
       color: #ffffff;
       display: grid;
       place-items: center;
-      font-size: 20px;
+      font-size: 19px;
       font-weight: 800;
-      box-shadow: 0 4px 14px rgba(108, 76, 255, 0.3);
+      box-shadow: 0 4px 14px rgba(0, 113, 227, 0.28);
     }
 
     .brand-title {
       font-size: 16px;
       font-weight: 800;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.025em;
       margin: 0;
+      color: var(--ink);
     }
 
     .brand-badge {
       font-size: 11px;
       font-weight: 700;
       color: var(--muted);
+      letter-spacing: 0.03em;
     }
 
     .rail-links {
@@ -140,25 +145,36 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
       text-decoration: none;
       color: var(--muted);
       font-size: 14px;
-      font-weight: 700;
-      transition: all 0.2s ease;
+      font-weight: 600;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       min-height: 44px;
+      user-select: none;
     }
 
     .rail-link:hover {
-      background: var(--bg);
+      background: rgba(0, 0, 0, 0.04);
       color: var(--ink);
     }
 
+    .rail-link:active {
+      transform: scale(0.97);
+    }
+
     .rail-link.active {
-      background: var(--brand-gradient);
-      color: #ffffff;
-      box-shadow: 0 4px 16px rgba(108, 76, 255, 0.25);
+      background: rgba(0, 113, 227, 0.09);
+      color: var(--brand-a);
+      font-weight: 700;
     }
 
     .rail-icon {
       width: 20px;
       height: 20px;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .rail-link.active .rail-icon {
+      animation: appStoreTabBounce 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+      stroke-width: 2.5;
     }
 
     .rail-bottom-actions {
@@ -171,19 +187,24 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
     .add-action-btn {
       width: 100%;
       height: 46px;
-      border-radius: var(--radius-pill, 99px);
-      background: var(--brand-gradient);
+      border-radius: var(--radius-pill, 9999px);
+      background: linear-gradient(135deg, #0071e3 0%, #0056b3 100%);
       color: #ffffff;
       border: none;
       font-size: 14px;
       font-weight: 800;
       cursor: pointer;
-      box-shadow: 0 4px 16px rgba(108, 76, 255, 0.3);
-      transition: transform 0.2s ease;
+      box-shadow: 0 8px 24px -2px rgba(0, 113, 227, 0.38), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .add-action-btn:hover {
-      transform: translateY(-1px);
+      transform: translateY(-1.5px) scale(1.01);
+      box-shadow: 0 12px 28px -2px rgba(0, 113, 227, 0.46);
+    }
+
+    .add-action-btn:active {
+      transform: scale(0.96);
     }
   `,
 })

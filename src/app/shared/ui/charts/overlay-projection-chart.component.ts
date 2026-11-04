@@ -29,19 +29,19 @@ import { formatCompactPaise, Paise } from '../../../core/engine';
       >
         <defs>
           <linearGradient id="grad-baseline" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#6c4cff" stop-opacity="0.25" />
-            <stop offset="100%" stop-color="#6c4cff" stop-opacity="0.0" />
+            <stop offset="0%" stop-color="#0071e3" stop-opacity="0.25" />
+            <stop offset="100%" stop-color="#0071e3" stop-opacity="0.0" />
           </linearGradient>
           <linearGradient id="grad-scenario" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#ff5f9e" stop-opacity="0.25" />
-            <stop offset="100%" stop-color="#ff5f9e" stop-opacity="0.0" />
+            <stop offset="0%" stop-color="#34c759" stop-opacity="0.25" />
+            <stop offset="100%" stop-color="#34c759" stop-opacity="0.0" />
           </linearGradient>
         </defs>
 
         <!-- Grid Lines -->
-        <line x1="0" y1="20" x2="400" y2="20" stroke="var(--color-line, rgba(0,0,0,0.06))" stroke-dasharray="4" />
-        <line x1="0" y1="80" x2="400" y2="80" stroke="var(--color-line, rgba(0,0,0,0.06))" stroke-dasharray="4" />
-        <line x1="0" y1="140" x2="400" y2="140" stroke="var(--color-line, rgba(0,0,0,0.06))" />
+        <line x1="0" y1="20" x2="400" y2="20" stroke="var(--line, rgba(0,0,0,0.06))" stroke-dasharray="4" />
+        <line x1="0" y1="80" x2="400" y2="80" stroke="var(--line, rgba(0,0,0,0.06))" stroke-dasharray="4" />
+        <line x1="0" y1="140" x2="400" y2="140" stroke="var(--line, rgba(0,0,0,0.06))" />
 
         <!-- Baseline Area & Line -->
         @if (baselinePath()) {
@@ -49,7 +49,7 @@ import { formatCompactPaise, Paise } from '../../../core/engine';
           <path
             [attr.d]="baselinePath()"
             fill="none"
-            stroke="#6c4cff"
+            stroke="#0071e3"
             stroke-width="2.5"
             stroke-linecap="round"
           />
@@ -61,7 +61,7 @@ import { formatCompactPaise, Paise } from '../../../core/engine';
           <path
             [attr.d]="scenarioPath()"
             fill="none"
-            stroke="#ff5f9e"
+            stroke="#34c759"
             stroke-width="2.5"
             stroke-linecap="round"
           />
@@ -103,11 +103,11 @@ import { formatCompactPaise, Paise } from '../../../core/engine';
     }
 
     .legend-item.baseline .dot {
-      background: #6c4cff;
+      background: #0071e3;
     }
 
     .legend-item.scenario .dot {
-      background: #ff5f9e;
+      background: #34c759;
     }
 
     .overlay-svg {

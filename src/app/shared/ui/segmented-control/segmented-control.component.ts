@@ -28,11 +28,11 @@ export interface SegmentOption<T = string> {
   styles: `
     .segmented-track {
       display: flex;
-      background: var(--bg);
-      border: 1px solid var(--line);
-      border-radius: var(--radius-pill, 99px);
-      padding: 4px;
-      gap: 4px;
+      background: rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(0, 0, 0, 0.04);
+      border-radius: var(--radius-pill, 9999px);
+      padding: 3px;
+      gap: 3px;
       position: relative;
     }
 
@@ -42,27 +42,33 @@ export interface SegmentOption<T = string> {
       background: transparent;
       color: var(--muted);
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 600;
       padding: 8px 14px;
-      border-radius: var(--radius-pill, 99px);
+      border-radius: var(--radius-pill, 9999px);
       cursor: pointer;
-      transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
-      min-height: 40px;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      min-height: 38px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       text-align: center;
       user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .segment-item:hover {
       color: var(--ink);
     }
 
+    .segment-item:active {
+      transform: scale(0.96);
+    }
+
     .segment-item.active {
-      background: var(--card);
+      background: #ffffff;
       color: var(--ink);
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+      font-weight: 700;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
     }
   `,
 })

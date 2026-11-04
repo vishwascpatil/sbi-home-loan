@@ -312,22 +312,22 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
     .status-pill {
       font-size: 11px;
       font-weight: 700;
-      padding: 4px 10px;
-      border-radius: var(--radius-pill, 99px);
-      text-transform: uppercase;
+      padding: 4px 11px;
+      border-radius: var(--radius-pill, 9999px);
       letter-spacing: 0.02em;
+      transition: all 0.2s ease;
     }
 
     .status-pill.reconciled {
-      background: rgba(15, 178, 124, 0.15);
-      color: var(--success);
-      border: 1px solid var(--success);
+      background: var(--success-bg, rgba(52, 199, 89, 0.12));
+      color: #248a3d;
+      border: 1px solid rgba(52, 199, 89, 0.24);
     }
 
     .status-pill.estimated {
-      background: rgba(108, 76, 255, 0.12);
+      background: rgba(0, 113, 227, 0.08);
       color: var(--brand-a);
-      border: 1px solid rgba(108, 76, 255, 0.25);
+      border: 1px solid rgba(0, 113, 227, 0.2);
     }
 
     .method-tag, .tag-badge {
@@ -337,21 +337,25 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
     }
 
     .method-tag.clickable {
-      background: rgba(108, 76, 255, 0.1);
+      background: rgba(0, 113, 227, 0.06);
       color: var(--brand-a);
-      border: 1px solid rgba(108, 76, 255, 0.2);
-      border-radius: var(--radius-pill, 99px);
-      padding: 4px 10px;
+      border: 1px solid rgba(0, 113, 227, 0.16);
+      border-radius: var(--radius-pill, 9999px);
+      padding: 4px 11px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      transition: all 0.2s ease;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .method-tag.clickable:hover {
-      background: rgba(108, 76, 255, 0.18);
+      background: rgba(0, 113, 227, 0.12);
       transform: translateY(-1px);
+    }
+
+    .method-tag.clickable:active {
+      transform: scale(0.95);
     }
 
     .key-value-list {
@@ -471,13 +475,25 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 12px 0;
+      padding: 12px 10px;
+      margin: 0 -10px;
       border: none;
       border-top: 1px solid var(--line);
       background: transparent;
+      border-radius: 14px;
       text-align: left;
       cursor: pointer;
-      width: 100%;
+      width: calc(100% + 20px);
+      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .tx-row-btn:hover {
+      background: rgba(0, 0, 0, 0.025);
+      transform: translateX(2px);
+    }
+
+    .tx-row-btn:active {
+      transform: scale(0.98);
     }
 
     .tx-row-btn:first-child {
@@ -488,15 +504,20 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       width: 38px;
       height: 38px;
       border-radius: 12px;
-      background: var(--bg);
+      background: var(--bg-subtle, #f5f5f7);
       display: grid;
       place-items: center;
       font-size: 18px;
       flex-shrink: 0;
+      transition: transform 0.2s ease;
+    }
+
+    .tx-row-btn:hover .tx-icon-wrap {
+      transform: scale(1.08);
     }
 
     .tx-icon-wrap.payment {
-      background: rgba(108, 76, 255, 0.1);
+      background: rgba(0, 113, 227, 0.08);
     }
 
     .tx-details {

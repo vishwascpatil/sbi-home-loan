@@ -52,15 +52,15 @@ import {
     .sheet-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.45);
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
+      background: rgba(0, 0, 0, 0.32);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       z-index: 1000;
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
       align-items: center;
-      animation: fadeIn 0.25s ease-out;
+      animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .sheet-container {
@@ -68,55 +68,64 @@ import {
       max-width: 560px;
       max-height: 88vh;
       max-height: 88dvh;
-      background: var(--card);
-      border: 1px solid var(--line);
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.08);
       border-radius: 28px 28px 0 0;
-      box-shadow: 0 -8px 36px rgba(0, 0, 0, 0.18);
+      box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.16);
       display: flex;
       flex-direction: column;
-      padding: 12px 20px calc(24px + env(safe-area-inset-bottom, 0px));
-      animation: slideUp 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+      padding: 12px 22px calc(24px + env(safe-area-inset-bottom, 0px));
+      animation: slideUp 0.38s cubic-bezier(0.16, 1, 0.3, 1);
       overflow-y: auto;
     }
 
     .drag-handle {
-      width: 40px;
-      height: 4px;
-      border-radius: 99px;
-      background: var(--line-strong);
-      margin: 4px auto 14px;
+      width: 38px;
+      height: 5px;
+      border-radius: 9999px;
+      background: rgba(0, 0, 0, 0.14);
+      margin: 4px auto 16px;
       flex-shrink: 0;
+      transition: background 0.2s ease, width 0.2s ease;
     }
 
     .sheet-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 16px;
+      margin-bottom: 18px;
     }
 
     .sheet-title {
-      font-size: 18px;
+      font-size: 19px;
       font-weight: 800;
       margin: 0;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.025em;
+      color: var(--ink);
     }
 
     .close-btn {
-      width: 36px;
-      height: 36px;
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
-      border: 1px solid var(--line);
-      background: var(--bg);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: rgba(0, 0, 0, 0.04);
       color: var(--muted);
       cursor: pointer;
       display: grid;
       place-items: center;
-      font-size: 14px;
+      font-size: 13px;
+      font-weight: 700;
+      transition: all 0.2s ease;
     }
 
     .close-btn:hover {
       color: var(--ink);
+      background: rgba(0, 0, 0, 0.08);
+    }
+
+    .close-btn:active {
+      transform: scale(0.9);
     }
 
     .sheet-content {

@@ -754,30 +754,42 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
       height: 40px;
       border-radius: var(--radius-tile, 16px);
       border: 1px solid var(--line);
-      background: var(--bg);
+      background: var(--bg-subtle, #f5f5f7);
       color: var(--ink);
       padding: 0 12px;
       font-size: 13px;
       font-weight: 700;
       outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .member-name-input:focus {
+      border-color: var(--brand-a);
+      box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+      background: #ffffff;
     }
 
     .toggle-status-btn {
       padding: 8px 14px;
-      border-radius: var(--radius-pill, 99px);
+      border-radius: var(--radius-pill, 9999px);
       border: 1px solid var(--line);
-      background: var(--bg);
+      background: var(--bg-subtle, #f5f5f7);
       color: var(--muted);
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
       min-height: 40px;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .toggle-status-btn:active {
+      transform: scale(0.96);
     }
 
     .toggle-status-btn.active {
-      background: rgba(15, 178, 124, 0.15);
-      color: var(--success);
-      border-color: var(--success);
+      background: var(--success-bg, rgba(52, 199, 89, 0.12));
+      color: #248a3d;
+      border-color: rgba(52, 199, 89, 0.25);
     }
 
     .backup-actions-grid {
@@ -790,9 +802,9 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
     .backup-btn, .sample-btn, .reset-btn {
       width: 100%;
       height: 44px;
-      border-radius: var(--radius-pill, 99px);
+      border-radius: var(--radius-pill, 9999px);
       border: 1px solid var(--line);
-      background: var(--bg);
+      background: #ffffff;
       color: var(--ink);
       font-size: 13px;
       font-weight: 700;
@@ -800,6 +812,17 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
       display: grid;
       place-items: center;
       text-align: center;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .backup-btn:hover, .sample-btn:hover, .reset-btn:hover {
+      transform: translateY(-1.5px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    .backup-btn:active, .sample-btn:active, .reset-btn:active {
+      transform: scale(0.97);
     }
 
     .upload-label {
@@ -812,14 +835,14 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
 
     .reset-btn {
       color: var(--danger);
-      border-color: rgba(238, 77, 107, 0.3);
+      border-color: rgba(255, 59, 48, 0.3);
     }
 
     .security-notice {
       margin-top: 16px;
       padding: 12px 14px;
       border-radius: var(--radius-tile, 16px);
-      background: var(--bg);
+      background: var(--bg-subtle, #f5f5f7);
       border: 1px solid var(--line);
       font-size: 11px;
       color: var(--muted);
@@ -827,19 +850,24 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
     }
 
     .view-ledger-pill-btn {
-      padding: 6px 12px;
-      border-radius: var(--radius-pill, 99px);
-      border: 1px solid rgba(108, 76, 255, 0.25);
-      background: rgba(108, 76, 255, 0.1);
+      padding: 6px 14px;
+      border-radius: var(--radius-pill, 9999px);
+      border: 1px solid rgba(0, 113, 227, 0.2);
+      background: rgba(0, 113, 227, 0.08);
       color: var(--brand-a);
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .view-ledger-pill-btn:hover {
-      background: rgba(108, 76, 255, 0.18);
+      background: rgba(0, 113, 227, 0.16);
+      transform: translateY(-1px);
+    }
+
+    .view-ledger-pill-btn:active {
+      transform: scale(0.96);
     }
 
     .notif-pref-list {

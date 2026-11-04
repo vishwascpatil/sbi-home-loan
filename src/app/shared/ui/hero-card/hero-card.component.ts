@@ -76,35 +76,43 @@ import { formatCompactPaise, formatPaise, Loan, Paise } from '../../../core/engi
   `,
   styles: `
     .hero-container {
-      background: var(--hero-gradient);
-      color: #ffffff;
-      border-radius: var(--radius-card, 26px);
-      padding: 22px 20px 20px;
-      margin-bottom: 16px;
+      background: linear-gradient(145deg, #ffffff 0%, #f8f9fc 55%, #edf2f9 100%);
+      color: var(--ink);
+      border: 1px solid var(--hero-border, rgba(0, 0, 0, 0.07));
+      border-radius: var(--radius-card, 24px);
+      padding: 24px 22px 22px;
+      margin-bottom: 18px;
       position: relative;
       overflow: hidden;
-      box-shadow: 0 16px 36px rgba(108, 76, 255, 0.28);
+      box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.02), inset 0 1px 1.5px #ffffff;
+      transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .hero-container:hover {
+      transform: translateY(-2px) scale(1.006);
+      box-shadow: 0 24px 50px -10px rgba(0, 0, 0, 0.1), 0 4px 14px rgba(0, 0, 0, 0.03), inset 0 1px 2px #ffffff;
     }
 
     .glow-circle {
       position: absolute;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.12);
+      background: radial-gradient(circle, rgba(0, 113, 227, 0.06) 0%, rgba(255, 255, 255, 0) 70%);
       pointer-events: none;
     }
 
     .glow-top-right {
-      width: 240px;
-      height: 240px;
+      width: 280px;
+      height: 280px;
       right: -80px;
       top: -100px;
     }
 
     .glow-bottom-left {
-      width: 160px;
-      height: 160px;
+      width: 200px;
+      height: 200px;
       left: -60px;
       bottom: -80px;
+      background: radial-gradient(circle, rgba(67, 56, 202, 0.04) 0%, rgba(255, 255, 255, 0) 70%);
     }
 
     .top-row {
@@ -118,46 +126,55 @@ import { formatCompactPaise, formatPaise, Loan, Paise } from '../../../core/engi
     .badge-pill {
       display: inline-flex;
       align-items: center;
-      padding: 6px 13px;
-      border-radius: var(--radius-pill, 99px);
-      background: rgba(255, 255, 255, 0.18);
-      border: 1px solid rgba(255, 255, 255, 0.22);
-      color: #ffffff;
+      padding: 6px 14px;
+      border-radius: var(--radius-pill, 9999px);
+      background: rgba(0, 0, 0, 0.04);
+      border: 1px solid rgba(0, 0, 0, 0.07);
+      color: var(--ink);
       font-size: 11px;
       font-weight: 700;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      letter-spacing: 0.02em;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .badge-pill.clickable {
       cursor: pointer;
-      transition: background 0.2s ease;
       min-height: 32px;
     }
 
     .badge-pill.clickable:hover {
-      background: rgba(255, 255, 255, 0.28);
+      background: rgba(0, 0, 0, 0.07);
+      transform: translateY(-1px);
+    }
+
+    .badge-pill.clickable:active {
+      transform: scale(0.96);
     }
 
     .balance-section {
-      margin-top: 18px;
-      margin-bottom: 14px;
+      margin-top: 20px;
+      margin-bottom: 16px;
       position: relative;
       z-index: 1;
     }
 
     .balance-label {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
-      opacity: 0.88;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
     }
 
     .balance-amount {
-      font-size: 38px;
+      font-size: 40px;
       font-weight: 800;
-      letter-spacing: -0.035em;
-      line-height: 1.15;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
       margin-top: 4px;
+      color: var(--ink);
     }
 
     .repaid-details-row {
@@ -165,9 +182,9 @@ import { formatCompactPaise, formatPaise, Loan, Paise } from '../../../core/engi
       justify-content: space-between;
       font-size: 12px;
       font-weight: 600;
-      opacity: 0.9;
+      color: var(--muted);
       margin-top: 8px;
-      margin-bottom: 18px;
+      margin-bottom: 20px;
       position: relative;
       z-index: 1;
     }

@@ -207,8 +207,8 @@ import { BankImportSheetComponent } from '../bank-import/bank-import-sheet.compo
 
     .statements-link-btn {
       padding: 8px 16px;
-      border-radius: var(--radius-pill, 99px);
-      border: 1px solid var(--line);
+      border-radius: var(--radius-pill, 9999px);
+      border: 1px solid rgba(0, 0, 0, 0.08);
       background: var(--card);
       color: var(--ink);
       font-size: 13px;
@@ -216,39 +216,50 @@ import { BankImportSheetComponent } from '../bank-import/bank-import-sheet.compo
       text-decoration: none;
       display: inline-flex;
       align-items: center;
-      box-shadow: var(--shadow-sm);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
       min-height: 40px;
-      transition: all 0.2s ease;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .statements-link-btn:hover {
-      border-color: var(--brand-a);
-      color: var(--brand-a);
+      border-color: rgba(0, 0, 0, 0.16);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    .statements-link-btn:active {
+      transform: scale(0.96);
     }
 
     .csv-export-btn {
       padding: 8px 16px;
-      border-radius: var(--radius-pill, 99px);
-      border: 1px solid var(--line);
+      border-radius: var(--radius-pill, 9999px);
+      border: 1px solid rgba(0, 0, 0, 0.08);
       background: var(--card);
       color: var(--ink);
       font-size: 13px;
       font-weight: 700;
       cursor: pointer;
-      box-shadow: var(--shadow-sm);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
       min-height: 40px;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .csv-export-btn:hover {
-      border-color: var(--brand-a);
-      color: var(--brand-a);
+      border-color: rgba(0, 0, 0, 0.16);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    .csv-export-btn:active {
+      transform: scale(0.96);
     }
 
     .filters-card {
       background: var(--card);
       border: 1px solid var(--line);
-      border-radius: var(--radius-card, 26px);
-      padding: 14px;
+      border-radius: var(--radius-card, 22px);
+      padding: 16px;
       box-shadow: var(--shadow-sm);
       display: flex;
       flex-direction: column;
@@ -304,13 +315,25 @@ import { BankImportSheetComponent } from '../bank-import/bank-import-sheet.compo
       display: flex;
       align-items: flex-start;
       gap: 12px;
-      padding: 14px 0;
+      padding: 12px 10px;
+      margin: 0 -10px;
       border: none;
       border-top: 1px solid var(--line);
       background: transparent;
+      border-radius: 14px;
       text-align: left;
       cursor: pointer;
-      width: 100%;
+      width: calc(100% + 20px);
+      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .tx-history-item:hover {
+      background: rgba(0, 0, 0, 0.025);
+      transform: translateX(2px);
+    }
+
+    .tx-history-item:active {
+      transform: scale(0.98);
     }
 
     .tx-history-item:first-child {
@@ -321,17 +344,22 @@ import { BankImportSheetComponent } from '../bank-import/bank-import-sheet.compo
     .tx-icon-badge {
       width: 40px;
       height: 40px;
-      border-radius: 32%;
-      background: var(--bg);
+      border-radius: 14px;
+      background: var(--bg-subtle, #f5f5f7);
       color: var(--muted);
       display: grid;
       place-items: center;
       font-size: 18px;
       flex-shrink: 0;
+      transition: transform 0.2s ease;
+    }
+
+    .tx-history-item:hover .tx-icon-badge {
+      transform: scale(1.08);
     }
 
     .tx-icon-badge.payment {
-      background: rgba(108, 76, 255, 0.1);
+      background: rgba(0, 113, 227, 0.08);
       color: var(--brand-a);
     }
 

@@ -33,27 +33,30 @@ import { ToastService } from './toast.service';
 
     .toast-item {
       pointer-events: auto;
-      background: var(--card);
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(24px) saturate(190%);
+      -webkit-backdrop-filter: blur(24px) saturate(190%);
       color: var(--ink);
-      border: 1px solid var(--line);
-      border-radius: var(--radius-pill, 99px);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: var(--radius-pill, 9999px);
       padding: 12px 20px;
-      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04);
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
       font-size: 13px;
       font-weight: 700;
-      animation: slideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+      letter-spacing: -0.01em;
+      animation: appleCardEntrance 0.38s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .toast-item.success {
-      border-left: 4px solid var(--success);
+      border-left: 5px solid var(--success);
     }
 
     .toast-item.danger {
-      border-left: 4px solid var(--danger);
+      border-left: 5px solid var(--danger);
     }
 
     .toast-close {

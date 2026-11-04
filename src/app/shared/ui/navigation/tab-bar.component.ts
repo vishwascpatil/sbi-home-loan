@@ -86,13 +86,14 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
       display: flex;
       justify-content: space-around;
       align-items: center;
-      background: var(--card-glass);
-      backdrop-filter: var(--blur-glass);
-      -webkit-backdrop-filter: var(--blur-glass);
-      border-top: 1px solid var(--line);
+      background: var(--card-glass-dock);
+      backdrop-filter: var(--blur-dock);
+      -webkit-backdrop-filter: var(--blur-dock);
+      border-top: 0.5px solid var(--line);
       height: 64px;
       padding-bottom: env(safe-area-inset-bottom, 0px);
-      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
+      box-shadow: var(--shadow-dock);
+      transition: background 0.3s ease;
     }
 
     @media (min-width: 900px) {
@@ -111,46 +112,96 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
       flex: 1;
       height: 100%;
       min-width: 44px;
-      transition: color 0.2s ease;
+      position: relative;
+      transition: color 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.15s ease;
       -webkit-tap-highlight-color: transparent;
+      user-select: none;
     }
 
-    .tab-item:hover, .tab-item.active {
+    .tab-item:active {
+      transform: scale(0.92);
+    }
+
+    .tab-item::before {
+      content: '';
+      position: absolute;
+      width: 44px;
+      height: 32px;
+      border-radius: 12px;
+      background: rgba(0, 113, 227, 0.08);
+      top: 6px;
+      opacity: 0;
+      transform: scale(0.8);
+      transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+    }
+
+    .tab-item.active::before {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .tab-item:hover {
+      color: var(--ink);
+    }
+
+    .tab-item.active {
       color: var(--brand-a);
     }
 
     .tab-icon {
       width: 22px;
       height: 22px;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.2s ease;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Apple App Store Tab Switching Bounce Animation */
+    .tab-item.active .tab-icon {
+      animation: appStoreTabBounce 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+      stroke-width: 2.6;
     }
 
     .tab-label {
       font-size: 10px;
-      font-weight: 700;
+      font-weight: 600;
+      letter-spacing: -0.01em;
       margin-top: 3px;
+      position: relative;
+      z-index: 1;
+      transition: font-weight 0.2s ease, transform 0.2s ease;
+    }
+
+    .tab-item.active .tab-label {
+      font-weight: 800;
     }
 
     .raised-add-button {
       width: 52px;
       height: 52px;
       border-radius: 50%;
-      background: var(--brand-gradient);
-      border: 3px solid var(--card);
-      box-shadow: 0 8px 24px rgba(108, 76, 255, 0.4);
+      background: linear-gradient(135deg, #0071e3 0%, #0056b3 100%);
+      border: 3.5px solid #ffffff;
+      box-shadow: 0 10px 26px -2px rgba(0, 113, 227, 0.42), inset 0 1px 1.5px rgba(255, 255, 255, 0.6);
       display: grid;
       place-items: center;
       cursor: pointer;
-      margin-top: -22px;
+      margin-top: -24px;
       flex-shrink: 0;
-      transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+      position: relative;
+      z-index: 2;
+      transition: transform 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.28s ease;
     }
 
     .raised-add-button:hover {
-      transform: scale(1.08) translateY(-2px);
+      transform: scale(1.1) translateY(-2px);
+      box-shadow: 0 14px 32px -2px rgba(0, 113, 227, 0.52), inset 0 1px 1.5px rgba(255, 255, 255, 0.8);
     }
 
     .raised-add-button:active {
-      transform: scale(0.96);
+      transform: scale(0.92) translateY(0);
+      box-shadow: 0 4px 14px rgba(0, 113, 227, 0.35);
     }
   `,
 })

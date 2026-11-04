@@ -222,21 +222,29 @@ import { GlassCardComponent, ToastService } from '../../shared/ui';
     }
 
     .btn {
-      padding: 8px 14px;
-      border-radius: 12px;
+      padding: 8px 16px;
+      border-radius: var(--radius-pill, 9999px);
       font-size: 0.85rem;
       font-weight: 700;
-      border: none;
+      border: 1px solid var(--line);
       cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &:active {
+        transform: scale(0.96);
+      }
 
       &.btn-primary {
-        background: linear-gradient(135deg, #6c4cff, #9b4dff);
+        background: linear-gradient(135deg, #0071e3 0%, #0056b3 100%);
         color: #fff;
+        border: none;
+        box-shadow: 0 4px 14px rgba(0, 113, 227, 0.3);
       }
       &.btn-secondary {
-        background: var(--color-card, #ffffff);
-        color: var(--color-ink, #15172b);
-        border: 1px solid rgba(0, 0, 0, 0.1);
+        background: #ffffff;
+        color: var(--ink, #1d1d1f);
+        border: 1px solid var(--line);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
       }
     }
 
@@ -260,13 +268,13 @@ import { GlassCardComponent, ToastService } from '../../shared/ui';
     .status-title {
       font-size: 1.05rem;
       font-weight: 800;
-      color: #0fb27c;
+      color: #34c759;
       display: block;
     }
 
     .status-sub {
       font-size: 0.82rem;
-      color: var(--color-muted, #767a90);
+      color: var(--muted, #86868b);
       margin: 2px 0 0;
     }
 
@@ -277,9 +285,9 @@ import { GlassCardComponent, ToastService } from '../../shared/ui';
     }
 
     .hash-box {
-      background: #f8f9fc;
-      border: 1px solid #ededf4;
-      border-radius: 10px;
+      background: var(--bg-subtle, #f5f5f7);
+      border: 1px solid var(--line);
+      border-radius: 12px;
       padding: 8px 12px;
       display: flex;
       flex-direction: column;
@@ -289,13 +297,13 @@ import { GlassCardComponent, ToastService } from '../../shared/ui';
     .hash-label {
       font-size: 0.7rem;
       font-weight: 700;
-      color: #767a90;
+      color: var(--muted);
     }
 
     .hash-code {
       font-family: monospace;
       font-size: 0.68rem;
-      color: #6c4cff;
+      color: var(--brand-a, #0071e3);
       word-break: break-all;
     }
 

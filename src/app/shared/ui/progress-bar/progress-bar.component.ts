@@ -18,31 +18,52 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
         [class.solid-white]="glass()"
         [style.width.%]="clampedProgress()"
         [style.background]="fillColor()"
-      ></div>
+      >
+        <div class="pb-shimmer"></div>
+      </div>
     </div>
   `,
   styles: `
     .pb-track {
       width: 100%;
-      border-radius: 99px;
-      background: var(--line);
+      border-radius: 9999px;
+      background: rgba(0, 0, 0, 0.06);
       overflow: hidden;
       position: relative;
     }
 
     .pb-track.glass {
-      background: rgba(255, 255, 255, 0.22);
+      background: rgba(0, 0, 0, 0.06);
     }
 
     .pb-fill {
       height: 100%;
-      border-radius: 99px;
-      background: var(--brand-gradient);
-      transition: width 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+      border-radius: 9999px;
+      background: linear-gradient(90deg, #0071e3 0%, #38bdf8 100%);
+      transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0, 113, 227, 0.3);
     }
 
     .pb-fill.solid-white {
-      background: #ffffff;
+      background: linear-gradient(90deg, #0071e3 0%, #34c759 100%);
+    }
+
+    .pb-shimmer {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: 50%;
+      background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.4) 50%,
+        rgba(255, 255, 255, 0) 100%
+      );
+      animation: appleShimmer 2.2s infinite ease-in-out;
+      pointer-events: none;
     }
   `,
 })

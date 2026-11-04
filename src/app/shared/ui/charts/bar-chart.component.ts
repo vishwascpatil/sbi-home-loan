@@ -49,17 +49,23 @@ export interface BarDatum {
       max-width: 32px;
       display: flex;
       align-items: flex-end;
-      background: var(--bg);
+      background: rgba(0, 0, 0, 0.05);
       border-radius: 8px;
       overflow: hidden;
+      cursor: pointer;
     }
 
     .bar-fill {
       width: 100%;
-      background: var(--brand-gradient);
+      background: linear-gradient(180deg, #38bdf8 0%, #0071e3 100%);
       border-radius: 8px 8px 0 0;
-      transition: height 1s cubic-bezier(0.2, 0.8, 0.2, 1);
+      transition: height 1s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s ease, opacity 0.2s ease;
       min-height: 4px;
+    }
+
+    .bar-track:hover .bar-fill {
+      opacity: 0.85;
+      transform: scaleY(1.02);
     }
 
     .bar-label {

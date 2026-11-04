@@ -273,13 +273,20 @@ type ResolutionType = 'snapshot' | 'correction' | 'investigate';
       width: 100%;
       height: 44px;
       border-radius: 14px;
-      border: 1px solid var(--color-line, rgba(0, 0, 0, 0.1));
-      background: var(--color-bg, #f4f1ec);
-      color: var(--color-ink, #15172b);
+      border: 1px solid var(--line);
+      background: var(--bg-subtle, #f5f5f7);
+      color: var(--ink);
       padding: 0 14px;
       font-size: 14px;
       font-family: inherit;
       outline: none;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .form-input:focus {
+      border-color: var(--brand-a);
+      box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+      background: #ffffff;
     }
 
     .input-wrap {
@@ -292,7 +299,7 @@ type ResolutionType = 'snapshot' | 'correction' | 'investigate';
       position: absolute;
       left: 14px;
       font-weight: 700;
-      color: #6c4cff;
+      color: var(--brand-a);
     }
 
     .prefix-padding {
@@ -304,10 +311,11 @@ type ResolutionType = 'snapshot' | 'correction' | 'investigate';
     }
 
     .variance-card {
-      background: var(--color-card, #ffffff);
-      border: 1px solid var(--color-line, rgba(0, 0, 0, 0.1));
+      background: #ffffff;
+      border: 1px solid var(--line);
       border-radius: 16px;
       padding: 14px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -322,27 +330,27 @@ type ResolutionType = 'snapshot' | 'correction' | 'investigate';
     .var-title {
       font-size: 13px;
       font-weight: 800;
-      color: var(--color-ink, #15172b);
+      color: var(--ink);
     }
 
     .status-badge {
       font-size: 11px;
       font-weight: 700;
       padding: 3px 10px;
-      border-radius: 99px;
+      border-radius: var(--radius-pill, 9999px);
       text-transform: uppercase;
     }
 
     .status-badge.reconciled {
-      background: rgba(15, 178, 124, 0.15);
-      color: #0fb27c;
-      border: 1px solid rgba(15, 178, 124, 0.3);
+      background: var(--success-bg, rgba(52, 199, 89, 0.12));
+      color: #248a3d;
+      border: 1px solid rgba(52, 199, 89, 0.25);
     }
 
     .status-badge.estimated {
-      background: rgba(108, 76, 255, 0.12);
-      color: #6c4cff;
-      border: 1px solid rgba(108, 76, 255, 0.25);
+      background: rgba(0, 113, 227, 0.08);
+      color: var(--brand-a);
+      border: 1px solid rgba(0, 113, 227, 0.2);
     }
 
     .comparison-grid, .interest-comp-row {
@@ -352,7 +360,7 @@ type ResolutionType = 'snapshot' | 'correction' | 'investigate';
     }
 
     .interest-comp-row {
-      border-top: 1px solid var(--color-line, rgba(0, 0, 0, 0.1));
+      border-top: 1px solid var(--line);
       padding-top: 10px;
     }
 
@@ -365,21 +373,21 @@ type ResolutionType = 'snapshot' | 'correction' | 'investigate';
     .comp-label {
       font-size: 10px;
       font-weight: 600;
-      color: var(--color-muted, #767a90);
+      color: var(--muted);
     }
 
     .comp-val {
       font-size: 13px;
       font-weight: 700;
-      color: var(--color-ink, #15172b);
+      color: var(--ink);
     }
 
     .comp-val.variance-zero {
-      color: #0fb27c;
+      color: var(--success);
     }
 
     .comp-val.variance-diff {
-      color: #ee4d6b;
+      color: var(--danger);
     }
 
     .resolution-section {
@@ -400,20 +408,54 @@ type ResolutionType = 'snapshot' | 'correction' | 'investigate';
       gap: 12px;
       padding: 12px;
       border-radius: 14px;
-      border: 1px solid var(--color-line, rgba(0, 0, 0, 0.1));
-      background: var(--color-card, #ffffff);
+      border: 1px solid var(--line);
+      background: #ffffff;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .res-card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
 
     .res-card.selected {
-      border-color: #6c4cff;
-      background: rgba(108, 76, 255, 0.04);
+      border-color: var(--brand-a);
+      background: rgba(0, 113, 227, 0.04);
     }
 
     .res-card input[type="radio"] {
       margin-top: 3px;
-      accent-color: #6c4cff;
+      accent-color: var(--brand-a);
+    }
+
+    .action-btn.primary {
+      width: 100%;
+      height: 48px;
+      border-radius: var(--radius-pill, 9999px);
+      background: linear-gradient(135deg, #0071e3 0%, #0056b3 100%);
+      color: #ffffff;
+      border: none;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0, 113, 227, 0.3);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .action-btn.primary:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(0, 113, 227, 0.4);
+    }
+
+    .action-btn.primary:active:not(:disabled) {
+      transform: scale(0.96);
+    }
+
+    .action-btn.primary:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      box-shadow: none;
     }
 
     .res-info strong {

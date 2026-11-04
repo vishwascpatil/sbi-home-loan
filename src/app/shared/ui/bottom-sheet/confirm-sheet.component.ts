@@ -51,38 +51,45 @@ import { BottomSheetComponent } from './bottom-sheet.component';
     .action-btn {
       width: 100%;
       height: 48px;
-      border-radius: var(--radius-pill, 99px);
-      font-size: 14px;
+      border-radius: var(--radius-pill, 9999px);
+      font-size: 15px;
       font-weight: 700;
+      letter-spacing: -0.01em;
       cursor: pointer;
       display: grid;
       place-items: center;
-      transition: all 0.2s ease;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       border: 1px solid var(--line);
+    }
+
+    .action-btn:active {
+      transform: scale(0.96);
     }
 
     .confirm-btn {
       background: var(--brand-a);
       color: #ffffff;
       border: none;
+      box-shadow: 0 4px 14px rgba(0, 113, 227, 0.3);
     }
 
     .confirm-btn.danger {
       background: var(--danger);
+      box-shadow: 0 4px 14px rgba(255, 59, 48, 0.3);
     }
 
     .confirm-btn:hover {
-      opacity: 0.92;
+      opacity: 0.94;
       transform: translateY(-1px);
     }
 
     .cancel-btn {
-      background: var(--bg);
+      background: var(--bg-subtle, #f5f5f7);
       color: var(--ink);
     }
 
     .cancel-btn:hover {
-      background: var(--line);
+      background: rgba(0, 0, 0, 0.08);
     }
   `,
 })

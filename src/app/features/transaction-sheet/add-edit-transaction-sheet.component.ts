@@ -345,43 +345,45 @@ const PAYMENT_MODES: PaymentMode[] = [
       height: 60px;
       padding-left: 38px;
       padding-right: 16px;
-      border-radius: var(--radius-tile, 16px);
-      border: 2px solid var(--line);
-      background: var(--bg);
+      border-radius: var(--radius-tile, 18px);
+      border: 1.5px solid var(--line);
+      background: var(--bg-subtle, #f5f5f7);
       color: var(--ink);
       font-size: 28px;
       font-weight: 800;
       letter-spacing: -0.02em;
       outline: none;
-      transition: border-color 0.2s ease;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .large-amount-input:focus {
       border-color: var(--brand-a);
-      background: var(--card);
+      box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.15);
+      background: #ffffff;
     }
 
     .form-input, .form-select {
       width: 100%;
       height: 46px;
-      border-radius: var(--radius-tile, 16px);
+      border-radius: 14px;
       border: 1px solid var(--line);
-      background: var(--bg);
+      background: var(--bg-subtle, #f5f5f7);
       color: var(--ink);
       padding: 0 14px;
       font-size: 14px;
       font-weight: 600;
       outline: none;
-      transition: border-color 0.2s ease;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .form-input:focus, .form-select:focus {
       border-color: var(--brand-a);
-      background: var(--card);
+      box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+      background: #ffffff;
     }
 
     .split-preview-card {
-      background: var(--bg);
+      background: var(--bg-subtle, #f5f5f7);
       border: 1px solid var(--line);
       border-radius: var(--radius-tile, 16px);
       padding: 14px;
@@ -415,19 +417,29 @@ const PAYMENT_MODES: PaymentMode[] = [
     .submit-btn {
       width: 100%;
       height: 50px;
-      border-radius: var(--radius-pill, 99px);
-      background: var(--brand-gradient);
+      border-radius: var(--radius-pill, 9999px);
+      background: linear-gradient(135deg, #0071e3 0%, #0056b3 100%);
       color: #ffffff;
       border: none;
       font-size: 15px;
       font-weight: 800;
+      letter-spacing: -0.01em;
       cursor: pointer;
-      box-shadow: 0 4px 16px rgba(108, 76, 255, 0.3);
-      transition: opacity 0.2s ease;
+      box-shadow: 0 4px 16px rgba(0, 113, 227, 0.35);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .submit-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 22px rgba(0, 113, 227, 0.45);
+    }
+
+    .submit-btn:active:not(:disabled) {
+      transform: scale(0.96);
     }
 
     .submit-btn:disabled {
-      opacity: 0.5;
+      opacity: 0.45;
       cursor: not-allowed;
       box-shadow: none;
     }
@@ -435,13 +447,22 @@ const PAYMENT_MODES: PaymentMode[] = [
     .delete-btn {
       width: 100%;
       height: 44px;
-      border-radius: var(--radius-pill, 99px);
+      border-radius: var(--radius-pill, 9999px);
       background: transparent;
       color: var(--danger);
-      border: 1px solid var(--danger);
+      border: 1px solid rgba(255, 59, 48, 0.3);
       font-size: 14px;
       font-weight: 700;
       cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .delete-btn:hover:not(:disabled) {
+      background: var(--danger-bg, rgba(255, 59, 48, 0.08));
+    }
+
+    .delete-btn:active:not(:disabled) {
+      transform: scale(0.96);
     }
 
     .delete-btn:disabled {

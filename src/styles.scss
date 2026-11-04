@@ -1,35 +1,49 @@
 @import '@fontsource/plus-jakarta-sans/latin.css';
 
 :root {
-  /* Light theme tokens */
-  --bg: #f4f1ec;
+  /* Apple TV White Elegant Tokens */
+  --bg: #fbfbfd;
+  --bg-subtle: #f5f5f7;
   --card: #ffffff;
-  --card-glass: rgba(255, 255, 255, 0.72);
-  --ink: #15172b;
-  --muted: #767a90;
-  --line: rgba(21, 23, 43, 0.08);
-  --line-strong: rgba(21, 23, 43, 0.16);
+  --card-glass: rgba(255, 255, 255, 0.82);
+  --card-glass-dock: rgba(255, 255, 255, 0.88);
+  --ink: #1d1d1f;
+  --ink-secondary: #515154;
+  --muted: #86868b;
+  --line: rgba(0, 0, 0, 0.06);
+  --line-strong: rgba(0, 0, 0, 0.12);
 
   /* Accents & Brand Gradients */
-  --brand-a: #6c4cff;
-  --brand-b: #ff5f9e;
-  --brand-gradient: linear-gradient(135deg, #6c4cff 0%, #ff5f9e 100%);
-  --hero-gradient: linear-gradient(135deg, #4f35ff 0%, #9b4dff 55%, #ff5f9e 100%);
-  --success: #0fb27c;
-  --danger: #ee4d6b;
+  --brand-a: #0071e3;
+  --brand-b: #4338ca;
+  --brand-gradient: linear-gradient(135deg, #0071e3 0%, #4338ca 100%);
+  --hero-gradient: linear-gradient(145deg, #ffffff 0%, #f6f8fb 55%, #edf2f8 100%);
+  --hero-ink: #1d1d1f;
+  --hero-border: rgba(0, 0, 0, 0.08);
 
-  /* Elevation & Shadows */
-  --shadow-sm: 0 4px 12px rgba(42, 47, 90, 0.06);
-  --shadow-md: 0 12px 32px rgba(42, 47, 90, 0.09);
-  --shadow-glass: 0 8px 32px rgba(31, 38, 135, 0.07);
+  /* Semantic Feedback */
+  --success: #34c759;
+  --success-bg: rgba(52, 199, 89, 0.12);
+  --danger: #ff3b30;
+  --danger-bg: rgba(255, 59, 48, 0.1);
+  --warning: #ff9500;
+  --warning-bg: rgba(255, 149, 0, 0.12);
+
+  /* Elevation & Diffuse Shadows (Apple TV style) */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --shadow-md: 0 10px 30px -4px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.02);
+  --shadow-lg: 0 20px 48px -6px rgba(0, 0, 0, 0.09), 0 6px 16px rgba(0, 0, 0, 0.03);
+  --shadow-dock: 0 -4px 28px rgba(0, 0, 0, 0.06), 0 0 1px rgba(0, 0, 0, 0.1);
+  --shadow-tv-hover: 0 18px 45px -8px rgba(0, 0, 0, 0.1), 0 4px 14px rgba(0, 0, 0, 0.03);
 
   /* Radii */
-  --radius-card: 26px;
+  --radius-card: 24px;
   --radius-tile: 16px;
-  --radius-pill: 99px;
+  --radius-pill: 9999px;
 
-  /* Glass backdrop */
-  --blur-glass: blur(18px);
+  /* Glass backdrops (Apple ultra-fine frosted glass) */
+  --blur-glass: blur(28px) saturate(190%);
+  --blur-dock: blur(34px) saturate(210%);
 
   color-scheme: light;
 }
@@ -43,13 +57,15 @@
 }
 
 html {
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
   font-size: 15px;
   line-height: 1.45;
   color: var(--ink);
   background-color: var(--bg);
   scroll-behavior: smooth;
   scroll-padding-top: env(safe-area-inset-top, 0px);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
@@ -57,8 +73,8 @@ body {
   min-height: 100dvh;
   background-color: var(--bg);
   background-image: 
-    radial-gradient(90% 38% at 85% -5%, rgba(108, 76, 255, 0.18), transparent),
-    radial-gradient(70% 28% at 0% 18%, rgba(255, 95, 158, 0.12), transparent);
+    radial-gradient(90% 45% at 50% -8%, rgba(0, 113, 227, 0.04), transparent),
+    radial-gradient(80% 35% at 90% 20%, rgba(67, 56, 202, 0.03), transparent);
   background-repeat: no-repeat;
   color: var(--ink);
   overflow-x: hidden;
@@ -71,21 +87,50 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* 44px Minimum Touch Targets */
+/* 44px Minimum Touch Targets with tactile press response */
 button, a, input, select, textarea, .touch-target {
   min-height: 44px;
   min-width: 44px;
 }
 
+button:active, .interactive-item:active {
+  transform: scale(0.97);
+  transition: transform 0.12s cubic-bezier(0.2, 0, 0, 1);
+}
+
 /* Keyframe Animations */
-@keyframes cardEntrance {
+@keyframes appleCardEntrance {
   from {
     opacity: 0;
-    transform: translateY(20px) scale(0.97);
+    transform: translateY(22px) scale(0.97);
   }
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes appStoreTabBounce {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.26);
+  }
+  70% {
+    transform: scale(0.92);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes appleShimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
   }
 }
 
@@ -95,13 +140,38 @@ button, a, input, select, textarea, .touch-target {
 }
 
 @keyframes slideUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+  from { 
+    transform: translateY(100%); 
+    opacity: 0.8;
+  }
+  to { 
+    transform: translateY(0); 
+    opacity: 1;
+  }
+}
+
+@keyframes pulseSubtle {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
 }
 
 .stagger-in {
-  animation: cardEntrance 0.65s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-  animation-delay: calc(var(--stagger-index, 0) * 70ms);
+  animation: appleCardEntrance 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--stagger-index, 0) * 65ms);
+}
+
+/* Apple TV Floating Card Hover Class */
+.apple-tv-hover {
+  transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.apple-tv-hover:hover {
+  transform: translateY(-3px) scale(1.012);
+  box-shadow: var(--shadow-tv-hover);
 }
 
 /* Respect Reduced Motion */
