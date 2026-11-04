@@ -8,8 +8,10 @@ import {
 import { FormsModule } from '@angular/forms';
 import { LedgerStore } from '../../core/state';
 import {
+  AmortizationAreaChartComponent,
   AvatarComponent,
   BarChartComponent,
+  ContributionHeatmapComponent,
   GlassCardComponent,
   OverlayProjectionChartComponent,
   ProgressBarComponent,
@@ -17,6 +19,10 @@ import {
   ToastService,
 } from '../../shared/ui';
 import {
+  computeAmortizationHistory,
+  computeContributionHeatmap,
+  computeMemberConsistencyScores,
+  computeRupeeSplit,
   ContributionTransaction,
   DrawdownEvent,
   formatCompactPaise,
@@ -44,6 +50,8 @@ const MEMBER_COLORS = ['#6c4cff', '#ff5f9e', '#0fb27c', '#f59f00', '#2e90ff'];
     AvatarComponent,
     ProgressBarComponent,
     OverlayProjectionChartComponent,
+    AmortizationAreaChartComponent,
+    ContributionHeatmapComponent,
   ],
   template: `
     <div class="insights-page">
@@ -267,6 +275,85 @@ const MEMBER_COLORS = ['#6c4cff', '#ff5f9e', '#0fb27c', '#f59f00', '#2e90ff'];
             ⚠️ Never closes with current parameters: monthly payment is insufficient to cover accrued interest.
           </div>
         }
+      </app-glass-card>
+
+      <!-- Historical Amortization Chart -->
+      <app-glass-card [staggerIndex]="3">
+        <h2 class="card-title">Historical Amortization (Principal vs Interest)</h2>
+        <p class="section-sub">Cumulative progression of principal reduction vs interest costs over time.</p>
+        <app-amortization-area-chart [points]="amortizationHistory()" />
+      </app-glass-card>
+
+      <!-- Where Each Rupee Went Breakdown -->
+      <app-glass-card [staggerIndex]="4">
+        <h2 class="card-title">Where Each Rupee Went</h2>
+        <p class="section-sub">Lifetime breakdown of total bank payments into equity built vs interest charges.</p>
+
+        <div class="rupee-split-container">
+          <div class="split-bar-track">
+            <div
+              class="split-segment principal"
+              [style.width.%]="rupeeSplit().principalPercent"
+              [title]="'Principal Repaid: ' + rupeeSplit().principalPercent.toFixed(1) + '%'"
+            ></div>
+            <div
+              class="split-segment interest"
+              [style.width.%]="rupeeSplit().interestPercent"
+              [title]="'Interest Cost: ' + rupeeSplit().interestPercent.toFixed(1) + '%'"
+            ></div>
+          </div>
+
+          <div class="split-stats-grid">
+            <div class="split-stat-card principal">
+              <span class="stat-badge green">Principal Equity</span>
+              <strong class="stat-amount tabular-nums">{{ formatPaise(rupeeSplit().totalPrincipalReduced) }}</strong>
+              <small class="stat-percent">{{ rupeeSplit().principalPercent.toFixed(1) }}% of total paid</small>
+            </div>
+            <div class="split-stat-card interest">
+              <span class="stat-badge red">Interest Cost</span>
+              <strong class="stat-amount tabular-nums">{{ formatPaise(rupeeSplit().totalInterestPaid) }}</strong>
+              <small class="stat-percent">{{ rupeeSplit().interestPercent.toFixed(1) }}% of total paid</small>
+            </div>
+          </div>
+        </div>
+      </app-glass-card>
+
+      <!-- 365-Day Contribution Heatmap -->
+      <app-glass-card [staggerIndex]="5">
+        <h2 class="card-title">365-Day Contribution Activity</h2>
+        <p class="section-sub">Daily member deposit intensity over the past 12 months.</p>
+        <app-contribution-heatmap [days]="contributionHeatmapDays()" />
+      </app-glass-card>
+
+      <!-- Member Consistency & Streaks -->
+      <app-glass-card [staggerIndex]="6">
+        <h2 class="card-title">Member Consistency & Streaks</h2>
+        <p class="section-sub">On-time adherence and active payment streaks over past 6 months.</p>
+
+        <div class="consistency-list">
+          @for (c of memberConsistency(); track c.memberId) {
+            <div class="consistency-row">
+              <div class="member-info-col">
+                <app-avatar [name]="c.name" [colorIndex]="$index" [size]="28" />
+                <div>
+                  <strong class="c-name">{{ c.name }}</strong>
+                  <small class="c-streak">🔥 {{ c.currentStreakMonths }} month streak</small>
+                </div>
+              </div>
+
+              <div class="metrics-col">
+                <div class="metric-pill">
+                  <span class="pill-label">On-Time</span>
+                  <span class="pill-val" [class.high]="c.onTimePercent >= 80">{{ c.onTimePercent }}%</span>
+                </div>
+                <div class="metric-pill">
+                  <span class="pill-label">Target Met</span>
+                  <span class="pill-val" [class.high]="c.targetAdherencePercent >= 80">{{ c.targetAdherencePercent }}%</span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
       </app-glass-card>
     </div>
   `,
@@ -615,11 +702,152 @@ const MEMBER_COLORS = ['#6c4cff', '#ff5f9e', '#0fb27c', '#f59f00', '#2e90ff'];
       font-weight: 700;
       text-align: center;
     }
+
+    /* Rupee Split Styles */
+    .rupee-split-container {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .split-bar-track {
+      height: 18px;
+      border-radius: 99px;
+      background: #f1f2f8;
+      display: flex;
+      overflow: hidden;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .split-segment {
+      height: 100%;
+      transition: width 0.3s ease;
+      &.principal { background: linear-gradient(135deg, #0fb27c, #48bb78); }
+      &.interest { background: linear-gradient(135deg, #ee4d6b, #f56565); }
+    }
+
+    .split-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .split-stat-card {
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-tile, 16px);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .stat-badge {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 4px;
+      width: fit-content;
+      &.green { background: rgba(15, 178, 124, 0.15); color: #0fb27c; }
+      &.red { background: rgba(238, 77, 107, 0.15); color: #ee4d6b; }
+    }
+
+    .stat-amount {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--ink);
+    }
+
+    .stat-percent {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* Consistency List */
+    .consistency-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .consistency-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-tile, 16px);
+    }
+
+    .member-info-col {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .c-name {
+      display: block;
+      font-size: 13px;
+      color: var(--ink);
+    }
+
+    .c-streak {
+      font-size: 11px;
+      color: #6c4cff;
+      font-weight: 700;
+    }
+
+    .metrics-col {
+      display: flex;
+      gap: 8px;
+    }
+
+    .metric-pill {
+      background: var(--card);
+      border: 1px solid var(--line);
+      padding: 4px 8px;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .pill-label {
+      font-size: 9px;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .pill-val {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--ink);
+      &.high { color: #0fb27c; }
+    }
   `,
 })
 export class InsightsComponent {
   readonly ledgerStore = inject(LedgerStore);
   readonly toast = inject(ToastService);
+
+  readonly amortizationHistory = computed(() => {
+    return computeAmortizationHistory(this.ledgerStore.ledgerState());
+  });
+
+  readonly rupeeSplit = computed(() => {
+    return computeRupeeSplit(this.ledgerStore.ledgerState());
+  });
+
+  readonly contributionHeatmapDays = computed(() => {
+    return computeContributionHeatmap(this.ledgerStore.ledgerState());
+  });
+
+  readonly memberConsistency = computed(() => {
+    return computeMemberConsistencyScores(this.ledgerStore.ledgerState());
+  });
 
   readonly formatPaise = formatPaise;
   readonly formatCompactPaise = formatCompactPaise;

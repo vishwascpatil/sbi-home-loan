@@ -9,4 +9,6 @@ export * from './simulator';
 export * from './bank-import';
 export * from './notifications';
 export * from './backup';
+export * from './hash-chain';
+export * from './analytics';
 

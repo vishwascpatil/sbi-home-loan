@@ -6,6 +6,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { LedgerStore, NotificationsStore, SettingsStore } from '../../core/state';
 import {
   ConfirmSheetComponent,
@@ -38,6 +39,7 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FormsModule,
+    RouterLink,
     GlassCardComponent,
     SegmentedControlComponent,
     ConfirmSheetComponent,
@@ -494,6 +496,10 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
           <button type="button" class="sample-btn" (click)="loadSampleData()">
             🔄 Load Sample Data
           </button>
+
+          <a routerLink="/admin/audit" class="sample-btn" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
+            🛡️ Audit Log & Integrity
+          </a>
 
           <button
             type="button"

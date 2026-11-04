@@ -37,6 +37,11 @@ export const routes: Routes = [
       import('./features/settings/settings.component').then((m) => m.SettingsComponent),
   },
   {
+    path: 'admin/audit',
+    loadComponent: () =>
+      import('./features/audit/audit-viewer.component').then((m) => m.AuditViewerComponent),
+  },
+  {
     path: 'styleguide',
     loadComponent: () =>
       import('./features/styleguide/styleguide.component').then((m) => m.StyleguideComponent),
