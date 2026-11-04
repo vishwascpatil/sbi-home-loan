@@ -15,10 +15,12 @@ import {
   ToastService,
 } from '../../shared/ui';
 import {
+  BackupDiffSummary,
   CalculationMethod,
   DayCountBasis,
   DebitFrequency,
   formatPaise,
+  inspectBackupDiff,
   Member,
   monthlySummary,
   Paise,
@@ -29,6 +31,7 @@ import {
 } from '../../core/engine';
 import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.component';
 import { ReconciliationWizardComponent } from '../reconciliation/reconciliation-wizard.component';
+import { RestorePreviewModalComponent } from './restore-preview-modal.component';
 
 @Component({
   selector: 'app-settings',
@@ -40,6 +43,7 @@ import { ReconciliationWizardComponent } from '../reconciliation/reconciliation-
     ConfirmSheetComponent,
     DailyLedgerSheetComponent,
     ReconciliationWizardComponent,
+    RestorePreviewModalComponent,
   ],
   template: `
     <div class="settings-page">
@@ -528,6 +532,14 @@ import { ReconciliationWizardComponent } from '../reconciliation/reconciliation-
         [isOpen]="isReconciliationOpen()"
         (dismissed)="isReconciliationOpen.set(false)"
       />
+
+      <!-- Restore Preview Modal -->
+      <app-restore-preview-modal
+        [isOpen]="isRestoreModalOpen()"
+        [diff]="pendingRestoreDiff()"
+        (confirmed)="confirmRestore()"
+        (cancelled)="cancelRestore()"
+      />
     </div>
   `,
   styles: `
@@ -957,6 +969,9 @@ export class SettingsComponent {
   readonly isConfirmClearOpen = signal<boolean>(false);
   readonly isDailyLedgerOpen = signal<boolean>(false);
   readonly isReconciliationOpen = signal<boolean>(false);
+  readonly isRestoreModalOpen = signal<boolean>(false);
+  readonly pendingRestoreDiff = signal<BackupDiffSummary | null>(null);
+  readonly pendingRestoreJson = signal<string | null>(null);
 
   newRateInput: number | null = null;
   rateEffectiveDate = new Date().toISOString().slice(0, 10);
@@ -1121,15 +1136,39 @@ export class SettingsComponent {
     const file = inputEl.files[0]!;
     const reader = new FileReader();
     reader.onload = async () => {
+      const rawText = reader.result as string;
       try {
-        await this.ledgerStore.restoreBackup(reader.result as string);
-        this.toast.show('Backup restored successfully', 'success');
+        const diff = inspectBackupDiff(rawText, this.ledgerStore.ledgerState());
+        this.pendingRestoreJson.set(rawText);
+        this.pendingRestoreDiff.set(diff);
+        this.isRestoreModalOpen.set(true);
       } catch {
-        this.toast.show('Failed to restore backup: Invalid JSON', 'danger');
+        this.toast.show('Failed to inspect backup file', 'danger');
       }
     };
     reader.readAsText(file);
     inputEl.value = '';
+  }
+
+  async confirmRestore(): Promise<void> {
+    const json = this.pendingRestoreJson();
+    if (!json) return;
+
+    try {
+      await this.ledgerStore.restoreBackup(json);
+      this.isRestoreModalOpen.set(false);
+      this.pendingRestoreJson.set(null);
+      this.pendingRestoreDiff.set(null);
+      this.toast.show('Backup restored successfully', 'success');
+    } catch {
+      this.toast.show('Failed to restore backup: Invalid schema or corrupted data', 'danger');
+    }
+  }
+
+  cancelRestore(): void {
+    this.isRestoreModalOpen.set(false);
+    this.pendingRestoreJson.set(null);
+    this.pendingRestoreDiff.set(null);
   }
 
   async loadSampleData(): Promise<void> {
