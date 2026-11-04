@@ -18,7 +18,6 @@ import {
   ToastService,
 } from '../../shared/ui';
 import { Loan, Paise, toPaise } from '../../core/engine';
-import { SettingsStore } from '../../core/state';
 
 @Component({
   selector: 'app-styleguide',
@@ -46,9 +45,6 @@ import { SettingsStore } from '../../core/state';
           <small class="sg-subtitle">Design System & Primitives</small>
           <h1 class="sg-title">Fintech UI Styleguide</h1>
         </div>
-        <button type="button" class="theme-btn" (click)="settings.toggleTheme()">
-          {{ settings.isDark() ? '☀️ Light' : '🌙 Dark' }}
-        </button>
       </header>
 
       <!-- Section: Hero Card -->
@@ -230,17 +226,6 @@ import { SettingsStore } from '../../core/state';
       margin: 2px 0 0;
     }
 
-    .theme-btn {
-      padding: 8px 16px;
-      border-radius: var(--radius-pill, 99px);
-      border: 1px solid var(--line);
-      background: var(--card);
-      color: var(--ink);
-      font-weight: 700;
-      cursor: pointer;
-      min-height: 40px;
-    }
-
     .sg-section {
       margin-bottom: 32px;
     }
@@ -297,7 +282,6 @@ import { SettingsStore } from '../../core/state';
   `,
 })
 export class StyleguideComponent {
-  readonly settings = inject(SettingsStore);
   readonly toastService = inject(ToastService);
 
   readonly isMasked = signal<boolean>(true);

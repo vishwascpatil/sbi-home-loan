@@ -185,3 +185,4 @@ export class OverlayProjectionChartComponent {
     return `${linePath} L ${lastX},${h - paddingY} L 0,${h - paddingY} Z`;
   }
 }
+

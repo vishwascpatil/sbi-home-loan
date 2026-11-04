@@ -20,7 +20,7 @@ describe('LedgerStore and SettingsStore', () => {
     expect(ledgerStore.loan().accountNumber).toBe('43054757071');
     expect(ledgerStore.members().length).toBe(5);
     expect(ledgerStore.activeMembers().length).toBe(5);
-    expect(settingsStore.theme()).toBe('auto');
+    expect(settingsStore.theme()).toBe('light');
     expect(settingsStore.maskAccountNumber()).toBe(true);
   });
 
@@ -103,16 +103,11 @@ describe('LedgerStore and SettingsStore', () => {
     expect(ledgerStore.auditLog()[0]?.action).toBe('update');
   });
 
-  it('toggles theme and mask account number in settings store', () => {
+  it('toggles mask account number in settings store', () => {
     expect(settingsStore.maskAccountNumber()).toBe(true);
     settingsStore.toggleMaskAccountNumber();
     expect(settingsStore.maskAccountNumber()).toBe(false);
 
-    settingsStore.setTheme('dark');
-    expect(settingsStore.theme()).toBe('dark');
-    expect(settingsStore.isDark()).toBe(true);
-
-    settingsStore.setTheme('light');
     expect(settingsStore.theme()).toBe('light');
     expect(settingsStore.isDark()).toBe(false);
   });

@@ -146,7 +146,7 @@ export function getInitialSeedData(): LedgerState {
     snapshots: [],
     interestEntries: [],
     settings: {
-      theme: 'auto',
+      theme: 'light',
       dateFormat: 'DD/MM/YYYY',
       maskAccountNumber: true,
       defaultPaymentMode: 'UPI',

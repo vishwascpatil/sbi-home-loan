@@ -1,7 +1,7 @@
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import { LocalStorageLedgerRepository } from '../data';
 
-export type AppTheme = 'auto' | 'light' | 'dark';
+export type AppTheme = 'light';
 export type AppDateFormat = 'DD/MM/YYYY' | 'YYYY-MM-DD';
 
 @Injectable({
@@ -10,52 +10,35 @@ export type AppDateFormat = 'DD/MM/YYYY' | 'YYYY-MM-DD';
 export class SettingsStore {
   private readonly repo = inject(LocalStorageLedgerRepository);
 
-  readonly theme = signal<AppTheme>('auto');
+  readonly theme = signal<AppTheme>('light');
   readonly dateFormat = signal<AppDateFormat>('DD/MM/YYYY');
   readonly maskAccountNumber = signal<boolean>(true);
 
-  // Computes whether dark theme is actually active (considering system preferences)
-  readonly isDark = computed(() => {
-    const current = this.theme();
-    if (current === 'dark') return true;
-    if (current === 'light') return false;
-    if (typeof window !== 'undefined' && window.matchMedia) {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
-    }
-    return false;
-  });
+  // Always false as dark mode has been removed in favor of permanent light fintech theme
+  readonly isDark = computed(() => false);
 
   constructor() {
     // Synchronize DOM attributes and theme-color meta tag
     effect(() => {
-      // Track theme signal dependency
-      this.theme();
-      const dark = this.isDark();
-
       if (typeof document !== 'undefined') {
         const root = document.documentElement;
-        root.dataset['theme'] = dark ? 'dark' : 'light';
+        root.dataset['theme'] = 'light';
 
         const metaThemeColor = document.querySelector('meta[name="theme-color"]');
         if (metaThemeColor) {
-          metaThemeColor.setAttribute('content', dark ? '#0a0c15' : '#f4f1ec');
+          metaThemeColor.setAttribute('content', '#f4f1ec');
         }
       }
     });
   }
 
-  setTheme(newTheme: AppTheme): void {
-    this.theme.set(newTheme);
+  setTheme(_newTheme?: unknown): void {
+    this.theme.set('light');
     this.persistSettings();
   }
 
   toggleTheme(): void {
-    const current = this.theme();
-    if (current === 'auto') {
-      this.setTheme(this.isDark() ? 'light' : 'dark');
-    } else {
-      this.setTheme(current === 'dark' ? 'light' : 'dark');
-    }
+    // No-op: dark mode removed
   }
 
   toggleMaskAccountNumber(): void {
@@ -69,11 +52,11 @@ export class SettingsStore {
   }
 
   initFromState(settings: {
-    theme: AppTheme;
+    theme?: string;
     dateFormat: AppDateFormat;
     maskAccountNumber: boolean;
   }): void {
-    this.theme.set(settings.theme || 'auto');
+    this.theme.set('light');
     this.dateFormat.set(settings.dateFormat || 'DD/MM/YYYY');
     this.maskAccountNumber.set(settings.maskAccountNumber ?? true);
   }
@@ -81,7 +64,7 @@ export class SettingsStore {
   private persistSettings(): void {
     void this.repo.load().then((state) => {
       state.settings = {
-        theme: this.theme(),
+        theme: 'light',
         dateFormat: this.dateFormat(),
         maskAccountNumber: this.maskAccountNumber(),
         defaultPaymentMode: state.settings.defaultPaymentMode || 'UPI',

@@ -231,7 +231,7 @@ export interface AuditEntry {
 }
 
 export interface Settings {
-  theme: 'auto' | 'light' | 'dark';
+  theme: 'light';
   dateFormat: 'DD/MM/YYYY' | 'YYYY-MM-DD';
   maskAccountNumber: boolean;
   defaultPaymentMode: PaymentMode;

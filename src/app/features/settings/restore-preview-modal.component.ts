@@ -367,3 +367,4 @@ export class RestorePreviewModalComponent {
   readonly confirmed = output<void>();
   readonly cancelled = output<void>();
 }
+

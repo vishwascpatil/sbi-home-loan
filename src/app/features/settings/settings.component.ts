@@ -250,20 +250,11 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
         </div>
       </app-glass-card>
 
-      <!-- Appearance & Calculation Method -->
+      <!-- Calculation Method Preference -->
       <app-glass-card [staggerIndex]="4">
         <h2 class="card-title">Preferences</h2>
 
         <div class="setting-group" style="margin-top: 14px">
-          <span class="setting-label" id="theme-label">Theme</span>
-          <app-segmented-control
-            [options]="themeOptions"
-            [selectedValue]="settings.theme()"
-            (changed)="settings.setTheme($event)"
-          />
-        </div>
-
-        <div class="setting-group" style="margin-top: 16px">
           <span class="setting-label" id="method-label">Interest Engine</span>
           <app-segmented-control
             [options]="methodOptions"
@@ -993,12 +984,6 @@ export class SettingsComponent {
       (s) => !s.deletedAt && s.date.slice(0, 7) === curMonth && s.variance === 0
     );
   });
-
-  readonly themeOptions: SegmentOption<'auto' | 'light' | 'dark'>[] = [
-    { label: 'Auto (System)', value: 'auto' },
-    { label: 'Light', value: 'light' },
-    { label: 'Dark', value: 'dark' },
-  ];
 
   readonly methodOptions: SegmentOption<CalculationMethod>[] = [
     { label: 'Monthly Reducing', value: 'monthly' },

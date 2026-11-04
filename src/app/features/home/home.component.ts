@@ -44,14 +44,6 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
           <small class="header-month">{{ currentMonthFormatted() }}</small>
           <h1 class="header-title">Loan Tracker</h1>
         </div>
-        <button
-          type="button"
-          class="theme-icon-btn"
-          (click)="settings.toggleTheme()"
-          [attr.aria-label]="settings.isDark() ? 'Switch to light theme' : 'Switch to dark theme'"
-        >
-          {{ settings.isDark() ? '☀️' : '🌙' }}
-        </button>
       </header>
 
       <!-- Hero Outstanding Balance Card -->
@@ -282,19 +274,6 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       font-weight: 800;
       letter-spacing: -0.025em;
       margin: 2px 0 0;
-    }
-
-    .theme-icon-btn {
-      width: 44px;
-      height: 44px;
-      border-radius: 14px;
-      border: 1px solid var(--line);
-      background: var(--card);
-      box-shadow: var(--shadow-sm);
-      display: grid;
-      place-items: center;
-      cursor: pointer;
-      font-size: 18px;
     }
 
     .quick-actions-bar {

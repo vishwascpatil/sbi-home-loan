@@ -156,3 +156,4 @@ export class ContributionHeatmapComponent {
     return `${day.date}: ${formatPaise(day.amount)}`;
   }
 }
+

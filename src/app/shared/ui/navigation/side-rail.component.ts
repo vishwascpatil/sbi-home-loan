@@ -1,6 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, output } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { SettingsStore } from '../../../core/state';
 
 @Component({
   selector: 'app-side-rail',
@@ -65,15 +64,6 @@ import { SettingsStore } from '../../../core/state';
           (click)="openAdd.emit()"
         >
           ＋ New Entry
-        </button>
-
-        <button
-          type="button"
-          class="theme-toggle-btn"
-          (click)="settings.toggleTheme()"
-          aria-label="Toggle theme"
-        >
-          {{ settings.isDark() ? '☀️ Light Mode' : '🌙 Dark Mode' }}
         </button>
       </div>
     </aside>
@@ -195,22 +185,9 @@ import { SettingsStore } from '../../../core/state';
     .add-action-btn:hover {
       transform: translateY(-1px);
     }
-
-    .theme-toggle-btn {
-      width: 100%;
-      height: 40px;
-      border-radius: var(--radius-pill, 99px);
-      border: 1px solid var(--line);
-      background: var(--bg);
-      color: var(--ink);
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-    }
   `,
 })
 export class SideRailComponent {
-  readonly settings = inject(SettingsStore);
   readonly openAdd = output<void>();
 }
 
