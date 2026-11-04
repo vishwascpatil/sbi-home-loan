@@ -1,18 +1,30 @@
-# Group Loan Tracker & EMI Ledger (Phase 1)
+# Group Loan Tracker & EMI Ledger (Phases 1, 2 & 3 Complete)
 
-A mobile-first, local-first Progressive Web Application (PWA) built with **Angular 22** for tracking shared group loans, overdraft (OD) facilities, member contributions, and bank EMI payments with mathematical precision.
+A mobile-first, local-first Progressive Web Application (PWA) built with **Angular 22** for tracking shared group loans, overdraft (OD) facilities, member contributions, bank EMI payments, and tax reporting with mathematical precision.
 
 ---
 
 ## 🌟 Key Features
 
-- **Mathematical Precision**: Currency is strictly stored as branded integer paise (`Paise`) with `BigInt` intermediate calculations. Eliminates all floating-point rounding errors.
-- **Pure Event-Sourced Ledger**: Outstanding balances, member statistics, and monthly summaries are pure functions of historical transactions. Editing or deleting past records recalculates the entire ledger automatically.
-- **Decoupled Accounting**: Group member contributions fund the collective cash pool; only recorded bank payments reduce loan principal. Bank payments feature a live estimated interest vs. principal reduction split.
-- **Offline-First PWA**: Powered by `@angular/service-worker` and browser `localStorage` with versioned schema migrations, debounced writes, and in-memory failover.
+### Advanced Banking & Calculations (Phase 3)
+- **Daily Reducing Balance OD Engine**: Day-accurate accrual with customizable bank rules: `actual/365` (SBI Maxgain / HDFC default), `360`, and `actual/actual`. Interest accumulated with fixed-point `BigInt` ($10^6$ scale) and rounded half-up only on debit. Includes interactive Daily OD Ledger sheet.
+- **Period Locking & Month Close**: Freeze financial periods idempotently. Historical edits inside locked periods require an admin unlock with a mandatory audited reason.
+- **Bank Reconciliation Wizard**: Compare ledger balances with net-banking closing figures. Three resolution paths: *Record Snapshot* (`✓ Reconciled`), *Record Manual Correction*, or *Flag for Investigation*.
+- **Day-Accurate Simulator v2**: Model payment day of month, one-off prepayments, drawdowns, and interest rate shifts ($\pm 0.25\% / \pm 0.50\%$) with an SVG overlay comparison chart and saved named scenarios.
+- **Client-Side Statements & Tax Reports**:
+  - Monthly printable statements with Web Share API and PDF print styling.
+  - Indian Financial Year (April–March) tax certificates: Section 24(b) (Interest up to ₹2L) and Section 80C (Principal up to ₹1.5L) breakdown table and co-borrower shares.
+- **Bank Statement CSV Importer**: Pre-configured profiles for SBI Maxgain, HDFC, ICICI, and Generic CSVs. Features automated deduplication (`hash(date + amount + reference)`), interactive review queue, and 1-click batch rollback.
+- **In-App Notification Center & Anomaly Detection**: Floating bell with unread badge and slide-out tray. Detects 24h duplicates, $>3\times$ median contribution outliers, $>10\%$ target payment deviations, and tenure expiry warnings (90, 30, 7 days).
+- **Cryptographic Audit Log & Verification**: Append-only tamper-evident audit log verified via Web Crypto SHA-256 hash chains ($H_n = \text{SHA256}(H_{n-1} + \text{canonical}(E_n))$). Exportable to RFC 4180 CSV.
+- **Validated JSON Backup & Dry-Run Restore**: Validates schema version and entity counts, with a visual diff preview before applying restores.
+
+### Core Architecture (Phases 1 & 2)
+- **Branded Integer Arithmetic**: Money is strictly modeled as integer paise (`Paise`) with intermediate `BigInt` multiplication. Zero floating-point rounding errors.
+- **Pure Event-Sourced Ledger**: Outstanding balances, member statistics, and monthly summaries are pure functions of historical transactions.
+- **Decoupled Accounting**: Group member contributions fund the collective cash pool; only recorded bank payments reduce loan principal.
+- **Offline-First PWA**: Powered by `@angular/service-worker` with versioned schema migrations, debounced writes, and in-memory failover.
 - **Fintech Design**: iPhone 17 Pro Max first (~440px wide) with smooth glassmorphism, responsive desktop side rail ($\ge 900\text{px}$), custom SVG charts, tabular numerals, and dynamic theme switching (`auto`, `light`, `dark`).
-- **Repayment Simulator**: Interactive analytical payoff modeling with closed-form mathematical tenure calculation and graceful "never closes" handling.
-- **Data Portability**: Full JSON backup/restore with schema validation and RFC 4180 CSV export with UTF-8 BOM (`\uFEFF`).
 
 ---
 

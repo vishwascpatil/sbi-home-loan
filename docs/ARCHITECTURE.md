@@ -132,48 +132,83 @@ The application state is driven by Angular Signals using zoneless change detecti
 
 ---
 
-## 6. How to Add an Interest Engine
+## 6. Daily Reducing Balance OD Interest Engine (Phase 3)
 
-The system abstracts interest computation behind the `InterestEngine` interface:
+The system implements both Monthly and Daily interest engines conforming to the `InterestEngine` interface:
 
-```typescript
-export interface InterestEngine {
-  readonly method: CalculationMethod;
-  calculateInterest(
-    period: string, // YYYY-MM
-    openingBalance: Paise,
-    annualRateBps: number,
-    transactionsInPeriod: Transaction[]
-  ): InterestCalculationResult;
-}
-```
-
-### Steps to Implement a Daily Balance Engine in Phase 3:
-1. Create `src/app/core/engine/daily-reducing-balance-engine.ts` implementing `InterestEngine`.
-2. Break the calendar month into sub-day intervals between daily transactions.
-3. Compute daily interest for each slice using $\text{Principal}_d \times \frac{\text{Rate}_{\text{bps}}}{100 \times 100 \times 365}$.
-4. In `engine.ts` / `settings.component.ts`, register the engine in the calculation engine registry.
-5. All UI cards, hero indicators, and monthly summaries will immediately compute daily interest splits without touching any UI component!
+- **Monthly Reducing Balance**:
+  $$\text{Monthly Interest} = \left\lfloor \frac{\text{Principal} \times \text{Rate}_{\text{bps}} + 60,000}{120,000} \right\rfloor$$
+- **Daily Reducing Balance OD Engine (`DailyReducingBalanceEngine`)**:
+  - Accurate to the day based on configurable bank-rule conventions:
+    - **Day-Count Basis**: `actual/365` (SBI Maxgain / HDFC default), `360` (US commercial bank), `actual/actual` (ISMA).
+    - **Interest Debit Frequency**: `monthlyLastDay` (default), `quarterly`, `customDay`.
+    - **Capitalisation Toggle**: Whether debited interest capitalises into outstanding principal.
+    - **Value Date Handling**: Transactions take effect from their recorded `valueDate`.
+  - **Fixed-Point High-Precision Math**: Daily accrual is accumulated unrounded using fixed-point `BigInt` (scale $10^6$ paise). Half-up rounding to paise occurs strictly when interest is debited.
+  - **Golden Invariants**:
+    - Golden Test 1: ₹10,00,000 at 8.00%, actual/365, 31 days $\implies$ **₹6,794.52**.
+    - Golden Test 2: ₹10,00,000 for 10 days, then ₹9,00,000 for 21 days at 8.00% $\implies$ **₹6,334.25**.
 
 ---
 
-## 7. Phase 2: Firebase Migration Path
+## 7. Period Locking, Month Close & Reconciliation
 
-Phase 1 provides a 100% contract-compliant repository adapter: `LocalStorageLedgerRepository`.
+- **Deterministic Month Close**: Admin-triggered "Close Month" computes the period's summary, persists an idempotent `InterestEntry` (`periodStart_method`), and updates `loan.lockedUntilPeriod`.
+- **Audited Period Unlock**: Edits inside a locked period require explicit admin unlock and a mandatory reason, permanently recorded in the immutable audit log.
+- **Bank Passbook Reconciliation**:
+  - Compares bank actual closing outstanding and interest debit with ledger figures.
+  - Offers 3 resolution paths: `BalanceSnapshot` (zero variance), `ManualCorrection` (bank charges/penalties), or `Flag for Investigation` (high-variance anomaly).
 
-To transition to multi-user collaborative sync with Firebase in Phase 2:
-1. Implement `FirebaseLedgerRepository` implementing `LedgerRepository`:
-   ```typescript
-   export class FirebaseLedgerRepository implements LedgerRepository {
-     // Connects to Firestore collections:
-     // - loans/{loanId}
-     // - loans/{loanId}/transactions
-     // - loans/{loanId}/members
-     // - loans/{loanId}/audit
-   }
-   ```
-2. In `app.config.ts`, swap the provider:
-   ```typescript
-   { provide: LedgerRepository, useClass: FirebaseLedgerRepository }
-   ```
-3. Because `LedgerStore` and `SettingsStore` interact strictly via the `LedgerRepository` contract, zero state or UI layer changes are required!
+---
+
+## 8. Simulator v2 & Visual Projections
+
+- **Day-Accurate Simulator**: Accounts for exact calendar day of monthly payments, one-off prepayments, drawdowns, and interest rate shifts ($\pm 0.25\% / \pm 0.50\%$).
+- **Overlay Trajectory Chart**: Custom SVG chart rendering baseline vs custom scenarios side by side with interactive crosshair tooltips.
+- **Named Scenarios**: Save and compare named scenarios stored within the loan document.
+
+---
+
+## 9. Statements & Indian Financial Year (FY) Reporting
+
+- **Client-Side Statements**: Monthly printable statements showing opening balance, member contributions, bank payment split, closing balance, and group funds accounting.
+- **Web Share API**: Native mobile sharing with printable letter/A4 stylesheets.
+- **Indian Financial Year (April–March)**:
+  - Aggregates Section 24(b) (Interest on Housing Loan, up to ₹2L) and Section 80C (Principal Repayment, up to ₹1.5L).
+  - 12-month month-by-month table and co-borrower tax deduction shares.
+
+---
+
+## 10. Bank Statement Importer & Review Queue
+
+- **Bank Format Presets**: SBI Maxgain Home Loan OD, HDFC Bank, ICICI Bank, Generic Bank CSV.
+- **Deduplication Engine**: Matches rows using `hash(date + amount + reference)`:
+  - `Matched`: Same date & amount or reference $\implies$ auto-set to `Skip`.
+  - `Probable`: Same amount with $\pm 3$ days shift $\implies$ flagged for review.
+  - `Unmatched`: New payments/drawdowns $\implies$ suggested for import.
+- **Zero Auto-Writing**: Mutations occur only after explicit review and confirmation.
+- **Batch Reversal**: Assigns `importBatchId` to all imported records, enabling 1-click batch rollback.
+
+---
+
+## 11. In-App Notification Center & Anomaly Detection
+
+- Floating notification bell with unread badge counter and slide-out tray.
+- **Anomaly Detection Rules**:
+  - Potential duplicates recorded within 24 hours.
+  - Member contributions $> 3\times$ individual median.
+  - Bank payment deviating $> 10\%$ from monthly target.
+  - Bank reconciliation variance $> ₹1,000$.
+- User-configurable alert preferences and quiet hours.
+
+---
+
+## 12. Validated Backup & Cryptographic Audit Verification
+
+- **Full JSON Backup**: Complete snapshot of loan parameters, members, transactions, rate changes, snapshots, statements, and audit history.
+- **Dry-Run Validated Restore**: Inspects schema version, checks entity counts, verifies paise integer arithmetic, and displays visual diff before applying.
+- **Cryptographic Hash Chain**: Verifies audit log immutability via Web Crypto SHA-256 chain:
+  $$H_0 = \text{SHA256}(\text{"GROUP\_LOAN\_TRACKER\_GENESIS\_V1"})$$
+  $$H_n = \text{SHA256}(H_{n-1} + \text{canonical}(E_n))$$
+- **Audit Export**: RFC 4180 CSV export with UTF-8 BOM.
+
