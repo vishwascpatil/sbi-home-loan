@@ -86,14 +86,23 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       <app-glass-card [staggerIndex]="1">
         <div class="card-header-row">
           <h2 class="card-title">This Month</h2>
-          <button
-            type="button"
-            class="method-tag clickable"
-            (click)="isDailyLedgerOpen.set(true)"
-            aria-label="View daily interest breakdown"
-          >
-            {{ methodLabel() }} 📊
-          </button>
+          <div class="header-badges-cluster">
+            <span
+              class="status-pill"
+              [class.reconciled]="isThisMonthReconciled()"
+              [class.estimated]="!isThisMonthReconciled()"
+            >
+              {{ isThisMonthReconciled() ? '✓ Reconciled' : 'Estimated' }}
+            </span>
+            <button
+              type="button"
+              class="method-tag clickable"
+              (click)="isDailyLedgerOpen.set(true)"
+              aria-label="View daily interest breakdown"
+            >
+              {{ methodLabel() }} 📊
+            </button>
+          </div>
         </div>
 
         <div class="key-value-list">
@@ -313,6 +322,33 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       font-weight: 800;
       margin: 0;
       letter-spacing: -0.015em;
+    }
+
+    .header-badges-cluster {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-pill {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill, 99px);
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .status-pill.reconciled {
+      background: rgba(15, 178, 124, 0.15);
+      color: var(--success);
+      border: 1px solid var(--success);
+    }
+
+    .status-pill.estimated {
+      background: rgba(108, 76, 255, 0.12);
+      color: var(--brand-a);
+      border: 1px solid rgba(108, 76, 255, 0.25);
     }
 
     .method-tag, .tag-badge {
@@ -540,6 +576,13 @@ export class HomeComponent {
 
   readonly currentMonthFormatted = computed(() => {
     return new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+  });
+
+  readonly isThisMonthReconciled = computed<boolean>(() => {
+    const curMonth = new Date().toISOString().slice(0, 7);
+    return this.ledgerStore.snapshots().some(
+      (s) => !s.deletedAt && s.date.slice(0, 7) === curMonth && s.variance === 0
+    );
   });
 
   readonly methodLabel = computed(() => {

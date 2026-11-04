@@ -28,6 +28,7 @@ import {
   toRupees,
 } from '../../core/engine';
 import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.component';
+import { ReconciliationWizardComponent } from '../reconciliation/reconciliation-wizard.component';
 
 @Component({
   selector: 'app-settings',
@@ -38,6 +39,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
     SegmentedControlComponent,
     ConfirmSheetComponent,
     DailyLedgerSheetComponent,
+    ReconciliationWizardComponent,
   ],
   template: `
     <div class="settings-page">
@@ -163,32 +165,51 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
         </form>
       </app-glass-card>
 
-      <!-- Reconcile Balance Section -->
+      <!-- Reconciliation & Period Locking Section -->
       <app-glass-card [staggerIndex]="2">
-        <h2 class="card-title">Reconcile Outstanding Balance</h2>
+        <div class="card-title-row">
+          <h2 class="card-title">Reconciliation & Period Locking</h2>
+          <span
+            class="status-badge"
+            [class.reconciled]="isCurrentMonthReconciled()"
+            [class.estimated]="!isCurrentMonthReconciled()"
+          >
+            {{ isCurrentMonthReconciled() ? '✓ Reconciled' : 'Estimated' }}
+          </span>
+        </div>
         <p class="section-sub">
-          Ledger computed outstanding is <strong>{{ formatPaise(ledgerStore.currentOutstanding()) }}</strong>.
-          Compare with your bank passbook/statement.
+          Computed balance: <strong>{{ formatPaise(ledgerStore.currentOutstanding()) }}</strong>.
+          Locked until period: <strong>{{ loan().lockedUntilPeriod || 'None (Open)' }}</strong>.
         </p>
 
-        <form class="reconcile-form" (ngSubmit)="applyReconciliation()">
-          <div class="setting-item">
-            <label class="setting-label" for="actual-balance">Bank Statement Balance (₹)</label>
-            <input
-              id="actual-balance"
-              type="number"
-              class="setting-input tabular-nums"
-              placeholder="e.g. 12105189"
-              [(ngModel)]="actualBalanceInput"
-              name="actualBalance"
-              required
-            />
-          </div>
-
-          <button type="submit" class="reconcile-btn">
-            Save Reconciliation Snapshot
+        <div class="reconcile-actions-grid">
+          <button type="button" class="wizard-launch-btn" (click)="isReconciliationOpen.set(true)">
+            ⚖️ Launch Reconciliation Wizard
           </button>
-        </form>
+        </div>
+
+        <div class="close-month-box" style="margin-top: 14px">
+          <div class="setting-row">
+            <div class="setting-item" style="flex: 1">
+              <label class="setting-label" for="close-period-select">Period to Finalize</label>
+              <input
+                id="close-period-select"
+                type="month"
+                class="setting-input"
+                [(ngModel)]="periodToClose"
+              />
+            </div>
+            <div style="display: flex; align-items: flex-end;">
+              <button
+                type="button"
+                class="close-period-btn"
+                (click)="triggerMonthClose()"
+              >
+                🔒 Close & Lock
+              </button>
+            </div>
+          </div>
+        </div>
       </app-glass-card>
 
       <!-- Member Management -->
@@ -405,6 +426,12 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
         [isOpen]="isDailyLedgerOpen()"
         (dismissed)="isDailyLedgerOpen.set(false)"
       />
+
+      <!-- Bank Reconciliation Wizard -->
+      <app-reconciliation-wizard
+        [isOpen]="isReconciliationOpen()"
+        (dismissed)="isReconciliationOpen.set(false)"
+      />
     </div>
   `,
   styles: `
@@ -545,6 +572,52 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       font-size: 13px;
       font-weight: 800;
       cursor: pointer;
+    }
+
+    .wizard-launch-btn {
+      width: 100%;
+      height: 46px;
+      border-radius: var(--radius-pill, 99px);
+      background: linear-gradient(135deg, #6c4cff, #9b4dff);
+      color: #ffffff;
+      border: none;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(108, 76, 255, 0.3);
+    }
+
+    .close-period-btn {
+      height: 44px;
+      padding: 0 16px;
+      border-radius: var(--radius-pill, 99px);
+      background: var(--ink);
+      color: var(--bg);
+      border: none;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .status-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill, 99px);
+      text-transform: uppercase;
+    }
+
+    .status-badge.reconciled {
+      background: rgba(15, 178, 124, 0.15);
+      color: var(--success);
+      border: 1px solid var(--success);
+    }
+
+    .status-badge.estimated {
+      background: rgba(108, 76, 255, 0.12);
+      color: var(--brand-a);
+      border: 1px solid rgba(108, 76, 255, 0.25);
     }
 
     .add-m-btn {
@@ -758,13 +831,22 @@ export class SettingsComponent {
   readonly loan = this.ledgerStore.loan;
   readonly isConfirmClearOpen = signal<boolean>(false);
   readonly isDailyLedgerOpen = signal<boolean>(false);
+  readonly isReconciliationOpen = signal<boolean>(false);
 
   newRateInput: number | null = null;
   rateEffectiveDate = new Date().toISOString().slice(0, 10);
   actualBalanceInput: number | null = null;
 
   verificationPeriod = new Date().toISOString().slice(0, 7);
+  periodToClose = new Date().toISOString().slice(0, 7);
   actualInterestInput: number | null = null;
+
+  readonly isCurrentMonthReconciled = computed<boolean>(() => {
+    const curMonth = new Date().toISOString().slice(0, 7);
+    return this.ledgerStore.snapshots().some(
+      (s) => !s.deletedAt && s.date.slice(0, 7) === curMonth && s.variance === 0
+    );
+  });
 
   readonly themeOptions: SegmentOption<'auto' | 'light' | 'dark'>[] = [
     { label: 'Auto (System)', value: 'auto' },
@@ -832,6 +914,14 @@ export class SettingsComponent {
 
     this.toast.show(`Verified bank interest recorded (Variance: ${formatPaise(variance)})`, 'success');
     this.actualInterestInput = null;
+  }
+
+  async triggerMonthClose(): Promise<void> {
+    const res = await this.ledgerStore.closeMonthPeriod(this.periodToClose);
+    this.toast.show(
+      `Period ${this.periodToClose} finalized & locked. Interest: ${formatPaise(res.entry.calculatedInterest)}`,
+      'success'
+    );
   }
 
   async updateLoanParam(key: string, value: unknown): Promise<void> {

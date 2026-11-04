@@ -378,17 +378,22 @@ export class LedgerStore {
   }
 
   async unlockPeriod(period: string, reason: string): Promise<void> {
-    const prev = this.loan().lockedUntilPeriod;
+    const prev = this.loan();
     const [year, month] = period.split('-').map(Number);
     const prevDate = new Date(year, (month || 1) - 2, 1);
     const prevPeriod = prevDate.toISOString().slice(0, 7);
 
-    await this.updateLoanDetails({ lockedUntilPeriod: prevPeriod });
+    const updated: Loan = {
+      ...prev,
+      lockedUntilPeriod: prevPeriod,
+      updatedAt: new Date().toISOString(),
+    };
+    this.loan.set(updated);
     await this.logAuditAndSave(
       'update',
       'loan',
       `unlock-${period}`,
-      { lockedUntilPeriod: prev, reason },
+      { lockedUntilPeriod: prev.lockedUntilPeriod, reason },
       { lockedUntilPeriod: prevPeriod }
     );
   }

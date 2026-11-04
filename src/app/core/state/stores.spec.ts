@@ -76,6 +76,33 @@ describe('LedgerStore and SettingsStore', () => {
     expect(ledgerStore.snapshots()[0]?.variance).toBe(result.variance);
   });
 
+  it('closes month period, writes interest entry idempotently and locks period', async () => {
+    const period = '2025-01';
+    expect(ledgerStore.isPeriodLocked(period)).toBe(false);
+
+    const closeRes = await ledgerStore.closeMonthPeriod(period);
+    expect(closeRes.isNew).toBe(true);
+    expect(closeRes.entry.period).toBe(period);
+    expect(ledgerStore.loan().lockedUntilPeriod).toBe(period);
+    expect(ledgerStore.isPeriodLocked(period)).toBe(true);
+
+    // Calling again is idempotent
+    const secondClose = await ledgerStore.closeMonthPeriod(period);
+    expect(secondClose.isNew).toBe(false);
+  });
+
+  it('unlocks period with audited reason', async () => {
+    await ledgerStore.closeMonthPeriod('2025-01');
+    expect(ledgerStore.isPeriodLocked('2025-01')).toBe(true);
+
+    const initialAuditLen = ledgerStore.auditLog().length;
+    await ledgerStore.unlockPeriod('2025-01', 'Retroactive statement adjustment');
+
+    expect(ledgerStore.isPeriodLocked('2025-01')).toBe(false);
+    expect(ledgerStore.auditLog().length).toBe(initialAuditLen + 1);
+    expect(ledgerStore.auditLog()[0]?.action).toBe('update');
+  });
+
   it('toggles theme and mask account number in settings store', () => {
     expect(settingsStore.maskAccountNumber()).toBe(true);
     settingsStore.toggleMaskAccountNumber();

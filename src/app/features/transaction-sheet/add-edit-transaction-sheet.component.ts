@@ -57,6 +57,24 @@ const PAYMENT_MODES: PaymentMode[] = [
       (dismissed)="cancelSheet()"
     >
       <form class="tx-form" (ngSubmit)="saveTransaction()">
+        <!-- Locked Period Alert Banner -->
+        @if (isLocked()) {
+          <div class="locked-period-alert" role="alert">
+            <span class="lock-icon">🔒</span>
+            <div class="lock-content">
+              <strong>Period {{ forMonthInput }} is Locked</strong>
+              <p>Accounting period is closed. Edits require an audited unlock.</p>
+            </div>
+            <button
+              type="button"
+              class="unlock-pill-btn"
+              (click)="isUnlockPromptOpen.set(true)"
+            >
+              Unlock
+            </button>
+          </div>
+        }
+
         <!-- Segmented Type Selector -->
         <app-segmented-control
           [options]="typeOptions"
@@ -156,6 +174,18 @@ const PAYMENT_MODES: PaymentMode[] = [
           </div>
         </div>
 
+        <!-- Optional Value Date -->
+        <div class="form-group">
+          <label class="field-label" for="tx-value-date">Value Date (Optional, defaults to transaction date)</label>
+          <input
+            id="tx-value-date"
+            type="date"
+            class="form-input"
+            [(ngModel)]="valueDateInput"
+            name="valueDate"
+          />
+        </div>
+
         <!-- Payment Mode -->
         <div class="form-group">
           <label class="field-label" for="tx-mode">Payment Mode</label>
@@ -193,7 +223,7 @@ const PAYMENT_MODES: PaymentMode[] = [
 
         <!-- Action Buttons -->
         <div class="sheet-actions">
-          <button type="submit" class="submit-btn" [disabled]="numericAmount() <= 0">
+          <button type="submit" class="submit-btn" [disabled]="numericAmount() <= 0 || isLocked()">
             {{ isEdit() ? 'Save Changes' : submitActionLabel() }}
           </button>
 
@@ -201,6 +231,7 @@ const PAYMENT_MODES: PaymentMode[] = [
             <button
               type="button"
               class="delete-btn"
+              [disabled]="isLocked()"
               (click)="isConfirmDeleteOpen.set(true)"
             >
               Delete Entry
@@ -220,6 +251,39 @@ const PAYMENT_MODES: PaymentMode[] = [
       (confirmed)="confirmDelete()"
       (cancelled)="isConfirmDeleteOpen.set(false)"
     />
+
+    <!-- Unlock Period Bottom Sheet -->
+    <app-bottom-sheet
+      [isOpen]="isUnlockPromptOpen()"
+      title="Unlock Accounting Period"
+      (dismissed)="isUnlockPromptOpen.set(false)"
+    >
+      <div class="unlock-body">
+        <p class="unlock-desc">
+          Unlocking period <strong>{{ forMonthInput }}</strong> will allow modifications.
+          Historical edits will trigger ledger recalculations and an audit entry will be logged.
+        </p>
+        <div class="form-group" style="margin-top: 12px">
+          <label class="field-label" for="unlock-reason">Reason for Unlocking</label>
+          <input
+            id="unlock-reason"
+            type="text"
+            class="form-input"
+            placeholder="e.g. Bank statement retroactive correction"
+            [(ngModel)]="unlockReasonInput"
+          />
+        </div>
+        <button
+          type="button"
+          class="submit-btn"
+          style="margin-top: 14px"
+          [disabled]="!unlockReasonInput.trim()"
+          (click)="confirmUnlockPeriod()"
+        >
+          Confirm Audited Unlock
+        </button>
+      </div>
+    </app-bottom-sheet>
   `,
   styles: `
     .tx-form {
@@ -379,6 +443,69 @@ const PAYMENT_MODES: PaymentMode[] = [
       font-weight: 700;
       cursor: pointer;
     }
+
+    .delete-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .locked-period-alert {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: var(--radius-tile, 16px);
+      background: rgba(238, 77, 107, 0.1);
+      border: 1px solid rgba(238, 77, 107, 0.3);
+      color: var(--ink);
+    }
+
+    .lock-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .lock-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .lock-content strong {
+      display: block;
+      font-size: 13px;
+      color: var(--danger);
+    }
+
+    .lock-content p {
+      margin: 2px 0 0;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .unlock-pill-btn {
+      padding: 6px 14px;
+      border-radius: var(--radius-pill, 99px);
+      border: 1px solid var(--danger);
+      background: transparent;
+      color: var(--danger);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .unlock-body {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .unlock-desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.45;
+      margin: 0;
+    }
   `,
 })
 export class AddEditTransactionSheetComponent implements OnChanges {
@@ -393,6 +520,8 @@ export class AddEditTransactionSheetComponent implements OnChanges {
 
   readonly paymentModes = PAYMENT_MODES;
   readonly isConfirmDeleteOpen = signal<boolean>(false);
+  readonly isUnlockPromptOpen = signal<boolean>(false);
+  unlockReasonInput = '';
 
   readonly typeOptions: SegmentOption<FormType>[] = [
     { label: 'Contribution', value: 'contribution' },
@@ -408,11 +537,16 @@ export class AddEditTransactionSheetComponent implements OnChanges {
 
   dateInput = new Date().toISOString().slice(0, 10);
   forMonthInput = new Date().toISOString().slice(0, 7);
+  valueDateInput = '';
   modeInput: PaymentMode = 'UPI';
   referenceInput = '';
   notesInput = '';
 
   readonly isEdit = computed(() => !!this.editTransaction());
+
+  readonly isLocked = computed<boolean>(() => {
+    return this.ledgerStore.isPeriodLocked(this.forMonthInput);
+  });
 
   readonly sheetTitle = computed(() => {
     if (this.isEdit()) return 'Edit Transaction';
@@ -489,6 +623,11 @@ export class AddEditTransactionSheetComponent implements OnChanges {
   }
 
   async saveTransaction(): Promise<void> {
+    if (this.isLocked()) {
+      this.toast.show('Period is locked. Please unlock it to make changes.', 'danger');
+      return;
+    }
+
     const amt = this.numericAmount();
     if (amt <= 0) {
       this.toast.show('Please enter a valid amount', 'danger');
@@ -497,6 +636,7 @@ export class AddEditTransactionSheetComponent implements OnChanges {
 
     const type = this.selectedType();
     const date = this.dateInput;
+    const valueDate = this.valueDateInput.trim() || undefined;
     const forMonth = this.forMonthInput;
     const mode = this.modeInput;
     const ref = this.referenceInput.trim();
@@ -507,6 +647,7 @@ export class AddEditTransactionSheetComponent implements OnChanges {
         const txId = this.editTransaction()!.id;
         const updates: Partial<Transaction> = {
           date,
+          valueDate,
           forMonth,
           mode,
           reference: ref || undefined,
@@ -570,8 +711,20 @@ export class AddEditTransactionSheetComponent implements OnChanges {
     }
   }
 
+  async confirmUnlockPeriod(): Promise<void> {
+    const reason = this.unlockReasonInput.trim();
+    if (!reason) {
+      this.toast.show('Please provide a reason for unlocking', 'danger');
+      return;
+    }
+    await this.ledgerStore.unlockPeriod(this.forMonthInput, reason);
+    this.toast.show(`Period ${this.forMonthInput} unlocked (Audited)`, 'info');
+    this.isUnlockPromptOpen.set(false);
+    this.unlockReasonInput = '';
+  }
+
   async confirmDelete(): Promise<void> {
-    if (!this.editTransaction()) return;
+    if (!this.editTransaction() || this.isLocked()) return;
     await this.ledgerStore.deleteTransaction(this.editTransaction()!.id);
     this.isConfirmDeleteOpen.set(false);
     this.toast.show('Transaction deleted', 'danger');
@@ -590,6 +743,7 @@ export class AddEditTransactionSheetComponent implements OnChanges {
     this.customInterestInput.set('');
     this.dateInput = new Date().toISOString().slice(0, 10);
     this.forMonthInput = new Date().toISOString().slice(0, 7);
+    this.valueDateInput = '';
     this.modeInput = this.initialType() === 'bankPayment' ? 'Bank transfer' : 'UPI';
     this.referenceInput = '';
     this.notesInput = '';
@@ -598,6 +752,7 @@ export class AddEditTransactionSheetComponent implements OnChanges {
   private populateForEdit(tx: Transaction): void {
     this.selectedType.set(tx.type as FormType);
     this.dateInput = tx.date;
+    this.valueDateInput = tx.valueDate || '';
     this.forMonthInput = tx.forMonth;
     this.modeInput = 'mode' in tx ? tx.mode : 'UPI';
     this.referenceInput = 'reference' in tx ? (tx.reference || '') : '';
