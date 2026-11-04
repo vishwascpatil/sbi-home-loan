@@ -1,7 +1,12 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { SwUpdate } from '@angular/service-worker';
-import { SideRailComponent, TabBarComponent, ToastComponent } from './shared/ui';
+import {
+  NotificationCenterComponent,
+  SideRailComponent,
+  TabBarComponent,
+  ToastComponent,
+} from './shared/ui';
 import { LedgerStore } from './core/state';
 import { AddEditTransactionSheetComponent } from './features/transaction-sheet/add-edit-transaction-sheet.component';
 
@@ -12,6 +17,7 @@ import { AddEditTransactionSheetComponent } from './features/transaction-sheet/a
     TabBarComponent,
     SideRailComponent,
     ToastComponent,
+    NotificationCenterComponent,
     AddEditTransactionSheetComponent,
   ],
   templateUrl: './app.html',

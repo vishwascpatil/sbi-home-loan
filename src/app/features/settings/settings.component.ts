@@ -6,7 +6,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { LedgerStore, SettingsStore } from '../../core/state';
+import { LedgerStore, NotificationsStore, SettingsStore } from '../../core/state';
 import {
   ConfirmSheetComponent,
   GlassCardComponent,
@@ -376,8 +376,104 @@ import { ReconciliationWizardComponent } from '../reconciliation/reconciliation-
         </div>
       </app-glass-card>
 
-      <!-- Backup, Restore & Data Reset -->
+      <!-- Notifications & Alert Preferences -->
       <app-glass-card [staggerIndex]="7">
+        <h2 class="card-title">Notifications & Smart Alerts</h2>
+        <p class="section-sub">Configure in-app alert triggers, anomaly detection, and quiet hours.</p>
+
+        <div class="notif-pref-list">
+          <label class="setting-checkbox-label">
+            <input
+              type="checkbox"
+              class="setting-checkbox"
+              [ngModel]="notifsStore.preferences().enableContributionReminders"
+              (ngModelChange)="updateNotifPref('enableContributionReminders', $event)"
+            />
+            <div>
+              <strong>Monthly Contribution Reminders</strong>
+              <small class="pref-desc">Notify members when monthly targets are due.</small>
+            </div>
+          </label>
+
+          <label class="setting-checkbox-label">
+            <input
+              type="checkbox"
+              class="setting-checkbox"
+              [ngModel]="notifsStore.preferences().enablePaymentDue"
+              (ngModelChange)="updateNotifPref('enablePaymentDue', $event)"
+            />
+            <div>
+              <strong>Bank Payment (EMI) Reminders</strong>
+              <small class="pref-desc">Alert when monthly bank target is not yet fulfilled.</small>
+            </div>
+          </label>
+
+          <label class="setting-checkbox-label">
+            <input
+              type="checkbox"
+              class="setting-checkbox"
+              [ngModel]="notifsStore.preferences().enableLimitExpiry"
+              (ngModelChange)="updateNotifPref('enableLimitExpiry', $event)"
+            />
+            <div>
+              <strong>Loan Limit & Tenure Expiry Warnings</strong>
+              <small class="pref-desc">Warn at 90, 30, and 7 days before sanction limit expiry.</small>
+            </div>
+          </label>
+
+          <label class="setting-checkbox-label">
+            <input
+              type="checkbox"
+              class="setting-checkbox"
+              [ngModel]="notifsStore.preferences().enableAnomalyAlerts"
+              (ngModelChange)="updateNotifPref('enableAnomalyAlerts', $event)"
+            />
+            <div>
+              <strong>Unusual Transaction & Anomaly Detection</strong>
+              <small class="pref-desc">Flag duplicate entries within 24h, amounts &gt;3× median, and bank variances.</small>
+            </div>
+          </label>
+        </div>
+
+        <div class="quiet-hours-row" style="margin-top: 14px; display: flex; gap: 12px;">
+          <div class="setting-item" style="flex: 1">
+            <label class="setting-label" for="quiet-start">Quiet Hours Start</label>
+            <input
+              id="quiet-start"
+              type="time"
+              class="setting-input"
+              [ngModel]="notifsStore.preferences().quietHoursStart || '22:00'"
+              (ngModelChange)="updateNotifPref('quietHoursStart', $event)"
+            />
+          </div>
+          <div class="setting-item" style="flex: 1">
+            <label class="setting-label" for="quiet-end">Quiet Hours End</label>
+            <input
+              id="quiet-end"
+              type="time"
+              class="setting-input"
+              [ngModel]="notifsStore.preferences().quietHoursEnd || '08:00'"
+              (ngModelChange)="updateNotifPref('quietHoursEnd', $event)"
+            />
+          </div>
+        </div>
+
+        <div class="push-optin-box" style="margin-top: 14px">
+          <button
+            type="button"
+            class="reconcile-btn"
+            (click)="requestWebPush()"
+          >
+            🔔 Enable Web Push Notifications
+          </button>
+          <small class="pref-desc" style="display: block; margin-top: 6px">
+            Push notifications work via the browser service worker. On iOS, install the app to your Home Screen first.
+          </small>
+        </div>
+      </app-glass-card>
+
+      <!-- Backup, Restore & Data Reset -->
+      <app-glass-card [staggerIndex]="8">
         <h2 class="card-title">Data & Backup</h2>
         <p class="section-sub">Download your complete encrypted ledger or restore from a JSON backup.</p>
 
@@ -737,6 +833,34 @@ import { ReconciliationWizardComponent } from '../reconciliation/reconciliation-
       background: rgba(108, 76, 255, 0.18);
     }
 
+    .notif-pref-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .setting-checkbox-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--ink);
+      cursor: pointer;
+
+      strong {
+        display: block;
+        font-size: 13px;
+        color: var(--ink);
+      }
+    }
+
+    .pref-desc {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
     .checkbox-setting-row {
       display: flex;
       align-items: center;
@@ -822,6 +946,7 @@ import { ReconciliationWizardComponent } from '../reconciliation/reconciliation-
 export class SettingsComponent {
   readonly ledgerStore = inject(LedgerStore);
   readonly settings = inject(SettingsStore);
+  readonly notifsStore = inject(NotificationsStore);
   readonly toast = inject(ToastService);
 
   readonly formatPaise = formatPaise;
@@ -1016,5 +1141,20 @@ export class SettingsComponent {
     await this.ledgerStore.clearAllData();
     this.isConfirmClearOpen.set(false);
     this.toast.show('All ledger records cleared', 'danger');
+  }
+
+  updateNotifPref(key: string, value: boolean | string): void {
+    this.notifsStore.updatePreferences({ [key]: value });
+  }
+
+  async requestWebPush(): Promise<void> {
+    const res = await this.notifsStore.requestPushPermission();
+    if (res === 'granted') {
+      this.toast.show('Web push notifications enabled successfully', 'success');
+    } else if (res === 'unsupported') {
+      this.toast.show('Browser notifications are not supported in this environment', 'info');
+    } else {
+      this.toast.show('Notification permission was denied or dismissed', 'danger');
+    }
   }
 }

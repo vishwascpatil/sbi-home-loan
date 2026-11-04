@@ -7,4 +7,5 @@ export * from './daily-reducing-balance-engine.stub';
 export * from './ledger';
 export * from './simulator';
 export * from './bank-import';
+export * from './notifications';
 
