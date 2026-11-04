@@ -22,6 +22,7 @@ import {
   Transaction,
 } from '../../core/engine';
 import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-transaction-sheet.component';
+import { BankImportSheetComponent } from '../bank-import/bank-import-sheet.component';
 
 @Component({
   selector: 'app-history',
@@ -33,6 +34,7 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
     ChipComponent,
     AvatarComponent,
     AddEditTransactionSheetComponent,
+    BankImportSheetComponent,
   ],
   template: `
     <div class="history-page">
@@ -43,11 +45,19 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
         </div>
 
         <div class="header-actions">
+          <button
+            type="button"
+            class="statements-link-btn"
+            (click)="showImportSheet.set(true)"
+            aria-label="Import Bank Statement CSV"
+          >
+            📥 Import Bank CSV
+          </button>
           <a routerLink="/statements" class="statements-link-btn" aria-label="View Statements & Tax Reports">
             📄 Statements
           </a>
           <button type="button" class="csv-export-btn" (click)="exportCsv()" aria-label="Export CSV">
-            📥 Export CSV
+            Export CSV
           </button>
         </div>
       </header>
@@ -154,6 +164,11 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
         [editTransaction]="selectedTxForEdit()"
         (dismissed)="isSheetOpen.set(false); selectedTxForEdit.set(null)"
       />
+
+      <!-- Bank Statement Import Sheet -->
+      @if (showImportSheet()) {
+        <app-bank-import-sheet (closed)="showImportSheet.set(false)" />
+      }
     </div>
   `,
   styles: `
@@ -409,6 +424,7 @@ export class HistoryComponent implements OnInit {
   readonly selectedMonth = signal<string>('');
 
   readonly isSheetOpen = signal<boolean>(false);
+  readonly showImportSheet = signal<boolean>(false);
   readonly selectedTxForEdit = signal<Transaction | null>(null);
 
   ngOnInit(): void {

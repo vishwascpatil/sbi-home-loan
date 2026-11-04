@@ -36,6 +36,36 @@ export interface BaseEntity {
   createdAt: string;
   updatedAt: string;
   deletedAt?: string;
+  importBatchId?: string;
+}
+
+export type ImportMatchStatus = 'matched' | 'probable' | 'unmatched';
+
+export interface ImportMappingProfile {
+  id: string;
+  name: string;
+  dateColumn: string;
+  descriptionColumn: string;
+  referenceColumn?: string;
+  debitColumn?: string;
+  creditColumn?: string;
+  balanceColumn?: string;
+  dateFormat?: string;
+}
+
+export interface ParsedStatementRow {
+  tempId: string;
+  date: string; // YYYY-MM-DD
+  description: string;
+  reference?: string;
+  debitPaise: Paise;
+  creditPaise: Paise;
+  balancePaise?: Paise;
+  matchStatus: ImportMatchStatus;
+  matchedTransactionId?: string;
+  matchReason?: string;
+  action: 'skip' | 'bankPayment' | 'contribution' | 'withdrawal';
+  selectedMemberId?: string;
 }
 
 export interface PrepaymentEvent {

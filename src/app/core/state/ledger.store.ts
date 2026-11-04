@@ -2,10 +2,12 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import {
   AuditEntry,
   BalanceSnapshot,
+  BankPaymentTransaction,
   BankRuleSettings,
   bankPaymentSplit,
   CalculationMethod,
   closeMonth,
+  ContributionTransaction,
   DailyLedgerRecord,
   FinancialYearSummary,
   generateStatementSnapshot,
@@ -24,6 +26,7 @@ import {
   outstandingAt,
   Paise,
   paise,
+  ParsedStatementRow,
   PaymentMode,
   RateChange,
   reconcile,
@@ -31,6 +34,7 @@ import {
   SavedScenario,
   StatementSnapshot,
   Transaction,
+  WithdrawalTransaction,
 } from '../engine';
 import { getInitialSeedData, LocalStorageLedgerRepository } from '../data';
 import { SettingsStore } from './settings.store';
@@ -486,6 +490,114 @@ export class LedgerStore {
 
   getFinancialYearSummary(startYear: number): FinancialYearSummary {
     return getIndianFinancialYearSummary(startYear, this.ledgerState());
+  }
+
+  async commitImportBatch(batchId: string, rows: ParsedStatementRow[]): Promise<number> {
+    const toImport = rows.filter((r) => r.action !== 'skip');
+    if (toImport.length === 0) return 0;
+
+    const newTransactions: Transaction[] = [];
+    const now = new Date().toISOString();
+
+    for (const row of toImport) {
+      if (row.action === 'bankPayment') {
+        const amount = row.creditPaise > 0 ? row.creditPaise : row.debitPaise;
+        const forMonth = row.date.slice(0, 7);
+        const monthSum = monthlySummary(forMonth, this.ledgerState());
+        const split = bankPaymentSplit(amount, monthSum.interestIncurredEst);
+        const tx: BankPaymentTransaction = {
+          id: crypto.randomUUID(),
+          type: 'bankPayment',
+          amount,
+          date: row.date,
+          valueDate: row.date,
+          forMonth,
+          interestPortion: split.interestPortion,
+          principalPortion: split.principalPortion,
+          isEstimatedSplit: split.isEstimatedSplit,
+          mode: 'Bank transfer',
+          reference: row.reference || row.description,
+          notes: `Imported from bank statement (${batchId})`,
+          createdAt: now,
+          updatedAt: now,
+          importBatchId: batchId,
+        };
+        newTransactions.push(tx);
+      } else if (row.action === 'contribution') {
+        const amount = row.creditPaise > 0 ? row.creditPaise : row.debitPaise;
+        const memberId = row.selectedMemberId || this.activeMembers()[0]?.id || '';
+        const tx: ContributionTransaction = {
+          id: crypto.randomUUID(),
+          type: 'contribution',
+          memberId,
+          amount,
+          date: row.date,
+          valueDate: row.date,
+          forMonth: row.date.slice(0, 7),
+          mode: 'Bank transfer',
+          reference: row.reference || row.description,
+          notes: `Imported from bank statement (${batchId})`,
+          createdAt: now,
+          updatedAt: now,
+          importBatchId: batchId,
+        };
+        newTransactions.push(tx);
+      } else if (row.action === 'withdrawal') {
+        const amount = row.debitPaise > 0 ? row.debitPaise : row.creditPaise;
+        const tx: WithdrawalTransaction = {
+          id: crypto.randomUUID(),
+          type: 'withdrawal',
+          amount,
+          date: row.date,
+          valueDate: row.date,
+          forMonth: row.date.slice(0, 7),
+          mode: 'Bank transfer',
+          reference: row.reference || row.description,
+          notes: `Imported from bank statement (${batchId})`,
+          createdAt: now,
+          updatedAt: now,
+          importBatchId: batchId,
+        };
+        newTransactions.push(tx);
+      }
+    }
+
+    this.transactions.update((prev) => [...newTransactions, ...prev]);
+    await this.repo.save(this.ledgerState());
+    await this.logAuditAndSave('create', 'transaction', `batch-${batchId}`, undefined, {
+      importedCount: newTransactions.length,
+      batchId,
+    });
+
+    return newTransactions.length;
+  }
+
+  async rollbackImportBatch(batchId: string): Promise<number> {
+    const now = new Date().toISOString();
+    let count = 0;
+
+    this.transactions.update((prev) =>
+      prev.map((tx) => {
+        if (tx.importBatchId === batchId && !tx.deletedAt) {
+          count++;
+          return { ...tx, deletedAt: now, updatedAt: now };
+        }
+        return tx;
+      })
+    );
+
+    if (count > 0) {
+      await this.repo.save(this.ledgerState());
+      await this.logAuditAndSave(
+        'delete',
+        'transaction',
+        `rollback-${batchId}`,
+        { batchId, rolledBackCount: count },
+        undefined
+      );
+    }
+
+    return count;
   }
 
   private syncState(state: LedgerState): void {
