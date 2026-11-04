@@ -3,13 +3,10 @@ import { Router } from '@angular/router';
 import { LedgerStore, SettingsStore } from '../../core/state';
 import {
   AvatarComponent,
-  ChipComponent,
-  GlassCardComponent,
-  HeroCardComponent,
   ProgressBarComponent,
   SparklineChartComponent,
-  StatTileComponent,
 } from '../../shared/ui';
+import { CountUpDirective } from '../../shared/ui/count-up/count-up.directive';
 import {
   formatCompactPaise,
   formatPaise,
@@ -19,18 +16,18 @@ import {
   toRupees,
   Transaction,
 } from '../../core/engine';
+import { AmbientMotionHeroComponent } from './ambient-motion-hero.component';
 import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-transaction-sheet.component';
 import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.component';
 
 @Component({
   selector: 'app-home',
+  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    HeroCardComponent,
-    GlassCardComponent,
-    ChipComponent,
+    AmbientMotionHeroComponent,
+    CountUpDirective,
     ProgressBarComponent,
-    StatTileComponent,
     SparklineChartComponent,
     AvatarComponent,
     AddEditTransactionSheetComponent,
@@ -38,200 +35,254 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
   ],
   template: `
     <div class="home-page">
-      <!-- Top Date Header -->
+      <!-- Calm Minimal Header -->
       <header class="home-header">
-        <div>
-          <small class="header-month">{{ currentMonthFormatted() }}</small>
-          <h1 class="header-title">Loan Tracker</h1>
+        <div class="header-left">
+          <span class="header-eyebrow">{{ currentMonthFormatted() }}</span>
+          <h1 class="header-title">Loan Overview</h1>
+        </div>
+        <div class="header-right">
+          <button
+            type="button"
+            class="calm-icon-btn"
+            (click)="router.navigate(['/settings'])"
+            aria-label="Settings"
+            title="Settings"
+          >
+            ⚙️
+          </button>
         </div>
       </header>
 
-      <!-- Hero Outstanding Balance Card -->
-      <app-hero-card
+      <!-- Ambient Generative Motion Hero with High-End Animated Numbers -->
+      <app-ambient-motion-hero
         [loan]="ledgerStore.loan()"
         [currentOutstanding]="ledgerStore.currentOutstanding()"
         [isMasked]="settings.maskAccountNumber()"
         [closureDate]="simulationResult()?.closureDate"
         (toggleReveal)="settings.toggleMaskAccountNumber()"
+        (quickAction)="handleQuickAction($event)"
       />
 
-      <!-- Quick Actions Bar -->
-      <div class="quick-actions-bar" role="toolbar" aria-label="Quick Actions">
-        <app-chip (clicked)="openAddWith('contribution')">
-          <span>＋ Contribution</span>
-        </app-chip>
-        <app-chip (clicked)="openAddWith('bankPayment')">
-          <span>Bank Payment</span>
-        </app-chip>
-        <app-chip (clicked)="router.navigate(['/history'])">
-          <span>History</span>
-        </app-chip>
-        <app-chip (clicked)="router.navigate(['/settings'])">
-          <span>Update Rate</span>
-        </app-chip>
-        <app-chip (clicked)="router.navigate(['/insights'])">
-          <span>Simulator</span>
-        </app-chip>
-      </div>
-
-      <!-- This Month Card -->
-      <app-glass-card [staggerIndex]="1">
-        <div class="card-header-row">
-          <h2 class="card-title">This Month</h2>
-          <div class="header-badges-cluster">
+      <!-- Section 1: This Month Performance (Content-First & Calm Minimalism) -->
+      <section class="calm-section" style="--stagger: 1">
+        <div class="section-header">
+          <div class="title-cluster">
+            <h2 class="section-heading">This Month</h2>
             <span
-              class="status-pill"
+              class="calm-badge"
               [class.reconciled]="isThisMonthReconciled()"
               [class.estimated]="!isThisMonthReconciled()"
             >
               {{ isThisMonthReconciled() ? '✓ Reconciled' : 'Estimated' }}
             </span>
-            <button
-              type="button"
-              class="method-tag clickable"
-              (click)="isDailyLedgerOpen.set(true)"
-              aria-label="View daily interest breakdown"
+          </div>
+
+          <button
+            type="button"
+            class="calm-action-link"
+            (click)="isDailyLedgerOpen.set(true)"
+            aria-label="View daily interest breakdown"
+          >
+            {{ methodLabel() }} ↗
+          </button>
+        </div>
+
+        <!-- Hero Metric Flow: Borderless, Large Elegant Numbers -->
+        <div class="minimal-metric-grid">
+          <div class="metric-block highlight">
+            <span class="metric-caption">Principal Reduced</span>
+            <span class="metric-num-hero tabular-nums" [appCountUp]="summary().principalReduced">
+              {{ formatPaise(summary().principalReduced) }}
+            </span>
+            <span class="metric-sub positive">Direct debt reduction</span>
+          </div>
+
+          <div class="metric-block">
+            <span class="metric-caption">Interest Incurred (Est.)</span>
+            <span
+              class="metric-num-hero tabular-nums"
+              [appCountUp]="summary().interestIncurredEst"
+              [showDecimals]="true"
             >
-              {{ methodLabel() }} 📊
-            </button>
+              {{ formatPaise(summary().interestIncurredEst, { showPaise: true, isEstimated: true }) }}
+            </span>
+            <span class="metric-sub">Daily accrual rate</span>
           </div>
         </div>
 
-        <div class="key-value-list">
-          <div class="kv-item">
-            <span class="kv-label">Member contributions</span>
-            <span class="kv-value tabular-nums">{{ formatPaise(summary().memberContributions) }}</span>
+        <!-- Sleek Borderless Target Progress -->
+        <div class="progress-block">
+          <div class="progress-labels">
+            <span class="p-sub-label">Monthly Target Progress</span>
+            <span class="p-sub-val tabular-nums">{{ summary().targetProgressPercent.toFixed(0) }}%</span>
           </div>
-          <div class="kv-item">
-            <span class="kv-label">Paid to bank</span>
-            <span class="kv-value tabular-nums">{{ formatPaise(summary().paidToBank) }}</span>
+          <app-progress-bar [progressPercent]="summary().targetProgressPercent" [height]="6" />
+        </div>
+
+        <!-- Airy Key-Value Flow -->
+        <div class="airy-data-grid">
+          <div class="airy-data-item">
+            <span class="airy-label">Member Contributions</span>
+            <span class="airy-val tabular-nums">{{ formatPaise(summary().memberContributions) }}</span>
           </div>
-          <div class="kv-item">
-            <span class="kv-label">Interest incurred (est.)</span>
-            <span class="kv-value tabular-nums">{{ formatPaise(summary().interestIncurredEst, { showPaise: true, isEstimated: true }) }}</span>
+          <div class="airy-data-item">
+            <span class="airy-label">Paid to Bank</span>
+            <span class="airy-val tabular-nums">{{ formatPaise(summary().paidToBank) }}</span>
           </div>
-          <div class="kv-item">
-            <span class="kv-label">Principal reduced</span>
-            <span class="kv-value highlight tabular-nums">{{ formatPaise(summary().principalReduced) }}</span>
+          <div class="airy-data-item">
+            <span class="airy-label">Remaining to Target</span>
+            <span class="airy-val tabular-nums">{{ formatPaise(summary().remainingTarget) }}</span>
           </div>
-          <div class="kv-item">
-            <span class="kv-label">Remaining target</span>
-            <span class="kv-value tabular-nums">{{ formatPaise(summary().remainingTarget) }}</span>
+        </div>
+      </section>
+
+      <!-- Section 2: Group Funds (Cash Pool) -->
+      <section class="calm-section" style="--stagger: 2">
+        <div class="section-header">
+          <div class="title-cluster">
+            <h2 class="section-heading">Group Funds</h2>
+            <span class="calm-badge neutral">Cash Pool</span>
           </div>
         </div>
 
-        <div style="margin-top: 14px">
-          <app-progress-bar [progressPercent]="summary().targetProgressPercent" [height]="8" />
+        <div class="funds-columns">
+          <div class="fund-column">
+            <span class="fund-label">Total Contributed</span>
+            <span class="fund-val tabular-nums" [appCountUp]="funds().totalContributions">
+              {{ formatCompactPaise(funds().totalContributions) }}
+            </span>
+            <span class="fund-desc">Member deposits</span>
+          </div>
+          <div class="fund-divider"></div>
+          <div class="fund-column">
+            <span class="fund-label">Disbursed to Bank</span>
+            <span class="fund-val tabular-nums" [appCountUp]="funds().totalBankPayments">
+              {{ formatCompactPaise(funds().totalBankPayments) }}
+            </span>
+            <span class="fund-desc">Recorded payments</span>
+          </div>
+          <div class="fund-divider"></div>
+          <div class="fund-column highlight">
+            <span class="fund-label">Liquid Unused</span>
+            <span class="fund-val tabular-nums" [appCountUp]="funds().unusedFunds">
+              {{ formatCompactPaise(funds().unusedFunds) }}
+            </span>
+            <span class="fund-desc">Ready cash pool</span>
+          </div>
         </div>
-      </app-glass-card>
 
-      <!-- Group Funds Card -->
-      <app-glass-card [staggerIndex]="2">
-        <div class="card-header-row">
-          <h2 class="card-title">Group Funds</h2>
-          <span class="tag-badge">Cash Pool</span>
-        </div>
-
-        <div class="group-funds-grid">
-          <app-stat-tile label="Contributed" [value]="formatCompactPaise(funds().totalContributions)" />
-          <app-stat-tile label="Paid to Bank" [value]="formatCompactPaise(funds().totalBankPayments)" />
-          <app-stat-tile label="Unused Funds" [value]="formatCompactPaise(funds().unusedFunds)" />
-        </div>
-
-        <p class="footnote-text">
-          Contributions never reduce the loan principal by themselves — only recorded bank payments do.
+        <p class="calm-note">
+          Contributions accumulate in group funds. Only recorded bank payments reduce loan principal.
         </p>
-      </app-glass-card>
+      </section>
 
-      <!-- Projected Balance Sparkline -->
-      <app-glass-card [staggerIndex]="3">
-        <div class="card-header-row">
-          <h2 class="card-title">Projected Balance</h2>
-          <span class="method-tag">{{ formatCompactPaise(ledgerStore.loan().monthlyTarget) }}/mo · est.</span>
+      <!-- Section 3: Payoff Trajectory & Projected Amortization -->
+      <section class="calm-section" style="--stagger: 3">
+        <div class="section-header">
+          <div class="title-cluster">
+            <h2 class="section-heading">Payoff Trajectory</h2>
+            <span class="calm-badge neutral">{{ formatCompactPaise(ledgerStore.loan().monthlyTarget) }}/mo target</span>
+          </div>
+          <button type="button" class="calm-action-link" (click)="router.navigate(['/insights'])">
+            Simulate ↗
+          </button>
         </div>
 
         @if (simulationResult()) {
-          <app-sparkline-chart [data]="simulationResult()!.schedule" />
-          <div class="sparkline-footer">
-            <span>Today</span>
-            <span>{{ simulationResult()!.closureDate }}</span>
+          <div class="chart-wrapper">
+            <app-sparkline-chart [data]="simulationResult()!.schedule" />
           </div>
-          <p class="footnote-text" style="margin-top: 6px">
-            Estimated future interest until payoff ≈ {{ formatPaise(simulationResult()!.totalInterest) }}
+          <div class="trajectory-meta">
+            <div class="traj-point">
+              <span class="traj-caption">Today</span>
+              <span class="traj-val tabular-nums">{{ formatPaise(ledgerStore.currentOutstanding()) }}</span>
+            </div>
+            <div class="traj-point right">
+              <span class="traj-caption">Estimated Closure</span>
+              <span class="traj-val highlight">{{ simulationResult()!.closureDate }}</span>
+            </div>
+          </div>
+          <p class="calm-note">
+            Estimated future interest until debt-free: <strong>{{ formatPaise(simulationResult()!.totalInterest) }}</strong>.
           </p>
         } @else {
-          <p class="footnote-text">
-            Monthly target is below monthly interest. Principal will not fall.
+          <p class="calm-note warning">
+            Monthly target is below interest accrual. Debt is not amortizing.
           </p>
         }
-      </app-glass-card>
+      </section>
 
-      <!-- Members Snapshot Card -->
-      <app-glass-card [staggerIndex]="4">
-        <div class="card-header-row">
-          <h2 class="card-title">Members</h2>
-          <button type="button" class="link-btn" (click)="router.navigate(['/members'])">
-            See All →
+      <!-- Section 4: Members -->
+      <section class="calm-section" style="--stagger: 4">
+        <div class="section-header">
+          <h2 class="section-heading">Members</h2>
+          <button type="button" class="calm-action-link" (click)="router.navigate(['/members'])">
+            Manage ↗
           </button>
         </div>
 
-        <div class="members-snapshot-list">
+        <div class="calm-list">
           @for (m of ledgerStore.memberStats(); track m.memberId) {
-            <div class="member-snapshot-row">
-              <app-avatar [name]="m.name" [colorIndex]="$index" [size]="38" />
-              <div class="member-info">
-                <span class="member-name">{{ m.name }}</span>
-                <span class="member-sub">
+            <div class="calm-list-row member-row">
+              <app-avatar [name]="m.name" [colorIndex]="$index" [size]="40" />
+              <div class="row-main">
+                <span class="row-title">{{ m.name }}</span>
+                <span class="row-subtitle">
                   This month {{ formatPaise(m.thisMonthContribution) }} · Lifetime {{ formatCompactPaise(m.lifetimeContribution) }}
                 </span>
               </div>
-              <span class="member-share tabular-nums">{{ m.sharePercentage.toFixed(1) }}%</span>
+              <div class="row-end">
+                <span class="share-badge tabular-nums">{{ m.sharePercentage.toFixed(1) }}%</span>
+              </div>
             </div>
           }
         </div>
-      </app-glass-card>
+      </section>
 
-      <!-- Recent Activity Card -->
-      <app-glass-card [staggerIndex]="5">
-        <div class="card-header-row">
-          <h2 class="card-title">Recent Activity</h2>
-          <button type="button" class="link-btn" (click)="router.navigate(['/history'])">
-            View All →
+      <!-- Section 5: Recent Activity -->
+      <section class="calm-section" style="--stagger: 5">
+        <div class="section-header">
+          <h2 class="section-heading">Recent Activity</h2>
+          <button type="button" class="calm-action-link" (click)="router.navigate(['/history'])">
+            Complete Ledger ↗
           </button>
         </div>
 
-        <div class="recent-tx-list">
+        <div class="calm-list">
           @for (tx of ledgerStore.recentTransactions(); track tx.id) {
             <button
               type="button"
-              class="tx-row-btn"
+              class="calm-list-row tx-row clickable"
               (click)="editSelectedTx(tx)"
             >
-              <div class="tx-icon-wrap" [class.payment]="tx.type === 'bankPayment'">
+              <div class="tx-badge" [class.payment]="tx.type === 'bankPayment'">
                 {{ tx.type === 'bankPayment' ? '🏦' : '👤' }}
               </div>
-              <div class="tx-details">
-                <span class="tx-title">{{ getTxTitle(tx) }}</span>
-                <span class="tx-subtitle">
+              <div class="row-main">
+                <span class="row-title">{{ getTxTitle(tx) }}</span>
+                <span class="row-subtitle">
                   {{ tx.date }} · {{ getTransactionMode(tx) }}
                   @if (tx.type === 'bankPayment') {
                     · interest {{ formatPaise(tx.interestPortion, { showPaise: true }) }}
                   }
                 </span>
               </div>
-              <span
-                class="tx-amount tabular-nums"
-                [class.positive]="tx.type === 'contribution'"
-                [class.negative]="tx.type === 'bankPayment'"
-              >
-                {{ tx.type === 'contribution' ? '+' : '−' }}{{ formatPaise(getTransactionAmount(tx)) }}
-              </span>
+              <div class="row-end">
+                <span
+                  class="tx-val tabular-nums"
+                  [class.positive]="tx.type === 'contribution'"
+                  [class.negative]="tx.type === 'bankPayment'"
+                >
+                  {{ tx.type === 'contribution' ? '+' : '−' }}{{ formatPaise(getTransactionAmount(tx)) }}
+                </span>
+              </div>
             </button>
           } @empty {
-            <p class="footnote-text">Nothing yet — tap ＋ to record activity.</p>
+            <p class="calm-note">No transactions recorded yet. Tap ＋ to record one.</p>
           }
         </div>
-      </app-glass-card>
+      </section>
 
       <!-- Add/Edit Transaction Bottom Sheet Instance -->
       <app-add-edit-transaction-sheet
@@ -252,306 +303,466 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
     .home-page {
       display: flex;
       flex-direction: column;
+      padding: 4px 0 60px;
     }
 
+    /* Calm Minimal Header */
     .home-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      margin: 8px 4px 18px;
+      align-items: flex-end;
+      margin: 4px 0 24px;
+      padding: 0 4px;
     }
 
-    .header-month {
-      font-size: 12px;
+    .header-eyebrow {
+      display: block;
+      font-size: 11px;
       font-weight: 700;
-      color: var(--muted);
+      color: #86868b;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.06em;
+      margin-bottom: 2px;
     }
 
     .header-title {
-      font-size: 26px;
+      font-size: 28px;
       font-weight: 800;
-      letter-spacing: -0.025em;
-      margin: 2px 0 0;
-    }
-
-    .quick-actions-bar {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      margin: 0 -16px 18px;
-      padding: 4px 16px 8px;
-      scrollbar-width: none;
-    }
-
-    .quick-actions-bar::-webkit-scrollbar {
-      display: none;
-    }
-
-    .card-header-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 14px;
-    }
-
-    .card-title {
-      font-size: 16px;
-      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #1d1d1f;
       margin: 0;
-      letter-spacing: -0.015em;
     }
 
-    .header-badges-cluster {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .status-pill {
-      font-size: 11px;
-      font-weight: 700;
-      padding: 4px 11px;
-      border-radius: var(--radius-pill, 9999px);
-      letter-spacing: 0.02em;
-      transition: all 0.2s ease;
-    }
-
-    .status-pill.reconciled {
-      background: var(--success-bg, rgba(52, 199, 89, 0.12));
-      color: #248a3d;
-      border: 1px solid rgba(52, 199, 89, 0.24);
-    }
-
-    .status-pill.estimated {
-      background: rgba(0, 113, 227, 0.08);
-      color: var(--brand-a);
-      border: 1px solid rgba(0, 113, 227, 0.2);
-    }
-
-    .method-tag, .tag-badge {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--muted);
-    }
-
-    .method-tag.clickable {
-      background: rgba(0, 113, 227, 0.06);
-      color: var(--brand-a);
-      border: 1px solid rgba(0, 113, 227, 0.16);
-      border-radius: var(--radius-pill, 9999px);
-      padding: 4px 11px;
+    .calm-icon-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 9999px;
+      border: none;
+      background: rgba(0, 0, 0, 0.03);
       cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      display: grid;
+      place-items: center;
+      font-size: 16px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.06);
+        transform: scale(1.05);
+      }
+
+      &:active {
+        transform: scale(0.95);
+      }
     }
 
-    .method-tag.clickable:hover {
-      background: rgba(0, 113, 227, 0.12);
-      transform: translateY(-1px);
-    }
-
-    .method-tag.clickable:active {
-      transform: scale(0.95);
-    }
-
-    .key-value-list {
+    /* Calm Section Container - Borderless, Content-First, Generous Whitespace */
+    .calm-section {
       display: flex;
       flex-direction: column;
+      margin-bottom: 48px;
+      padding: 0 4px;
+      animation: calmSectionEntrance 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: calc(var(--stagger, 0) * 0.08s);
     }
 
-    .kv-item {
+    @keyframes calmSectionEntrance {
+      0% {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .section-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 0;
-      border-top: 1px solid var(--line);
-      font-size: 13px;
+      margin-bottom: 18px;
     }
 
-    .kv-item:first-child {
-      border-top: none;
-      padding-top: 2px;
-    }
-
-    .kv-label {
-      color: var(--muted);
-      font-weight: 600;
-    }
-
-    .kv-value {
-      font-weight: 800;
-      color: var(--ink);
-    }
-
-    .kv-value.highlight {
-      color: var(--success);
-    }
-
-    .group-funds-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-    }
-
-    .footnote-text {
-      font-size: 12px;
-      color: var(--muted);
-      margin: 12px 0 0;
-      line-height: 1.45;
-    }
-
-    .sparkline-footer {
+    .title-cluster {
       display: flex;
-      justify-content: space-between;
-      font-size: 11px;
-      color: var(--muted);
-      font-weight: 600;
-      margin-top: 6px;
+      align-items: center;
+      gap: 10px;
     }
 
-    .link-btn {
+    .section-heading {
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      color: #1d1d1f;
+      margin: 0;
+    }
+
+    .calm-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      letter-spacing: 0.02em;
+
+      &.reconciled {
+        background: rgba(52, 199, 89, 0.12);
+        color: #248a3d;
+      }
+
+      &.estimated {
+        background: rgba(0, 113, 227, 0.08);
+        color: #0071e3;
+      }
+
+      &.neutral {
+        background: rgba(0, 0, 0, 0.04);
+        color: #6e6e73;
+      }
+    }
+
+    .calm-action-link {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0071e3;
       background: transparent;
       border: none;
-      color: var(--brand-a);
-      font-size: 13px;
-      font-weight: 800;
+      padding: 4px 6px;
       cursor: pointer;
-      padding: 4px 8px;
+      letter-spacing: -0.01em;
+      transition: all 0.2s ease;
+
+      &:hover {
+        opacity: 0.75;
+        transform: translateX(1px);
+      }
+
+      &:active {
+        transform: scale(0.97);
+      }
     }
 
-    .members-snapshot-list {
+    /* Minimal Metric Grid */
+    .minimal-metric-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .metric-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      &.highlight .metric-num-hero {
+        color: #0fb27c;
+      }
+    }
+
+    .metric-caption {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #86868b;
+    }
+
+    .metric-num-hero {
+      font-size: clamp(22px, 5.5vw, 28px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #1d1d1f;
+      line-height: 1.1;
+    }
+
+    .metric-sub {
+      font-size: 11px;
+      font-weight: 600;
+      color: #86868b;
+
+      &.positive {
+        color: #248a3d;
+      }
+    }
+
+    /* Progress Block */
+    .progress-block {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .progress-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+
+    .p-sub-label {
+      font-weight: 600;
+      color: #6e6e73;
+    }
+
+    .p-sub-val {
+      font-weight: 800;
+      color: #1d1d1f;
+    }
+
+    /* Airy Key-Value Flow */
+    .airy-data-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .airy-data-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .airy-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #86868b;
+      line-height: 1.25;
+    }
+
+    .airy-val {
+      font-size: 14px;
+      font-weight: 800;
+      color: #1d1d1f;
+    }
+
+    /* Group Funds Columns */
+    .funds-columns {
+      display: flex;
+      align-items: stretch;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 0;
+    }
+
+    .fund-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      &.highlight .fund-val {
+        color: #0071e3;
+      }
+    }
+
+    .fund-divider {
+      width: 1px;
+      background: rgba(0, 0, 0, 0.06);
+    }
+
+    .fund-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #86868b;
+    }
+
+    .fund-val {
+      font-size: clamp(20px, 4.8vw, 24px);
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      color: #1d1d1f;
+      line-height: 1.15;
+    }
+
+    .fund-desc {
+      font-size: 11px;
+      font-weight: 500;
+      color: #86868b;
+    }
+
+    .calm-note {
+      font-size: 12px;
+      font-weight: 500;
+      color: #86868b;
+      line-height: 1.5;
+      margin: 8px 0 0;
+
+      &.warning {
+        color: #d9383a;
+      }
+    }
+
+    /* Trajectory Sparkline & Metadata */
+    .chart-wrapper {
+      margin: 8px 0 16px;
+    }
+
+    .trajectory-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding-top: 10px;
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .traj-point {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+
+      &.right {
+        align-items: flex-end;
+        text-align: right;
+      }
+    }
+
+    .traj-caption {
+      font-size: 11px;
+      font-weight: 600;
+      color: #86868b;
+    }
+
+    .traj-val {
+      font-size: 14px;
+      font-weight: 800;
+      color: #1d1d1f;
+
+      &.highlight {
+        color: #0071e3;
+      }
+    }
+
+    /* Calm Minimal List */
+    .calm-list {
       display: flex;
       flex-direction: column;
     }
 
-    .member-snapshot-row {
+    .calm-list-row {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 10px 0;
-      border-top: 1px solid var(--line);
-    }
-
-    .member-snapshot-row:first-child {
+      gap: 14px;
+      padding: 13px 4px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+      background: transparent;
+      border-left: none;
+      border-right: none;
       border-top: none;
+      width: 100%;
+      text-align: left;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &.clickable {
+        cursor: pointer;
+        border-radius: 14px;
+        margin: 0 -4px;
+        padding: 12px 8px;
+        width: calc(100% + 8px);
+
+        &:hover {
+          background: rgba(0, 0, 0, 0.02);
+          transform: translateX(3px);
+        }
+
+        &:active {
+          transform: scale(0.99);
+        }
+      }
     }
 
-    .member-info {
+    .row-main {
       flex: 1;
       min-width: 0;
       display: flex;
       flex-direction: column;
+      gap: 2px;
     }
 
-    .member-name {
+    .row-title {
       font-size: 14px;
-      font-weight: 800;
+      font-weight: 700;
+      color: #1d1d1f;
+      letter-spacing: -0.01em;
     }
 
-    .member-sub {
+    .row-subtitle {
       font-size: 11px;
-      color: var(--muted);
+      font-weight: 500;
+      color: #86868b;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    .member-share {
-      font-size: 13px;
-      font-weight: 800;
-      color: var(--muted);
-    }
-
-    .recent-tx-list {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .tx-row-btn {
+    .row-end {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 12px 10px;
-      margin: 0 -10px;
-      border: none;
-      border-top: 1px solid var(--line);
-      background: transparent;
-      border-radius: 14px;
-      text-align: left;
-      cursor: pointer;
-      width: calc(100% + 20px);
-      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .tx-row-btn:hover {
-      background: rgba(0, 0, 0, 0.025);
-      transform: translateX(2px);
+    .share-badge {
+      font-size: 12px;
+      font-weight: 700;
+      color: #6e6e73;
+      background: rgba(0, 0, 0, 0.04);
+      padding: 3px 8px;
+      border-radius: 9999px;
     }
 
-    .tx-row-btn:active {
-      transform: scale(0.98);
-    }
-
-    .tx-row-btn:first-child {
-      border-top: none;
-    }
-
-    .tx-icon-wrap {
+    .tx-badge {
       width: 38px;
       height: 38px;
       border-radius: 12px;
-      background: var(--bg-subtle, #f5f5f7);
+      background: #f5f5f7;
       display: grid;
       place-items: center;
-      font-size: 18px;
+      font-size: 17px;
       flex-shrink: 0;
       transition: transform 0.2s ease;
+
+      &.payment {
+        background: rgba(0, 113, 227, 0.08);
+      }
     }
 
-    .tx-row-btn:hover .tx-icon-wrap {
-      transform: scale(1.08);
+    .clickable:hover .tx-badge {
+      transform: scale(1.06);
     }
 
-    .tx-icon-wrap.payment {
-      background: rgba(0, 113, 227, 0.08);
-    }
-
-    .tx-details {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .tx-title {
+    .tx-val {
       font-size: 14px;
       font-weight: 800;
-      color: var(--ink);
+
+      &.positive {
+        color: #248a3d;
+      }
+
+      &.negative {
+        color: #1d1d1f;
+      }
     }
 
-    .tx-subtitle {
-      font-size: 11px;
-      color: var(--muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+    @media (max-width: 480px) {
+      .airy-data-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
 
-    .tx-amount {
-      font-size: 14px;
-      font-weight: 800;
-    }
+      .funds-columns {
+        flex-direction: column;
+        gap: 14px;
+      }
 
-    .tx-amount.positive {
-      color: var(--success);
-    }
-
-    .tx-amount.negative {
-      color: var(--ink);
+      .fund-divider {
+        display: none;
+      }
     }
   `,
 })
@@ -598,6 +809,14 @@ export class HomeComponent {
     const out = this.ledgerStore.currentOutstanding();
     return simulate(out, loan.monthlyTarget, loan.currentRateBps);
   });
+
+  handleQuickAction(action: 'contribution' | 'bankPayment' | 'history' | 'settings' | 'insights'): void {
+    if (action === 'contribution' || action === 'bankPayment') {
+      this.openAddWith(action);
+    } else {
+      this.router.navigate(['/' + action]);
+    }
+  }
 
   openAddWith(type: 'contribution' | 'bankPayment'): void {
     this.initialSheetType.set(type);

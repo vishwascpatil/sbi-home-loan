@@ -8,9 +8,9 @@
 .main-viewport-content {
   flex: 1;
   width: 100%;
-  max-width: 560px;
+  max-width: 600px;
   margin: 0 auto;
-  padding: 12px 16px calc(80px + env(safe-area-inset-bottom, 0px));
+  padding: 16px 20px calc(88px + env(safe-area-inset-bottom, 0px));
 }
 
 @media (min-width: 900px) {
