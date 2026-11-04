@@ -7,8 +7,11 @@ import {
   CalculationMethod,
   closeMonth,
   DailyLedgerRecord,
+  FinancialYearSummary,
+  generateStatementSnapshot,
   getDailyLedger,
   getEngineForMethod,
+  getIndianFinancialYearSummary,
   GroupFundsSummary,
   InterestEntry,
   LedgerState,
@@ -26,6 +29,7 @@ import {
   reconcile,
   ReconciliationResult,
   SavedScenario,
+  StatementSnapshot,
   Transaction,
 } from '../engine';
 import { getInitialSeedData, LocalStorageLedgerRepository } from '../data';
@@ -45,6 +49,7 @@ export class LedgerStore {
   readonly rateChanges = signal<RateChange[]>([]);
   readonly snapshots = signal<BalanceSnapshot[]>([]);
   readonly interestEntries = signal<InterestEntry[]>([]);
+  readonly statements = signal<StatementSnapshot[]>([]);
   readonly auditLog = signal<AuditEntry[]>([]);
 
   readonly isLoading = signal<boolean>(true);
@@ -58,6 +63,7 @@ export class LedgerStore {
     rateChanges: this.rateChanges(),
     snapshots: this.snapshots(),
     interestEntries: this.interestEntries(),
+    statements: this.statements(),
     settings: {
       theme: this.settingsStore.theme(),
       dateFormat: this.settingsStore.dateFormat(),
@@ -463,6 +469,25 @@ export class LedgerStore {
     return this.repo.exportCsv();
   }
 
+  getStatement(period: string): StatementSnapshot {
+    return generateStatementSnapshot(period, this.ledgerState());
+  }
+
+  async archiveStatement(period: string): Promise<StatementSnapshot> {
+    const snapshot = generateStatementSnapshot(period, this.ledgerState());
+    this.statements.update((prev) => {
+      const filtered = prev.filter((s) => s.period !== period);
+      return [snapshot, ...filtered];
+    });
+    await this.repo.save(this.ledgerState());
+    await this.logAuditAndSave('create', 'loan', `statement-${period}`, undefined, snapshot);
+    return snapshot;
+  }
+
+  getFinancialYearSummary(startYear: number): FinancialYearSummary {
+    return getIndianFinancialYearSummary(startYear, this.ledgerState());
+  }
+
   private syncState(state: LedgerState): void {
     this.loan.set(state.loan);
     this.members.set(state.members || []);
@@ -470,6 +495,7 @@ export class LedgerStore {
     this.rateChanges.set(state.rateChanges || []);
     this.snapshots.set(state.snapshots || []);
     this.interestEntries.set(state.interestEntries || []);
+    this.statements.set(state.statements || []);
     this.auditLog.set(state.auditLog || []);
   }
 

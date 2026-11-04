@@ -228,6 +228,56 @@ export function getTransactionReference(tx: Transaction): string | undefined {
   return undefined;
 }
 
+export interface StatementSnapshot extends BaseEntity {
+  period: string; // YYYY-MM
+  loanId: string;
+  accountNumber: string;
+  generatedAt: string;
+  openingOutstanding: Paise;
+  closingOutstanding: Paise;
+  totalContributions: Paise;
+  paidToBank: Paise;
+  interestPaid: Paise;
+  principalReduced: Paise;
+  status: 'reconciled' | 'estimated';
+  unusedGroupFunds: Paise;
+  memberContributions: {
+    memberId: string;
+    name: string;
+    amount: Paise;
+    sharePercentage: number;
+  }[];
+}
+
+export interface FinancialYearMonthSummary {
+  period: string; // YYYY-MM
+  opening: Paise;
+  contributions: Paise;
+  paidToBank: Paise;
+  interest: Paise;
+  principalReduction: Paise;
+  closing: Paise;
+}
+
+export interface FinancialYearSummary {
+  financialYear: string; // e.g. "FY 2024-25"
+  startPeriod: string; // YYYY-MM (e.g. 2024-04)
+  endPeriod: string; // YYYY-MM (e.g. 2025-03)
+  totalInterestPaid: Paise;
+  totalPrincipalReduced: Paise;
+  totalPaidToBank: Paise;
+  totalMemberContributions: Paise;
+  openingPrincipal: Paise;
+  closingPrincipal: Paise;
+  months: FinancialYearMonthSummary[];
+  memberShares: {
+    memberId: string;
+    name: string;
+    totalContributed: Paise;
+    sharePercentage: number;
+  }[];
+}
+
 export interface LedgerState {
   loan: Loan;
   members: Member[];
@@ -235,6 +285,7 @@ export interface LedgerState {
   rateChanges: RateChange[];
   snapshots: BalanceSnapshot[];
   interestEntries: InterestEntry[];
+  statements?: StatementSnapshot[];
   settings: Settings;
   auditLog: AuditEntry[];
 }

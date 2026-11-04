@@ -27,6 +27,11 @@ export const routes: Routes = [
       import('./features/history/history.component').then((m) => m.HistoryComponent),
   },
   {
+    path: 'statements',
+    loadComponent: () =>
+      import('./features/statements/statements.component').then((m) => m.StatementsComponent),
+  },
+  {
     path: 'settings',
     loadComponent: () =>
       import('./features/settings/settings.component').then((m) => m.SettingsComponent),

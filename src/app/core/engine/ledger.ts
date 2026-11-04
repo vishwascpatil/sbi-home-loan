@@ -5,10 +5,13 @@ import {
   CalculationMethod,
   ContributionTransaction,
   DailyLedgerRecord,
+  FinancialYearMonthSummary,
+  FinancialYearSummary,
   InterestEntry,
   LedgerState,
   Loan,
   RateChange,
+  StatementSnapshot,
 } from './models';
 import { addPaise, Paise, paise, subPaise, ZERO_PAISE } from './money';
 
@@ -418,4 +421,147 @@ export function getDailyLedger(period: string, ledger: LedgerState): DailyLedger
     bankRules: ledger.loan.bankRules,
   });
   return res.dailyLedger;
+}
+
+/**
+ * Generate an immutable monthly statement snapshot for a period.
+ */
+export function generateStatementSnapshot(
+  period: string,
+  ledger: LedgerState
+): StatementSnapshot {
+  const summary = monthlySummary(period, ledger);
+  const funds = groupFunds(ledger);
+
+  const activeContributions = activeOnly(ledger.transactions).filter(
+    (tx): tx is ContributionTransaction => tx.type === 'contribution' && tx.forMonth === period
+  );
+
+  const memberContributions = ledger.members
+    .filter((m) => !m.deletedAt)
+    .map((member) => {
+      const totalMember = activeContributions
+        .filter((tx) => tx.memberId === member.id)
+        .reduce((sum, tx) => addPaise(sum, tx.amount), ZERO_PAISE);
+
+      const sharePercentage =
+        summary.memberContributions > 0
+          ? (totalMember / summary.memberContributions) * 100
+          : 0;
+
+      return {
+        memberId: member.id,
+        name: member.name,
+        amount: totalMember,
+        sharePercentage,
+      };
+    });
+
+  const isReconciled = activeOnly(ledger.snapshots).some(
+    (s) => s.date.slice(0, 7) === period && s.variance === 0
+  );
+
+  return {
+    id: `stmt_${period}`,
+    period,
+    loanId: ledger.loan.id,
+    accountNumber: ledger.loan.accountNumber,
+    generatedAt: new Date().toISOString(),
+    openingOutstanding: summary.openingOutstanding,
+    closingOutstanding: summary.closingOutstanding,
+    totalContributions: summary.memberContributions,
+    paidToBank: summary.paidToBank,
+    interestPaid: summary.interestIncurredEst,
+    principalReduced: summary.principalReduced,
+    status: isReconciled ? 'reconciled' : 'estimated',
+    unusedGroupFunds: funds.unusedFunds,
+    memberContributions,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Produce Indian Financial Year summary (April 1 to March 31).
+ * Aggregates interest paid (Section 24b), principal reduction (Section 80C),
+ * and individual member shares.
+ */
+export function getIndianFinancialYearSummary(
+  startYear: number,
+  ledger: LedgerState
+): FinancialYearSummary {
+  const nextYear = startYear + 1;
+  const startPeriod = `${startYear}-04`;
+  const endPeriod = `${nextYear}-03`;
+  const fyLabel = `FY ${startYear}-${String(nextYear).slice(2)}`;
+
+  const months: FinancialYearMonthSummary[] = [];
+  let totalInterest = ZERO_PAISE;
+  let totalPrincipal = ZERO_PAISE;
+  let totalPaidToBank = ZERO_PAISE;
+  let totalContributions = ZERO_PAISE;
+
+  // 12 months from April Y to March Y+1
+  for (let m = 4; m <= 15; m++) {
+    const yr = m <= 12 ? startYear : nextYear;
+    const mo = m <= 12 ? m : m - 12;
+    const periodStr = `${yr}-${String(mo).padStart(2, '0')}`;
+    const sum = monthlySummary(periodStr, ledger);
+
+    months.push({
+      period: periodStr,
+      opening: sum.openingOutstanding,
+      contributions: sum.memberContributions,
+      paidToBank: sum.paidToBank,
+      interest: sum.interestIncurredEst,
+      principalReduction: sum.principalReduced,
+      closing: sum.closingOutstanding,
+    });
+
+    totalInterest = addPaise(totalInterest, sum.interestIncurredEst);
+    totalPrincipal = addPaise(totalPrincipal, sum.principalReduced);
+    totalPaidToBank = addPaise(totalPaidToBank, sum.paidToBank);
+    totalContributions = addPaise(totalContributions, sum.memberContributions);
+  }
+
+  const openingPrincipal = months[0].opening;
+  const closingPrincipal = months[months.length - 1].closing;
+
+  // Member contributions during the entire financial year
+  const activeTx = activeOnly(ledger.transactions).filter(
+    (tx): tx is ContributionTransaction =>
+      tx.type === 'contribution' && tx.forMonth >= startPeriod && tx.forMonth <= endPeriod
+  );
+
+  const memberShares = ledger.members
+    .filter((m) => !m.deletedAt)
+    .map((member) => {
+      const totalContributed = activeTx
+        .filter((tx) => tx.memberId === member.id)
+        .reduce((sum, tx) => addPaise(sum, tx.amount), ZERO_PAISE);
+
+      const sharePercentage =
+        totalContributions > 0 ? (totalContributed / totalContributions) * 100 : 0;
+
+      return {
+        memberId: member.id,
+        name: member.name,
+        totalContributed,
+        sharePercentage,
+      };
+    });
+
+  return {
+    financialYear: fyLabel,
+    startPeriod,
+    endPeriod,
+    totalInterestPaid: totalInterest,
+    totalPrincipalReduced: totalPrincipal,
+    totalPaidToBank,
+    totalMemberContributions: totalContributions,
+    openingPrincipal,
+    closingPrincipal,
+    months,
+    memberShares,
+  };
 }

@@ -6,7 +6,7 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { LedgerStore } from '../../core/state';
 import {
@@ -28,6 +28,7 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FormsModule,
+    RouterLink,
     GlassCardComponent,
     ChipComponent,
     AvatarComponent,
@@ -41,9 +42,14 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
           <h1 class="header-title">History</h1>
         </div>
 
-        <button type="button" class="csv-export-btn" (click)="exportCsv()" aria-label="Export CSV">
-          📥 Export CSV
-        </button>
+        <div class="header-actions">
+          <a routerLink="/statements" class="statements-link-btn" aria-label="View Statements & Tax Reports">
+            📄 Statements
+          </a>
+          <button type="button" class="csv-export-btn" (click)="exportCsv()" aria-label="Export CSV">
+            📥 Export CSV
+          </button>
+        </div>
       </header>
 
       <!-- Filter Controls Section -->
@@ -176,6 +182,33 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       font-weight: 800;
       letter-spacing: -0.025em;
       margin: 2px 0 0;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .statements-link-btn {
+      padding: 8px 16px;
+      border-radius: var(--radius-pill, 99px);
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      box-shadow: var(--shadow-sm);
+      min-height: 40px;
+      transition: all 0.2s ease;
+    }
+
+    .statements-link-btn:hover {
+      border-color: var(--brand-a);
+      color: var(--brand-a);
     }
 
     .csv-export-btn {
