@@ -38,6 +38,27 @@ export interface BaseEntity {
   deletedAt?: string;
 }
 
+export interface PrepaymentEvent {
+  date: string; // YYYY-MM-DD
+  amount: Paise;
+}
+
+export interface DrawdownEvent {
+  date: string; // YYYY-MM-DD
+  amount: Paise;
+}
+
+export interface SavedScenario {
+  id: string;
+  name: string;
+  monthlyPayment: Paise;
+  paymentDayOfMonth: number;
+  rateShiftBps: number;
+  prepayments: PrepaymentEvent[];
+  drawdowns: DrawdownEvent[];
+  createdAt: string;
+}
+
 export interface Loan extends BaseEntity {
   type: string;
   accountNumber: string;
@@ -50,6 +71,7 @@ export interface Loan extends BaseEntity {
   calculationMethod: CalculationMethod;
   bankRules?: BankRuleSettings;
   lockedUntilPeriod?: string; // YYYY-MM
+  savedScenarios?: SavedScenario[];
 }
 
 export interface Member extends BaseEntity {

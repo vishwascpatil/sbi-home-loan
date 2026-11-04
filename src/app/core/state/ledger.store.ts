@@ -25,6 +25,7 @@ import {
   RateChange,
   reconcile,
   ReconciliationResult,
+  SavedScenario,
   Transaction,
 } from '../engine';
 import { getInitialSeedData, LocalStorageLedgerRepository } from '../data';
@@ -396,6 +397,26 @@ export class LedgerStore {
       { lockedUntilPeriod: prev.lockedUntilPeriod, reason },
       { lockedUntilPeriod: prevPeriod }
     );
+  }
+
+  async deleteScenario(scenarioId: string): Promise<void> {
+    const currentScenarios = this.loan().savedScenarios || [];
+    await this.updateLoanDetails({
+      savedScenarios: currentScenarios.filter((s) => s.id !== scenarioId),
+    });
+  }
+
+  async saveScenario(scenario: Omit<SavedScenario, 'id' | 'createdAt'>): Promise<SavedScenario> {
+    const newScenario: SavedScenario = {
+      ...scenario,
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+    };
+    const currentScenarios = this.loan().savedScenarios || [];
+    await this.updateLoanDetails({
+      savedScenarios: [...currentScenarios, newScenario],
+    });
+    return newScenario;
   }
 
   async loadSampleData(): Promise<void> {

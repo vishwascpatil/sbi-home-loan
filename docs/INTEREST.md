@@ -74,3 +74,4 @@ When `isCapitalised === true` (standard OD/Maxgain terms), the debited interest 
   $$29 \times 21,917.808219... = 635,616.438... \implies \mathbf{635,616 \text{ paise}} \ (\mathbf{₹6,356.16})$$
 - **Feb 2025 (Standard Year, 28 Days @ 8.00%, actual/365)**:
   $$28 \times 21,917.808219... = 613,698.630... \implies \mathbf{613,699 \text{ paise}} \ (\mathbf{₹6,136.99})$$
+

@@ -1,6 +1,7 @@
 import { InterestEngine } from './interest-engine.interface';
 import { MonthlyReducingBalanceEngine } from './monthly-reducing-balance-engine';
-import { addPaise, Paise, paise, subPaise, ZERO_PAISE } from './money';
+import { addPaise, divideHalfUp, Paise, paise, subPaise, ZERO_PAISE } from './money';
+import { DayCountBasis, DrawdownEvent, PrepaymentEvent } from './models';
 
 export interface SimulationResult {
   months: number;
@@ -162,5 +163,137 @@ export function compareScenarios(
       differenceVsBaseline,
     };
   });
+}
+
+export interface SimulatorV2Options {
+  principal: Paise;
+  monthlyPayment: Paise;
+  rateBps: number;
+  paymentDayOfMonth?: number;
+  rateShiftBps?: number;
+  prepayments?: PrepaymentEvent[];
+  drawdowns?: DrawdownEvent[];
+  dayCountBasis?: DayCountBasis;
+  baseDate?: Date;
+}
+
+/**
+ * Day-accurate repayment simulation engine with prepayments, drawdowns,
+ * custom payment day of month, and interest rate shifts.
+ */
+export function simulateV2(options: SimulatorV2Options): SimulationResult | null {
+  const {
+    principal,
+    monthlyPayment,
+    rateBps,
+    paymentDayOfMonth = 1,
+    rateShiftBps = 0,
+    prepayments = [],
+    drawdowns = [],
+    dayCountBasis = 'actual/365',
+    baseDate = new Date(),
+  } = options;
+
+  if (principal <= 0) {
+    return {
+      months: 0,
+      closureDate: formatFutureMonth(0, baseDate),
+      totalInterest: ZERO_PAISE,
+      totalPaid: ZERO_PAISE,
+      schedule: [ZERO_PAISE],
+    };
+  }
+
+  const effectiveRateBps = Math.max(10, rateBps + rateShiftBps);
+  let currentPrincipalBigInt = BigInt(principal);
+  let totalInterestBigInt = 0n;
+  let months = 0;
+  const schedule: Paise[] = [principal];
+  const maxMonths = 600;
+
+  let simDate = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
+
+  while (currentPrincipalBigInt > 0n && months < maxMonths) {
+    const year = simDate.getFullYear();
+    const month = simDate.getMonth() + 1;
+    const daysInMonth = new Date(year, month, 0).getDate();
+
+    let basisDays = 365;
+    if (dayCountBasis === '360') basisDays = 360;
+    else if (dayCountBasis === 'actual/actual') {
+      const isLeap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+      basisDays = isLeap ? 366 : 365;
+    }
+
+    const yearStr = String(year);
+    const monthStr = String(month).padStart(2, '0');
+    let monthAccruedAccumulator = 0n;
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${yearStr}-${monthStr}-${String(day).padStart(2, '0')}`;
+
+      // 1. One-off prepayments on this day
+      for (const prepay of prepayments) {
+        if (prepay.date === dateStr) {
+          const prepayBig = BigInt(prepay.amount);
+          currentPrincipalBigInt = currentPrincipalBigInt > prepayBig
+            ? currentPrincipalBigInt - prepayBig
+            : 0n;
+        }
+      }
+
+      // 2. Scheduled drawdowns on this day
+      for (const draw of drawdowns) {
+        if (draw.date === dateStr) {
+          currentPrincipalBigInt += BigInt(draw.amount);
+        }
+      }
+
+      // 3. Regular monthly payment on paymentDayOfMonth
+      const isPayDay = day === Math.min(paymentDayOfMonth, daysInMonth);
+      if (isPayDay && currentPrincipalBigInt > 0n) {
+        const estHalfInterest = divideHalfUp(monthAccruedAccumulator, 1_000_000n);
+        const netPrincipalReduction = BigInt(monthlyPayment) > estHalfInterest
+          ? BigInt(monthlyPayment) - estHalfInterest
+          : 0n;
+        currentPrincipalBigInt = currentPrincipalBigInt > netPrincipalReduction
+          ? currentPrincipalBigInt - netPrincipalReduction
+          : 0n;
+      }
+
+      // 4. Daily interest accrual on closing balance
+      if (currentPrincipalBigInt > 0n && effectiveRateBps > 0) {
+        const dailyScaled = (currentPrincipalBigInt * BigInt(effectiveRateBps) * 1_000_000n) /
+          (BigInt(basisDays) * 10_000n);
+        monthAccruedAccumulator += dailyScaled;
+      }
+    }
+
+    const monthInterestPaise = divideHalfUp(monthAccruedAccumulator, 1_000_000n);
+    totalInterestBigInt += monthInterestPaise;
+
+    if (BigInt(monthlyPayment) <= monthInterestPaise && prepayments.length === 0) {
+      return null;
+    }
+
+    months++;
+    const currentPrincipalPaise = paise(Number(currentPrincipalBigInt));
+    schedule.push(currentPrincipalPaise);
+
+    simDate = new Date(simDate.getFullYear(), simDate.getMonth() + 1, 1);
+  }
+
+  if (currentPrincipalBigInt > 0n) {
+    return null;
+  }
+
+  const finalInterest = paise(Number(totalInterestBigInt));
+  return {
+    months,
+    closureDate: formatFutureMonth(months, baseDate),
+    totalInterest: finalInterest,
+    totalPaid: addPaise(principal, finalInterest),
+    schedule,
+  };
 }
 
