@@ -1,16 +1,27 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   inject,
+  signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LedgerStore, SettingsStore } from '../../core/state';
-import { GlassCardComponent, ToastService } from '../../shared/ui';
+import {
+  AvatarComponent,
+  ConfirmSheetComponent,
+  GlassCardComponent,
+  ToastService,
+} from '../../shared/ui';
 import {
   formatPaise,
   Member,
+  paise,
+  Paise,
+  subPaise,
   toPaise,
   toRupees,
+  ZERO_PAISE,
 } from '../../core/engine';
 
 @Component({
@@ -19,6 +30,8 @@ import {
   imports: [
     FormsModule,
     GlassCardComponent,
+    AvatarComponent,
+    ConfirmSheetComponent,
   ],
   template: `
     <div class="settings-page">
@@ -40,7 +53,7 @@ import {
         </div>
       }
 
-      <!-- Loan Parameters Editor -->
+      <!-- 1. Loan Parameters Editor -->
       <app-glass-card [staggerIndex]="0">
         <h2 class="card-title">Loan Details</h2>
         <p class="section-sub">Your loan account number, approved limit, outstanding balance, and monthly target.</p>
@@ -115,32 +128,78 @@ import {
         </div>
       </app-glass-card>
 
-      <!-- Interest Rate Update Section -->
+      <!-- 2. Classic Interest Rate Update Section -->
       <app-glass-card [staggerIndex]="1">
-        <h2 class="card-title">Change Interest Rate</h2>
-        <p class="section-sub">
-          Current interest is <strong>{{ (loan().currentRateBps / 100).toFixed(2) }}%</strong>.
-          Enter the new rate when the bank changes it. Past records stay accurate.
-        </p>
+        <div class="card-title-row">
+          <div>
+            <h2 class="card-title">Change Interest Rate</h2>
+            <p class="section-sub">Bank revisions update current and future interest without altering historical records.</p>
+          </div>
+        </div>
 
+        <!-- Active Rate Spotlight Tile -->
+        <div class="active-rate-spotlight">
+          <div class="spotlight-top">
+            <span class="spotlight-badge-title">CURRENT BANK RATE</span>
+            <span class="spotlight-live-pill">
+              <span class="live-dot"></span> Active
+            </span>
+          </div>
+
+          <div class="spotlight-main">
+            <span class="spotlight-rate tabular-nums">{{ (loan().currentRateBps / 100).toFixed(2) }}%</span>
+            <div class="spotlight-meta">
+              <span class="spotlight-unit">p.a.</span>
+              <span class="spotlight-type">Daily Reducing Balance</span>
+            </div>
+          </div>
+
+          <div class="spotlight-footer">
+            <span class="spotlight-date-text">
+              In effect from {{ formatEffectiveDate(loan().openingDate) }}
+            </span>
+            @if (previousRateFormatted()) {
+              <span class="prev-rate-chip">Prior: {{ previousRateFormatted() }}</span>
+            }
+          </div>
+        </div>
+
+        <!-- Rate Revision Form -->
         <form class="rate-change-form" (ngSubmit)="applyRateChange()">
-          <div class="setting-row">
-            <div class="setting-item" style="flex: 1">
-              <label class="setting-label" for="new-rate">New Bank Interest Rate (%)</label>
+          <div class="rate-form-header">
+            <span class="form-section-title">Enter New Bank Rate</span>
+          </div>
+
+          <div class="setting-item">
+            <label class="setting-label" for="new-rate">New Interest Rate (% p.a.)</label>
+            <div class="rate-input-wrap">
               <input
                 id="new-rate"
                 type="number"
                 step="0.05"
-                class="setting-input tabular-nums"
-                placeholder="e.g. 7.90"
+                min="0.1"
+                max="30"
+                class="setting-input rate-input tabular-nums"
+                placeholder="{{ (loan().currentRateBps / 100).toFixed(2) }}"
                 [(ngModel)]="newRateInput"
                 name="newRate"
                 required
               />
+              <span class="percent-adornment">%</span>
             </div>
 
+            <!-- Quick Adjust Stepper Chips -->
+            <div class="quick-adjust-row">
+              <button type="button" class="quick-chip" (click)="adjustNewRate(-0.25)">−0.25%</button>
+              <button type="button" class="quick-chip" (click)="adjustNewRate(-0.10)">−0.10%</button>
+              <button type="button" class="quick-chip" (click)="adjustNewRate(+0.10)">+0.10%</button>
+              <button type="button" class="quick-chip" (click)="adjustNewRate(+0.25)">+0.25%</button>
+            </div>
+          </div>
+
+          <div class="setting-row">
             <div class="setting-item" style="flex: 1">
-              <label class="setting-label" for="rate-date">Date Changed</label>
+              <label class="setting-label" for="rate-date">Effective Date</label>
               <input
                 id="rate-date"
                 type="date"
@@ -152,43 +211,168 @@ import {
             </div>
           </div>
 
+          <div class="setting-item">
+            <label class="setting-label" for="rate-reason">Reason / Note (Optional)</label>
+            <input
+              id="rate-reason"
+              type="text"
+              class="setting-input"
+              placeholder="e.g. SBI MCLR revision, RBI repo rate cut"
+              [(ngModel)]="rateReason"
+              name="rateReason"
+            />
+          </div>
+
           <button type="submit" class="apply-rate-btn">
-            Save New Rate
+            Save & Apply New Rate
           </button>
         </form>
+
+        <!-- Rate Revisions Timeline -->
+        @if (rateHistory().length > 0) {
+          <div class="rate-history-section">
+            <div class="history-section-title">Rate History ({{ rateHistory().length }})</div>
+            <div class="rate-timeline">
+              @for (r of rateHistory(); track r.id) {
+                <div class="timeline-entry" [class.current]="$first">
+                  <div class="timeline-indicator">
+                    <span class="timeline-bullet"></span>
+                    @if (!$last) {
+                      <span class="timeline-line"></span>
+                    }
+                  </div>
+                  <div class="timeline-details">
+                    <div class="timeline-top">
+                      <strong class="timeline-rate tabular-nums">{{ (r.rateBps / 100).toFixed(2) }}% p.a.</strong>
+                      @if ($first) {
+                        <span class="timeline-active-tag">Active</span>
+                      }
+                    </div>
+                    <span class="timeline-meta">
+                      {{ formatEffectiveDate(r.effectiveFrom) }} · {{ r.reason || 'Rate revision' }}
+                    </span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
       </app-glass-card>
 
-      <!-- Member Management -->
+      <!-- 3. Classic Family Members Section -->
       <app-glass-card [staggerIndex]="2">
         <div class="card-title-row">
-          <h2 class="card-title">Family Members</h2>
+          <div>
+            <h2 class="card-title">Family Members</h2>
+            <p class="section-sub">Co-borrowers contributing to monthly EMI pool.</p>
+          </div>
           <button type="button" class="add-m-btn" (click)="addNewMemberPrompt()">
-            ＋ Add New Person
+            ＋ Add Person
           </button>
         </div>
 
-        <div class="members-edit-list">
-          @for (m of ledgerStore.members(); track m.id) {
-            <div class="member-edit-item">
-              <input
-                type="text"
-                class="member-name-input"
-                [ngModel]="m.name"
-                (ngModelChange)="renameMember(m.id, $event)"
-                aria-label="Member name"
-              />
-              <button
-                type="button"
-                class="toggle-status-btn"
-                [class.active]="m.active"
-                (click)="toggleMemberActive(m)"
-              >
-                {{ m.active ? 'Active' : 'Inactive' }}
-              </button>
+        <div class="members-luxury-list">
+          @for (m of nonDeletedMembers(); track m.id) {
+            <div class="member-card" [class.inactive]="!m.active">
+              <!-- Avatar Cluster -->
+              <div class="member-avatar-wrap">
+                <app-avatar
+                  [name]="m.name"
+                  [colorIndex]="m.colorIndex"
+                  [size]="46"
+                  [circular]="true"
+                  [avatarUrl]="m.avatarUrl"
+                />
+                <span class="member-status-dot" [class.active]="m.active"></span>
+              </div>
+
+              <!-- Info Cluster: Name & Monthly Target -->
+              <div class="member-body">
+                <div class="member-name-row">
+                  <input
+                    type="text"
+                    class="member-name-input"
+                    [ngModel]="m.name"
+                    (ngModelChange)="renameMember(m.id, $event)"
+                    placeholder="Member Name"
+                    aria-label="Member name"
+                  />
+                  <span class="pencil-edit-icon" title="Edit name">✎</span>
+                </div>
+
+                <div class="member-target-pill">
+                  <span class="target-sub-label">Share:</span>
+                  <span class="rupee-sign">₹</span>
+                  <input
+                    type="number"
+                    class="member-target-input tabular-nums"
+                    [ngModel]="toRupees(m.target ?? ZERO_PAISE)"
+                    (ngModelChange)="updateMemberTarget(m.id, $event)"
+                    placeholder="0"
+                    aria-label="Monthly commitment target"
+                  />
+                  <span class="per-mo">/mo</span>
+                </div>
+              </div>
+
+              <!-- Right Actions: Status Toggle & Remove -->
+              <div class="member-actions">
+                <button
+                  type="button"
+                  class="member-status-pill"
+                  [class.active]="m.active"
+                  (click)="toggleMemberActive(m)"
+                  [attr.aria-label]="m.active ? 'Member active' : 'Member paused'"
+                >
+                  <span class="status-indicator"></span>
+                  {{ m.active ? 'Active' : 'Paused' }}
+                </button>
+
+                <button
+                  type="button"
+                  class="member-del-btn"
+                  (click)="confirmDeleteMember(m)"
+                  aria-label="Remove member"
+                  title="Remove member"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
           }
         </div>
+
+        <!-- Target Pool Sum Footer -->
+        <div class="pool-target-summary">
+          <div class="summary-left">
+            <span class="summary-label">Pool Monthly Target</span>
+            <strong class="summary-amount tabular-nums">
+              {{ formatPaise(totalMembersTarget()) }}
+            </strong>
+          </div>
+          <div class="summary-right">
+            @if (totalMembersTarget() >= loan().monthlyTarget) {
+              <span class="match-badge success">✓ Meets Goal</span>
+            } @else {
+              <span class="match-badge notice">
+                {{ formatPaise(subPaise(loan().monthlyTarget, totalMembersTarget())) }} short
+              </span>
+            }
+          </div>
+        </div>
       </app-glass-card>
+
+      <!-- Delete Member Confirmation Sheet -->
+      <app-confirm-sheet
+        [isOpen]="isDeleteConfirmOpen()"
+        title="Remove Family Member?"
+        [message]="'Are you sure you want to remove ' + (memberToDelete()?.name || 'this member') + '? Their past payment history will be preserved.'"
+        confirmText="Remove Member"
+        cancelText="Cancel"
+        [isDanger]="true"
+        (confirmed)="executeDeleteMember()"
+        (cancelled)="isDeleteConfirmOpen.set(false); memberToDelete.set(null)"
+      />
     </div>
   `,
   styles: `
@@ -252,7 +436,8 @@ import {
     .card-title-row {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
+      gap: 12px;
     }
 
     .section-sub {
@@ -310,7 +495,8 @@ import {
       font-size: 14px;
       font-weight: 700;
       outline: none;
-      transition: border-color 0.2s ease;
+      transition: border-color 0.2s ease, background 0.2s ease;
+      box-sizing: border-box;
     }
 
     .setting-input:focus {
@@ -318,89 +504,563 @@ import {
       background: var(--card);
     }
 
+    /* ----------------------------------------------------
+       Active Rate Spotlight Tile (Classic Luxury)
+       ---------------------------------------------------- */
+    .active-rate-spotlight {
+      background: #111216;
+      border-radius: var(--radius-card, 22px);
+      padding: 18px 20px;
+      margin-bottom: 20px;
+      color: #ffffff;
+      box-shadow: 0 8px 24px rgba(17, 18, 22, 0.16);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .spotlight-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .spotlight-badge-title {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      color: #8e8e93;
+      text-transform: uppercase;
+    }
+
+    .spotlight-live-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: var(--radius-pill, 99px);
+      background: rgba(16, 185, 129, 0.16);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #10b981;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .live-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 6px #10b981;
+      animation: pulseLive 2s infinite ease-in-out;
+    }
+
+    @keyframes pulseLive {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(0.85); }
+    }
+
+    .spotlight-main {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .spotlight-rate {
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      color: #ffffff;
+    }
+
+    .spotlight-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .spotlight-unit {
+      font-size: 14px;
+      font-weight: 700;
+      color: #8e8e93;
+    }
+
+    .spotlight-type {
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .spotlight-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .spotlight-date-text {
+      font-size: 12px;
+      color: #8e8e93;
+      font-weight: 500;
+    }
+
+    .prev-rate-chip {
+      font-size: 11px;
+      font-weight: 600;
+      color: #d1d1d6;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 3px 9px;
+      border-radius: var(--radius-pill, 99px);
+    }
+
+    /* ----------------------------------------------------
+       Rate Revision Form
+       ---------------------------------------------------- */
     .rate-change-form {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
+      background: var(--bg-subtle, #f5f5f7);
+      padding: 16px;
+      border-radius: var(--radius-tile, 18px);
+      border: 1px solid var(--line);
+    }
+
+    .rate-form-header {
+      margin-bottom: 2px;
+    }
+
+    .form-section-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+    }
+
+    .rate-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .rate-input {
+      padding-right: 36px;
+    }
+
+    .percent-adornment {
+      position: absolute;
+      right: 14px;
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    .quick-adjust-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+
+    .quick-chip {
+      flex: 1;
+      min-width: 60px;
+      height: 32px;
+      border-radius: var(--radius-pill, 99px);
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .quick-chip:hover {
+      border-color: var(--brand-a);
+      color: var(--brand-a);
+      transform: translateY(-1px);
+    }
+
+    .quick-chip:active {
+      transform: scale(0.96);
     }
 
     .apply-rate-btn {
       width: 100%;
-      height: 44px;
+      height: 46px;
       border-radius: var(--radius-pill, 99px);
-      background: var(--ink);
-      color: var(--bg);
+      background: #111216;
+      color: #ffffff;
       border: none;
       font-size: 13px;
       font-weight: 800;
       cursor: pointer;
-    }
-
-    .add-m-btn {
-      padding: 6px 14px;
-      border-radius: var(--radius-pill, 99px);
-      background: var(--brand-gradient);
-      color: #ffffff;
-      border: none;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .members-edit-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-top: 14px;
-    }
-
-    .member-edit-item {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .member-name-input {
-      flex: 1;
-      height: 40px;
-      border-radius: var(--radius-tile, 16px);
-      border: 1px solid var(--line);
-      background: var(--bg-subtle, #f5f5f7);
-      color: var(--ink);
-      padding: 0 12px;
-      font-size: 13px;
-      font-weight: 700;
-      outline: none;
-      transition: all 0.2s ease;
-    }
-
-    .member-name-input:focus {
-      border-color: var(--brand-a);
-      box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
-      background: #ffffff;
-    }
-
-    .toggle-status-btn {
-      padding: 8px 14px;
-      border-radius: var(--radius-pill, 9999px);
-      border: 1px solid var(--line);
-      background: var(--bg-subtle, #f5f5f7);
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      min-height: 40px;
+      margin-top: 4px;
+      box-shadow: 0 4px 14px rgba(17, 18, 22, 0.18);
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .toggle-status-btn:active {
+    .apply-rate-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(17, 18, 22, 0.24);
+    }
+
+    .apply-rate-btn:active {
+      transform: scale(0.97);
+    }
+
+    /* ----------------------------------------------------
+       Rate Timeline
+       ---------------------------------------------------- */
+    .rate-history-section {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+    }
+
+    .history-section-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+    }
+
+    .rate-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .timeline-entry {
+      display: flex;
+      gap: 12px;
+      min-height: 48px;
+    }
+
+    .timeline-indicator {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 14px;
+    }
+
+    .timeline-bullet {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      margin-top: 4px;
+    }
+
+    .timeline-entry.current .timeline-bullet {
+      background: #10b981;
+      box-shadow: 0 0 6px #10b981;
+    }
+
+    .timeline-line {
+      flex: 1;
+      width: 2px;
+      background: var(--line);
+      margin: 4px 0;
+    }
+
+    .timeline-details {
+      flex: 1;
+      padding-bottom: 12px;
+    }
+
+    .timeline-top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .timeline-rate {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--ink);
+    }
+
+    .timeline-active-tag {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 1px 6px;
+      border-radius: var(--radius-pill, 99px);
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+    }
+
+    .timeline-meta {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+      display: block;
+    }
+
+    /* ----------------------------------------------------
+       Family Members Section (Luxury List)
+       ---------------------------------------------------- */
+    .add-m-btn {
+      padding: 8px 16px;
+      border-radius: var(--radius-pill, 99px);
+      background: #111216;
+      color: #ffffff;
+      border: none;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(17, 18, 22, 0.15);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      white-space: nowrap;
+    }
+
+    .add-m-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(17, 18, 22, 0.2);
+    }
+
+    .add-m-btn:active {
       transform: scale(0.96);
     }
 
-    .toggle-status-btn.active {
-      background: var(--success-bg, rgba(52, 199, 89, 0.12));
-      color: #248a3d;
-      border-color: rgba(52, 199, 89, 0.25);
+    .members-luxury-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .member-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: var(--radius-tile, 18px);
+      border: 1px solid var(--line);
+      background: var(--bg-subtle, #f5f5f7);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .member-card.inactive {
+      opacity: 0.6;
+      background: transparent;
+      border-style: dashed;
+    }
+
+    .member-avatar-wrap {
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .member-status-dot {
+      position: absolute;
+      bottom: -1px;
+      right: -1px;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: #8e8e93;
+      border: 2px solid #ffffff;
+    }
+
+    .member-status-dot.active {
+      background: #10b981;
+    }
+
+    .member-body {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .member-name-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .member-name-input {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--ink);
+      border: none;
+      background: transparent;
+      outline: none;
+      padding: 0;
+      width: 100%;
+      letter-spacing: -0.01em;
+      transition: color 0.2s ease;
+    }
+
+    .member-name-input:focus {
+      border-bottom: 1.5px solid var(--brand-a);
+    }
+
+    .pencil-edit-icon {
+      font-size: 11px;
+      color: var(--muted);
+      opacity: 0.5;
+      user-select: none;
+    }
+
+    .member-target-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: var(--card);
+      padding: 3px 8px;
+      border-radius: var(--radius-pill, 99px);
+      border: 1px solid var(--line);
+      width: fit-content;
+      font-size: 12px;
+    }
+
+    .target-sub-label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .rupee-sign {
+      color: var(--ink);
+      font-weight: 800;
+      font-size: 11px;
+    }
+
+    .member-target-input {
+      border: none;
+      background: transparent;
+      color: var(--ink);
+      font-weight: 800;
+      font-size: 12px;
+      width: 64px;
+      outline: none;
+      padding: 0;
+    }
+
+    .per-mo {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .member-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .member-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 11px;
+      border-radius: var(--radius-pill, 99px);
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .status-indicator {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #8e8e93;
+    }
+
+    .member-status-pill.active {
+      background: rgba(16, 185, 129, 0.12);
+      color: #0fb27c;
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .member-status-pill.active .status-indicator {
+      background: #0fb27c;
+    }
+
+    .member-del-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 700;
+      transition: all 0.2s ease;
+    }
+
+    .member-del-btn:hover {
+      background: rgba(238, 77, 107, 0.12);
+      color: #ee4d6b;
+      transform: scale(1.05);
+    }
+
+    .pool-target-summary {
+      margin-top: 14px;
+      padding: 12px 16px;
+      border-radius: var(--radius-tile, 16px);
+      background: var(--bg-subtle, #f5f5f7);
+      border: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .summary-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .summary-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .summary-amount {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--ink);
+    }
+
+    .match-badge {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill, 99px);
+    }
+
+    .match-badge.success {
+      background: rgba(16, 185, 129, 0.14);
+      color: #0fb27c;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .match-badge.notice {
+      background: rgba(245, 159, 0, 0.14);
+      color: #d97706;
+      border: 1px solid rgba(245, 159, 0, 0.3);
     }
   `,
 })
@@ -412,12 +1072,62 @@ export class SettingsComponent {
   readonly formatPaise = formatPaise;
   readonly toRupees = toRupees;
   readonly toPaise = toPaise;
+  readonly ZERO_PAISE = ZERO_PAISE;
+  readonly subPaise = subPaise;
 
   readonly loan = this.ledgerStore.loan;
 
   newRateInput: number | null = null;
   rateEffectiveDate = new Date().toISOString().slice(0, 10);
+  rateReason = '';
   private saveTimeout: ReturnType<typeof setTimeout> | null = null;
+  private memberTargetTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+  private memberNameTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+
+  readonly memberToDelete = signal<Member | null>(null);
+  readonly isDeleteConfirmOpen = signal(false);
+
+  readonly nonDeletedMembers = computed(() => {
+    return this.ledgerStore.members().filter((m) => !m.deletedAt);
+  });
+
+  readonly totalMembersTarget = computed<Paise>(() => {
+    const total = this.nonDeletedMembers()
+      .filter((m) => m.active)
+      .reduce((sum, m) => sum + (m.target || 0), 0);
+    return paise(Math.max(0, total));
+  });
+
+  readonly rateHistory = computed(() => {
+    return [...this.ledgerStore.rateChanges()]
+      .sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom) || b.createdAt.localeCompare(a.createdAt));
+  });
+
+  readonly previousRateFormatted = computed(() => {
+    const changes = this.rateHistory();
+    if (changes.length > 1) {
+      return `${(changes[1].rateBps / 100).toFixed(2)}% p.a.`;
+    }
+    return null;
+  });
+
+  formatEffectiveDate(dateStr?: string): string {
+    if (!dateStr) return 'Active Baseline';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+      }
+    }
+    return dateStr;
+  }
+
+  adjustNewRate(delta: number): void {
+    const current = this.newRateInput ?? (this.loan().currentRateBps / 100);
+    const updated = Math.max(0.1, Math.round((current + delta) * 100) / 100);
+    this.newRateInput = updated;
+  }
 
   async updateLoanParam(key: string, value: unknown): Promise<void> {
     await this.ledgerStore.updateLoanDetails({ [key]: value });
@@ -469,22 +1179,64 @@ export class SettingsComponent {
       return;
     }
     const rateBps = Math.round(this.newRateInput * 100);
-    await this.ledgerStore.updateRate(rateBps, this.rateEffectiveDate, 'User settings update');
-    this.toast.show(`Interest rate changed to ${this.newRateInput}%`, 'success');
+    const reason = this.rateReason.trim() || 'Bank interest rate revision';
+    await this.ledgerStore.updateRate(rateBps, this.rateEffectiveDate, reason);
+    this.toast.show(`Interest rate updated to ${this.newRateInput.toFixed(2)}%`, 'success');
     this.newRateInput = null;
+    this.rateReason = '';
   }
 
   async addNewMemberPrompt(): Promise<void> {
-    const count = this.ledgerStore.members().length + 1;
-    await this.ledgerStore.addMember(`Member ${count}`);
+    const count = this.nonDeletedMembers().length + 1;
+    await this.ledgerStore.addMember(`Member ${count}`, toPaise(10000));
     this.toast.show(`New member added`, 'success');
   }
 
-  async renameMember(id: string, name: string): Promise<void> {
-    await this.ledgerStore.updateMember(id, { name: name.trim() });
+  renameMember(id: string, name: string): void {
+    const existing = this.memberNameTimeouts.get(id);
+    if (existing) clearTimeout(existing);
+
+    const t = setTimeout(async () => {
+      if (!name || !name.trim()) return;
+      await this.ledgerStore.updateMember(id, { name: name.trim() });
+      this.memberNameTimeouts.delete(id);
+    }, 450);
+    this.memberNameTimeouts.set(id, t);
+  }
+
+  updateMemberTarget(memberId: string, value: number | string | null | undefined): void {
+    if (value === null || value === undefined || value === '') return;
+    const num = typeof value === 'number' ? value : parseFloat(String(value));
+    if (isNaN(num) || num < 0) return;
+
+    const existing = this.memberTargetTimeouts.get(memberId);
+    if (existing) clearTimeout(existing);
+
+    const t = setTimeout(async () => {
+      await this.ledgerStore.updateMember(memberId, { target: toPaise(num) });
+      this.toast.show('Monthly commitment updated', 'success');
+      this.memberTargetTimeouts.delete(memberId);
+    }, 450);
+    this.memberTargetTimeouts.set(memberId, t);
   }
 
   async toggleMemberActive(member: Member): Promise<void> {
     await this.ledgerStore.updateMember(member.id, { active: !member.active });
+    const status = !member.active ? 'active' : 'paused';
+    this.toast.show(`${member.name} marked as ${status}`, 'info');
+  }
+
+  confirmDeleteMember(m: Member): void {
+    this.memberToDelete.set(m);
+    this.isDeleteConfirmOpen.set(true);
+  }
+
+  async executeDeleteMember(): Promise<void> {
+    const m = this.memberToDelete();
+    if (!m) return;
+    await this.ledgerStore.deleteMember(m.id);
+    this.toast.show(`${m.name} removed`, 'info');
+    this.isDeleteConfirmOpen.set(false);
+    this.memberToDelete.set(null);
   }
 }

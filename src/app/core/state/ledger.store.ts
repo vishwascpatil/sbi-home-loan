@@ -356,6 +356,19 @@ export class LedgerStore {
     return newMember;
   }
 
+  async deleteMember(memberId: string): Promise<void> {
+    const existing = this.members().find((m) => m.id === memberId);
+    if (!existing) return;
+    const updated: Member = {
+      ...existing,
+      active: false,
+      deletedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    this.members.update((prev) => prev.map((m) => (m.id === memberId ? updated : m)));
+    await this.logAuditAndSave('delete', 'member', memberId, existing, updated);
+  }
+
   async updateBankRules(rules: Partial<BankRuleSettings>): Promise<void> {
     const currentLoan = this.loan();
     const updatedRules: BankRuleSettings = {
