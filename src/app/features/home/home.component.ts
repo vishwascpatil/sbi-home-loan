@@ -3,7 +3,6 @@ import { Router } from '@angular/router';
 import { LedgerStore, SettingsStore } from '../../core/state';
 import {
   AvatarComponent,
-  ProgressBarComponent,
   SparklineChartComponent,
 } from '../../shared/ui';
 import { CountUpDirective } from '../../shared/ui/count-up/count-up.directive';
@@ -12,11 +11,11 @@ import {
   formatPaise,
   getTransactionAmount,
   getTransactionMode,
+  Paise,
   simulate,
   toRupees,
   Transaction,
 } from '../../core/engine';
-import { AmbientMotionHeroComponent } from './ambient-motion-hero.component';
 import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-transaction-sheet.component';
 import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.component';
 
@@ -25,253 +24,262 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    AmbientMotionHeroComponent,
     CountUpDirective,
-    ProgressBarComponent,
     SparklineChartComponent,
     AvatarComponent,
     AddEditTransactionSheetComponent,
     DailyLedgerSheetComponent,
   ],
   template: `
-    <div class="home-page">
-      <!-- Calm Minimal Header -->
-      <header class="home-header">
-        <div class="header-left">
-          <span class="header-eyebrow">{{ currentMonthFormatted() }}</span>
-          <h1 class="header-title">Loan Overview</h1>
+    <div class="home-page-container">
+      <!-- 1. Top User Profile Bar (Screenshot Matched) -->
+      <header class="app-top-bar">
+        <div class="user-profile-cluster">
+          <div class="profile-avatar-circle">
+            <span>V</span>
+          </div>
+          <div class="profile-text-wrap">
+            <span class="profile-greeting">Welcome back</span>
+            <h1 class="profile-user-name">Vishwas</h1>
+          </div>
         </div>
+
+        <button
+          type="button"
+          class="top-circle-action-btn"
+          (click)="isDailyLedgerOpen.set(true)"
+          aria-label="View Daily OD Accrual breakdown"
+          title="Daily OD Interest Accrual"
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#111216" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+        </button>
       </header>
 
-      <!-- Ambient Generative Motion Hero with High-End Animated Numbers -->
-      <app-ambient-motion-hero
-        [loan]="ledgerStore.loan()"
-        [currentOutstanding]="ledgerStore.currentOutstanding()"
-        [isMasked]="settings.maskAccountNumber()"
-        [closureDate]="simulationResult()?.closureDate"
-        (toggleReveal)="settings.toggleMaskAccountNumber()"
-        (quickAction)="handleQuickAction($event)"
-      />
-
-      <!-- Section 1: This Month Performance (Content-First & Calm Minimalism) -->
-      <section class="calm-section" style="--stagger: 1">
-        <div class="section-header">
-          <div class="title-cluster">
-            <h2 class="section-heading">This Month</h2>
-            <span
-              class="calm-badge"
-              [class.reconciled]="isThisMonthReconciled()"
-              [class.estimated]="!isThisMonthReconciled()"
-            >
-              {{ isThisMonthReconciled() ? '✓ Reconciled' : 'Estimated' }}
+      <!-- 2. Matte Black Hero Card (Go Premium style in screenshot) -->
+      <div class="matte-hero-banner" role="region" aria-label="Overdraft Facility Overview">
+        <div class="hero-left-content">
+          <div class="hero-badge-pill">
+            <span class="lightning-bolt">⚡</span>
+            <span>Overdraft Facility · {{ (ledgerStore.loan().currentRateBps / 100).toFixed(2) }}% p.a.</span>
+          </div>
+          <div class="hero-number-wrap">
+            <div class="hero-balance-headline tabular-nums" [appCountUp]="ledgerStore.currentOutstanding()">
+              {{ formatPaise(ledgerStore.currentOutstanding()) }}
+            </div>
+            <span class="hero-balance-sub">
+              Live EOD accrual · ₹2,573/day est.
             </span>
           </div>
+        </div>
 
+        <button
+          type="button"
+          class="hero-circle-cta"
+          (click)="openAddWith('bankPayment')"
+          aria-label="Record Bank Payment"
+          title="Record Bank Payment"
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#111216" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
+
+      <!-- 3. Section: Overview ("Wellness" style in screenshot) -->
+      <section class="home-section">
+        <h2 class="section-main-heading">Overview</h2>
+
+        <div class="dual-squircle-grid">
+          <!-- Card 1: This Month -->
           <button
             type="button"
-            class="calm-action-link"
+            class="squircle-metric-card"
             (click)="isDailyLedgerOpen.set(true)"
-            aria-label="View daily interest breakdown"
+            aria-label="View This Month Breakdown"
           >
-            {{ methodLabel() }} ↗
-          </button>
-        </div>
-
-        <!-- Hero Metric Flow: Borderless, Large Elegant Numbers -->
-        <div class="minimal-metric-grid">
-          <div class="metric-block highlight">
-            <span class="metric-caption">Principal Reduced</span>
-            <span class="metric-num-hero tabular-nums" [appCountUp]="summary().principalReduced">
-              {{ formatPaise(summary().principalReduced) }}
-            </span>
-            <span class="metric-sub positive">Direct debt reduction</span>
-          </div>
-
-          <div class="metric-block">
-            <span class="metric-caption">Interest Incurred (Est.)</span>
-            <span
-              class="metric-num-hero tabular-nums"
-              [appCountUp]="summary().interestIncurredEst"
-              [showDecimals]="true"
-            >
-              {{ formatPaise(summary().interestIncurredEst, { showPaise: true, isEstimated: true }) }}
-            </span>
-            <span class="metric-sub">Daily accrual rate</span>
-          </div>
-        </div>
-
-        <!-- Sleek Borderless Target Progress -->
-        <div class="progress-block">
-          <div class="progress-labels">
-            <span class="p-sub-label">Monthly Target Progress</span>
-            <span class="p-sub-val tabular-nums">{{ summary().targetProgressPercent.toFixed(0) }}%</span>
-          </div>
-          <app-progress-bar [progressPercent]="summary().targetProgressPercent" [height]="6" />
-        </div>
-
-        <!-- Airy Key-Value Flow -->
-        <div class="airy-data-grid">
-          <div class="airy-data-item">
-            <span class="airy-label">Member Contributions</span>
-            <span class="airy-val tabular-nums">{{ formatPaise(summary().memberContributions) }}</span>
-          </div>
-          <div class="airy-data-item">
-            <span class="airy-label">Paid to Bank</span>
-            <span class="airy-val tabular-nums">{{ formatPaise(summary().paidToBank) }}</span>
-          </div>
-          <div class="airy-data-item">
-            <span class="airy-label">Remaining to Target</span>
-            <span class="airy-val tabular-nums">{{ formatPaise(summary().remainingTarget) }}</span>
-          </div>
-        </div>
-      </section>
-
-      <!-- Section 2: Group Funds (Cash Pool) -->
-      <section class="calm-section" style="--stagger: 2">
-        <div class="section-header">
-          <div class="title-cluster">
-            <h2 class="section-heading">Group Funds</h2>
-            <span class="calm-badge neutral">Cash Pool</span>
-          </div>
-        </div>
-
-        <div class="funds-columns">
-          <div class="fund-column">
-            <span class="fund-label">Total Contributed</span>
-            <span class="fund-val tabular-nums" [appCountUp]="funds().totalContributions">
-              {{ formatCompactPaise(funds().totalContributions) }}
-            </span>
-            <span class="fund-desc">Member deposits</span>
-          </div>
-          <div class="fund-divider"></div>
-          <div class="fund-column">
-            <span class="fund-label">Disbursed to Bank</span>
-            <span class="fund-val tabular-nums" [appCountUp]="funds().totalBankPayments">
-              {{ formatCompactPaise(funds().totalBankPayments) }}
-            </span>
-            <span class="fund-desc">Recorded payments</span>
-          </div>
-          <div class="fund-divider"></div>
-          <div class="fund-column highlight">
-            <span class="fund-label">Liquid Unused</span>
-            <span class="fund-val tabular-nums" [appCountUp]="funds().unusedFunds">
-              {{ formatCompactPaise(funds().unusedFunds) }}
-            </span>
-            <span class="fund-desc">Ready cash pool</span>
-          </div>
-        </div>
-
-        <p class="calm-note">
-          Contributions accumulate in group funds. Only recorded bank payments reduce loan principal.
-        </p>
-      </section>
-
-      <!-- Section 3: Payoff Trajectory & Projected Amortization -->
-      <section class="calm-section" style="--stagger: 3">
-        <div class="section-header">
-          <div class="title-cluster">
-            <h2 class="section-heading">Payoff Trajectory</h2>
-            <span class="calm-badge neutral">{{ formatCompactPaise(ledgerStore.loan().monthlyTarget) }}/mo target</span>
-          </div>
-          <button type="button" class="calm-action-link" (click)="router.navigate(['/insights'])">
-            Simulate ↗
-          </button>
-        </div>
-
-        @if (simulationResult()) {
-          <div class="chart-wrapper">
-            <app-sparkline-chart [data]="simulationResult()!.schedule" />
-          </div>
-          <div class="trajectory-meta">
-            <div class="traj-point">
-              <span class="traj-caption">Today</span>
-              <span class="traj-val tabular-nums">{{ formatPaise(ledgerStore.currentOutstanding()) }}</span>
+            <div class="card-top-header">
+              <span class="card-caption-title">This Month</span>
+              <span class="card-chevron-icon">›</span>
             </div>
-            <div class="traj-point right">
-              <span class="traj-caption">Estimated Closure</span>
-              <span class="traj-val highlight">{{ simulationResult()!.closureDate }}</span>
-            </div>
-          </div>
-          <p class="calm-note">
-            Estimated future interest until debt-free: <strong>{{ formatPaise(simulationResult()!.totalInterest) }}</strong>.
-          </p>
-        } @else {
-          <p class="calm-note warning">
-            Monthly target is below interest accrual. Debt is not amortizing.
-          </p>
-        }
-      </section>
-
-      <!-- Section 4: Members -->
-      <section class="calm-section" style="--stagger: 4">
-        <div class="section-header">
-          <h2 class="section-heading">Members</h2>
-          <button type="button" class="calm-action-link" (click)="router.navigate(['/members'])">
-            Manage ↗
-          </button>
-        </div>
-
-        <div class="calm-list">
-          @for (m of ledgerStore.memberStats(); track m.memberId) {
-            <div class="calm-list-row member-row">
-              <app-avatar [name]="m.name" [colorIndex]="$index" [size]="40" />
-              <div class="row-main">
-                <span class="row-title">{{ m.name }}</span>
-                <span class="row-subtitle">
-                  Limit {{ m.target ? formatPaise(m.target) : '₹0' }}/mo · Due 5th
-                  @if (m.thisMonthContribution > 0) {
-                    · Paid {{ formatPaise(m.thisMonthContribution) }}
-                  }
+            <div class="card-metric-body">
+              <div class="metric-pair">
+                <span class="metric-big-num tabular-nums" [appCountUp]="summary().principalReduced">
+                  {{ formatPaise(summary().principalReduced) }}
                 </span>
+                <span class="metric-label-sub">Principal Reduced</span>
               </div>
-              <div class="row-end">
-                <span class="share-badge tabular-nums">{{ (m.targetSharePercentage || m.sharePercentage).toFixed(1) }}%</span>
+              <div class="metric-pair secondary">
+                <span class="metric-small-num tabular-nums">
+                  {{ formatPaise(summary().interestIncurredEst, { showPaise: true, isEstimated: true }) }}
+                </span>
+                <span class="metric-label-sub">Daily Interest (Est.)</span>
               </div>
             </div>
+          </button>
+
+          <!-- Card 2: Trajectory & Sparkline -->
+          <button
+            type="button"
+            class="squircle-metric-card"
+            (click)="router.navigate(['/insights'])"
+            aria-label="View Payoff Trajectory"
+          >
+            <div class="card-top-header">
+              <span class="card-caption-title">Payoff</span>
+              <span class="card-chevron-icon">›</span>
+            </div>
+            <div class="card-metric-body">
+              <div class="metric-stat-row">
+                <div>
+                  <span class="metric-big-num">5.2</span>
+                  <span class="metric-label-sub">Years</span>
+                </div>
+                <div>
+                  <span class="metric-big-num">2030</span>
+                  <span class="metric-label-sub">Est. Payoff</span>
+                </div>
+              </div>
+              @if (simulationResult()) {
+                <div class="sparkline-wrap">
+                  <app-sparkline-chart [data]="simulationResult()!.schedule" />
+                </div>
+              }
+            </div>
+          </button>
+        </div>
+      </section>
+
+      <!-- 4. Section: Feature Progress Card ("Overall Progress" with 3D ring in screenshot) -->
+      <section class="home-section">
+        <div class="progress-feature-card">
+          <div class="progress-card-info">
+            <span class="progress-eyebrow">Repayment Progress</span>
+            <h3 class="progress-main-title">
+              {{ formatPaise(repaidAmount()) }} Repaid
+            </h3>
+            <p class="progress-desc">
+              {{ repaidPercent().toFixed(1) }}% of {{ formatCompactPaise(ledgerStore.loan().sanctionedLimit) }} sanction limit repaid to date.
+            </p>
+            <button
+              type="button"
+              class="action-pill-black"
+              (click)="openAddWith('contribution')"
+            >
+              ＋ Record Deposit
+            </button>
+          </div>
+
+          <!-- Circular SVG Radial Gauge -->
+          <div class="progress-arc-visual">
+            <svg class="progress-radial-svg" viewBox="0 0 100 100">
+              <circle class="arc-bg-ring" cx="50" cy="50" r="40" fill="none" stroke-width="7" />
+              <circle
+                class="arc-progress-ring"
+                cx="50"
+                cy="50"
+                r="40"
+                fill="none"
+                stroke-width="7"
+                stroke-linecap="round"
+                [style.strokeDasharray]="arcCircumference"
+                [style.strokeDashoffset]="arcStrokeDashoffset()"
+              />
+            </svg>
+            <div class="arc-inner-label">
+              <span class="arc-pct-text">{{ repaidPercent().toFixed(1) }}%</span>
+              <span class="arc-pct-sub">REPAID</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. Section: Members & Monthly Limits ("Past Activities" style in screenshot) -->
+      <section class="home-section">
+        <div class="section-title-bar">
+          <div>
+            <h2 class="section-main-heading">Members & Limits</h2>
+            <span class="section-sub-caption">5 Members · Due 5th of each month · ₹2,40,000 pool</span>
+          </div>
+          <button type="button" class="section-see-all-btn" (click)="router.navigate(['/members'])">
+            See all ›
+          </button>
+        </div>
+
+        <div class="squircle-items-list">
+          @for (m of ledgerStore.memberStats(); track m.memberId) {
+            <button
+              type="button"
+              class="squircle-item-row"
+              (click)="router.navigate(['/members'])"
+              [attr.aria-label]="m.name + ' limit details'"
+            >
+              <div class="item-left-cluster">
+                <app-avatar [name]="m.name" [colorIndex]="$index" [size]="42" />
+                <div class="item-text-info">
+                  <span class="item-primary-name">{{ m.name }}</span>
+                  <span class="item-secondary-sub">
+                    Limit {{ m.target ? formatPaise(m.target) : '₹0' }}/mo · Due 5th
+                  </span>
+                </div>
+              </div>
+              <div class="item-right-cluster">
+                <span class="item-share-pill">{{ (m.targetSharePercentage || m.sharePercentage).toFixed(1) }}%</span>
+                <span class="item-chevron">›</span>
+              </div>
+            </button>
           }
         </div>
       </section>
 
-      <!-- Section 5: Recent Activity -->
-      <section class="calm-section" style="--stagger: 5">
-        <div class="section-header">
-          <h2 class="section-heading">Recent Activity</h2>
-          <button type="button" class="calm-action-link" (click)="router.navigate(['/history'])">
-            Complete Ledger ↗
+      <!-- 6. Section: Recent Activity -->
+      <section class="home-section">
+        <div class="section-title-bar">
+          <div>
+            <h2 class="section-main-heading">Recent Activity</h2>
+            <span class="section-sub-caption">Recorded Passbook & Member Activity</span>
+          </div>
+          <button type="button" class="section-see-all-btn" (click)="router.navigate(['/history'])">
+            See all ›
           </button>
         </div>
 
-        <div class="calm-list">
+        <div class="squircle-items-list">
           @for (tx of ledgerStore.recentTransactions(); track tx.id) {
             <button
               type="button"
-              class="calm-list-row tx-row clickable"
+              class="squircle-item-row clickable"
               (click)="editSelectedTx(tx)"
+              [attr.aria-label]="'Edit transaction ' + getTxTitle(tx)"
             >
-              <div class="tx-badge" [class.payment]="tx.type === 'bankPayment'">
-                {{ tx.type === 'bankPayment' ? '🏦' : '👤' }}
+              <div class="item-left-cluster">
+                <div class="activity-icon-bubble" [class.payment]="tx.type === 'bankPayment'">
+                  {{ tx.type === 'bankPayment' ? '🏦' : '👤' }}
+                </div>
+                <div class="item-text-info">
+                  <span class="item-primary-name">{{ getTxTitle(tx) }}</span>
+                  <span class="item-secondary-sub">
+                    {{ tx.date }} · {{ getTransactionMode(tx) }}
+                  </span>
+                </div>
               </div>
-              <div class="row-main">
-                <span class="row-title">{{ getTxTitle(tx) }}</span>
-                <span class="row-subtitle">
-                  {{ tx.date }} · {{ getTransactionMode(tx) }}
-                  @if (tx.type === 'bankPayment') {
-                    · interest {{ formatPaise(tx.interestPortion, { showPaise: true }) }}
-                  }
-                </span>
-              </div>
-              <div class="row-end">
+              <div class="item-right-cluster">
                 <span
-                  class="tx-val tabular-nums"
+                  class="item-amount-val tabular-nums"
                   [class.positive]="tx.type === 'contribution'"
                   [class.negative]="tx.type === 'bankPayment'"
                 >
                   {{ tx.type === 'contribution' ? '+' : '−' }}{{ formatPaise(getTransactionAmount(tx)) }}
                 </span>
+                <span class="item-chevron">›</span>
               </div>
             </button>
           } @empty {
-            <p class="calm-note">No transactions recorded yet. Tap ＋ to record one.</p>
+            <div class="squircle-empty-card">
+              <p class="empty-hint">No transactions recorded yet. Tap ＋ on the dock to add one.</p>
+            </div>
           }
         </div>
       </section>
@@ -292,447 +300,551 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
     </div>
   `,
   styles: `
-    .home-page {
+    .home-page-container {
       display: flex;
       flex-direction: column;
-      padding: 4px 0 60px;
+      padding: 0 0 88px;
     }
 
-    /* Calm Minimal Header */
-    .home-header {
+    /* 1. Top User Profile Bar */
+    .app-top-bar {
       display: flex;
       justify-content: space-between;
-      align-items: flex-end;
-      margin: 4px 0 24px;
+      align-items: center;
+      margin: 8px 0 20px;
       padding: 0 4px;
     }
 
-    .header-eyebrow {
-      display: block;
-      font-size: 11px;
-      font-weight: 700;
-      color: #86868b;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: 2px;
+    .user-profile-cluster {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
 
-    .header-title {
-      font-size: 28px;
+    .profile-avatar-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #111216;
+      color: #ffffff;
+      display: grid;
+      place-items: center;
+      font-size: 16px;
       font-weight: 800;
-      letter-spacing: -0.03em;
-      color: #1d1d1f;
-      margin: 0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
     }
 
-    /* Calm Section Container - Borderless, Content-First, Generous Whitespace */
-    .calm-section {
+    .profile-text-wrap {
       display: flex;
       flex-direction: column;
-      margin-bottom: 48px;
-      padding: 0 4px;
-      animation: calmSectionEntrance 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
-      animation-delay: calc(var(--stagger, 0) * 0.08s);
     }
 
-    @keyframes calmSectionEntrance {
-      0% {
-        opacity: 0;
-        transform: translateY(16px);
-      }
-      100% {
-        opacity: 1;
-        transform: translateY(0);
-      }
+    .profile-greeting {
+      font-size: 11px;
+      font-weight: 500;
+      color: #8e8e93;
+      letter-spacing: -0.01em;
     }
 
-    .section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 18px;
-    }
-
-    .title-cluster {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .section-heading {
-      font-size: 19px;
-      font-weight: 700;
-      letter-spacing: -0.025em;
-      color: #1d1d1f;
+    .profile-user-name {
+      font-size: 18px;
+      font-weight: 800;
+      color: #111216;
+      letter-spacing: -0.02em;
       margin: 0;
     }
 
-    .calm-badge {
-      font-size: 11px;
-      font-weight: 700;
-      padding: 3px 10px;
-      border-radius: 9999px;
-      letter-spacing: 0.02em;
-
-      &.reconciled {
-        background: rgba(52, 199, 89, 0.12);
-        color: #248a3d;
-      }
-
-      &.estimated {
-        background: rgba(0, 113, 227, 0.08);
-        color: #0071e3;
-      }
-
-      &.neutral {
-        background: rgba(0, 0, 0, 0.04);
-        color: #6e6e73;
-      }
-    }
-
-    .calm-action-link {
-      font-size: 13px;
-      font-weight: 700;
-      color: #0071e3;
-      background: transparent;
-      border: none;
-      padding: 4px 6px;
+    .top-circle-action-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.04);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
       cursor: pointer;
-      letter-spacing: -0.01em;
-      transition: all 0.2s ease;
+      display: grid;
+      place-items: center;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
       &:hover {
-        opacity: 0.75;
-        transform: translateX(1px);
+        background: #f7f8fa;
+        transform: scale(1.05);
       }
 
       &:active {
-        transform: scale(0.97);
+        transform: scale(0.95);
       }
     }
 
-    /* Minimal Metric Grid */
-    .minimal-metric-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      margin-bottom: 24px;
-    }
-
-    .metric-block {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-
-      &.highlight .metric-num-hero {
-        color: #0fb27c;
-      }
-    }
-
-    .metric-caption {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #86868b;
-    }
-
-    .metric-num-hero {
-      font-size: clamp(22px, 5.5vw, 28px);
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      color: #1d1d1f;
-      line-height: 1.1;
-    }
-
-    .metric-sub {
-      font-size: 11px;
-      font-weight: 600;
-      color: #86868b;
-
-      &.positive {
-        color: #248a3d;
-      }
-    }
-
-    /* Progress Block */
-    .progress-block {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-bottom: 24px;
-    }
-
-    .progress-labels {
+    /* 2. Matte Black Hero Card */
+    .matte-hero-banner {
+      background: #111216;
+      color: #ffffff;
+      border-radius: 28px;
+      padding: 22px 24px;
+      margin-bottom: 26px;
       display: flex;
       justify-content: space-between;
-      font-size: 12px;
-    }
-
-    .p-sub-label {
-      font-weight: 600;
-      color: #6e6e73;
-    }
-
-    .p-sub-val {
-      font-weight: 800;
-      color: #1d1d1f;
-    }
-
-    /* Airy Key-Value Flow */
-    .airy-data-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      padding-top: 14px;
-      border-top: 1px solid rgba(0, 0, 0, 0.05);
-    }
-
-    .airy-data-item {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .airy-label {
-      font-size: 11px;
-      font-weight: 600;
-      color: #86868b;
-      line-height: 1.25;
-    }
-
-    .airy-val {
-      font-size: 14px;
-      font-weight: 800;
-      color: #1d1d1f;
-    }
-
-    /* Group Funds Columns */
-    .funds-columns {
-      display: flex;
-      align-items: stretch;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 18px 0;
-    }
-
-    .fund-column {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-
-      &.highlight .fund-val {
-        color: #0071e3;
-      }
-    }
-
-    .fund-divider {
-      width: 1px;
-      background: rgba(0, 0, 0, 0.06);
-    }
-
-    .fund-label {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #86868b;
-    }
-
-    .fund-val {
-      font-size: clamp(20px, 4.8vw, 24px);
-      font-weight: 800;
-      letter-spacing: -0.025em;
-      color: #1d1d1f;
-      line-height: 1.15;
-    }
-
-    .fund-desc {
-      font-size: 11px;
-      font-weight: 500;
-      color: #86868b;
-    }
-
-    .calm-note {
-      font-size: 12px;
-      font-weight: 500;
-      color: #86868b;
-      line-height: 1.5;
-      margin: 8px 0 0;
-
-      &.warning {
-        color: #d9383a;
-      }
-    }
-
-    /* Trajectory Sparkline & Metadata */
-    .chart-wrapper {
-      margin: 8px 0 16px;
-    }
-
-    .trajectory-meta {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      padding-top: 10px;
-      border-top: 1px solid rgba(0, 0, 0, 0.05);
-    }
-
-    .traj-point {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-
-      &.right {
-        align-items: flex-end;
-        text-align: right;
-      }
-    }
-
-    .traj-caption {
-      font-size: 11px;
-      font-weight: 600;
-      color: #86868b;
-    }
-
-    .traj-val {
-      font-size: 14px;
-      font-weight: 800;
-      color: #1d1d1f;
-
-      &.highlight {
-        color: #0071e3;
-      }
-    }
-
-    /* Calm Minimal List */
-    .calm-list {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .calm-list-row {
-      display: flex;
       align-items: center;
-      gap: 14px;
-      padding: 13px 4px;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.04);
-      background: transparent;
-      border-left: none;
-      border-right: none;
-      border-top: none;
-      width: 100%;
-      text-align: left;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 12px 32px -6px rgba(0, 0, 0, 0.22);
+      cursor: pointer;
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 
-      &:last-child {
-        border-bottom: none;
+      &:hover {
+        transform: translateY(-2px);
       }
 
-      &.clickable {
-        cursor: pointer;
-        border-radius: 14px;
-        margin: 0 -4px;
-        padding: 12px 8px;
-        width: calc(100% + 8px);
-
-        &:hover {
-          background: rgba(0, 0, 0, 0.02);
-          transform: translateX(3px);
-        }
-
-        &:active {
-          transform: scale(0.99);
-        }
+      &:active {
+        transform: scale(0.99);
       }
     }
 
-    .row-main {
-      flex: 1;
-      min-width: 0;
+    .hero-left-content {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 10px;
     }
 
-    .row-title {
-      font-size: 14px;
-      font-weight: 700;
-      color: #1d1d1f;
+    .hero-badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.9);
       letter-spacing: -0.01em;
     }
 
-    .row-subtitle {
+    .lightning-bolt {
+      color: #f59e0b;
+      font-size: 14px;
+    }
+
+    .hero-number-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .hero-balance-headline {
+      font-size: clamp(26px, 6.5vw, 34px);
+      font-weight: 800;
+      letter-spacing: -0.035em;
+      line-height: 1.1;
+      color: #ffffff;
+    }
+
+    .hero-balance-sub {
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .hero-circle-cta {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: none;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &:hover {
+        transform: scale(1.08);
+      }
+
+      &:active {
+        transform: scale(0.92);
+      }
+    }
+
+    /* 3. Section Containers */
+    .home-section {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 26px;
+    }
+
+    .section-main-heading {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      color: #111216;
+      margin: 0 0 14px 4px;
+    }
+
+    .section-title-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin: 0 4px 14px;
+    }
+
+    .section-sub-caption {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: #8e8e93;
+      margin-top: 2px;
+    }
+
+    .section-see-all-btn {
+      background: transparent;
+      border: none;
+      color: #8e8e93;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 4px 6px;
+      transition: color 0.15s ease;
+
+      &:hover {
+        color: #111216;
+      }
+    }
+
+    /* Dual Squircle Grid */
+    .dual-squircle-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .squircle-metric-card {
+      background: #ffffff;
+      border: none;
+      width: 100%;
+      text-align: left;
+      font-family: inherit;
+      border-radius: 26px;
+      padding: 18px 20px;
+      box-shadow: var(--shadow-card);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 150px;
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.05);
+      }
+
+      &:active {
+        transform: scale(0.98);
+      }
+    }
+
+    .card-top-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-caption-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #111216;
+      letter-spacing: -0.01em;
+    }
+
+    .card-chevron-icon {
+      font-size: 16px;
+      color: #9ca3af;
+      font-weight: 700;
+    }
+
+    .card-metric-body {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .metric-pair {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+
+      &.secondary {
+        margin-top: 4px;
+      }
+    }
+
+    .metric-big-num {
+      font-size: clamp(18px, 4.5vw, 22px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #111216;
+      line-height: 1.15;
+    }
+
+    .metric-small-num {
+      font-size: 13px;
+      font-weight: 700;
+      color: #4b4c52;
+    }
+
+    .metric-label-sub {
       font-size: 11px;
       font-weight: 500;
-      color: #86868b;
+      color: #8e8e93;
+    }
+
+    .metric-stat-row {
+      display: flex;
+      gap: 16px;
+    }
+
+    .sparkline-wrap {
+      margin-top: 4px;
+    }
+
+    /* 4. Progress Feature Card (Screenshot Matched) */
+    .progress-feature-card {
+      background: #ffffff;
+      border-radius: 28px;
+      padding: 24px;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .progress-card-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .progress-eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      color: #8e8e93;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .progress-main-title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      color: #111216;
+      margin: 2px 0;
+    }
+
+    .progress-desc {
+      font-size: 12px;
+      font-weight: 500;
+      color: #8e8e93;
+      line-height: 1.4;
+      margin: 0 0 14px;
+    }
+
+    .action-pill-black {
+      background: #111216;
+      color: #ffffff;
+      border-radius: var(--radius-pill, 9999px);
+      padding: 10px 20px;
+      font-size: 13px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      align-self: flex-start;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &:hover {
+        background: #2a2b32;
+        transform: translateY(-1px);
+      }
+
+      &:active {
+        transform: scale(0.96);
+      }
+    }
+
+    /* Circular SVG Gauge */
+    .progress-arc-visual {
+      position: relative;
+      width: 90px;
+      height: 90px;
+      flex-shrink: 0;
+    }
+
+    .progress-radial-svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .arc-bg-ring {
+      stroke: #f0f1f4;
+    }
+
+    .arc-progress-ring {
+      stroke: #111216;
+      transition: stroke-dashoffset 1s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .arc-inner-label {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .arc-pct-text {
+      font-size: 14px;
+      font-weight: 800;
+      color: #111216;
+      letter-spacing: -0.02em;
+    }
+
+    .arc-pct-sub {
+      font-size: 8px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      color: #8e8e93;
+    }
+
+    /* 5. Squircle Items List (Members & Activity) */
+    .squircle-items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .squircle-item-row {
+      background: #ffffff;
+      border: none;
+      width: 100%;
+      text-align: left;
+      font-family: inherit;
+      border-radius: 22px;
+      padding: 14px 18px;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease;
+
+      &:hover {
+        transform: translateY(-1.5px);
+        box-shadow: 0 6px 20px -2px rgba(0, 0, 0, 0.04);
+      }
+
+      &:active {
+        transform: scale(0.985);
+      }
+    }
+
+    .item-left-cluster {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .item-text-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .item-primary-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: #111216;
+      letter-spacing: -0.01em;
+    }
+
+    .item-secondary-sub {
+      font-size: 11px;
+      font-weight: 500;
+      color: #8e8e93;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    .row-end {
+    .item-right-cluster {
       display: flex;
       align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
     }
 
-    .share-badge {
+    .item-share-pill {
       font-size: 12px;
       font-weight: 700;
-      color: #6e6e73;
-      background: rgba(0, 0, 0, 0.04);
-      padding: 3px 8px;
-      border-radius: 9999px;
+      color: #111216;
+      background: #f3f4f7;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill, 9999px);
     }
 
-    .tx-badge {
-      width: 38px;
-      height: 38px;
-      border-radius: 12px;
-      background: #f5f5f7;
+    .item-chevron {
+      font-size: 16px;
+      color: #9ca3af;
+      font-weight: 700;
+    }
+
+    .activity-icon-bubble {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: #f3f4f7;
       display: grid;
       place-items: center;
-      font-size: 17px;
+      font-size: 18px;
       flex-shrink: 0;
-      transition: transform 0.2s ease;
 
       &.payment {
-        background: rgba(0, 113, 227, 0.08);
+        background: #eaecee;
       }
     }
 
-    .clickable:hover .tx-badge {
-      transform: scale(1.06);
-    }
-
-    .tx-val {
+    .item-amount-val {
       font-size: 14px;
       font-weight: 800;
 
       &.positive {
-        color: #248a3d;
+        color: #10b981;
       }
 
       &.negative {
-        color: #1d1d1f;
+        color: #111216;
       }
     }
 
-    @media (max-width: 480px) {
-      .airy-data-grid {
-        grid-template-columns: 1fr;
-        gap: 10px;
-      }
+    .squircle-empty-card {
+      background: #ffffff;
+      border-radius: 22px;
+      padding: 24px;
+      text-align: center;
+      box-shadow: var(--shadow-card);
+    }
 
-      .funds-columns {
-        flex-direction: column;
-        gap: 14px;
-      }
-
-      .fund-divider {
-        display: none;
-      }
+    .empty-hint {
+      font-size: 13px;
+      font-weight: 500;
+      color: #8e8e93;
+      margin: 0;
     }
   `,
 })
@@ -755,6 +867,26 @@ export class HomeComponent {
   readonly summary = this.ledgerStore.thisMonthSummary;
   readonly funds = this.ledgerStore.groupFunds;
 
+  readonly arcRadius = 40;
+  readonly arcCircumference = 2 * Math.PI * this.arcRadius;
+
+  readonly repaidAmount = computed<Paise>(() => {
+    const lim = this.ledgerStore.loan().sanctionedLimit;
+    const out = this.ledgerStore.currentOutstanding();
+    return Math.max(0, lim - out) as Paise;
+  });
+
+  readonly repaidPercent = computed(() => {
+    const lim = this.ledgerStore.loan().sanctionedLimit;
+    if (lim <= 0) return 0;
+    return (this.repaidAmount() / lim) * 100;
+  });
+
+  readonly arcStrokeDashoffset = computed(() => {
+    const pct = Math.min(100, Math.max(0, this.repaidPercent()));
+    return this.arcCircumference - (pct / 100) * this.arcCircumference;
+  });
+
   readonly currentMonthFormatted = computed(() => {
     return new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
   });
@@ -766,27 +898,11 @@ export class HomeComponent {
     );
   });
 
-  readonly methodLabel = computed(() => {
-    const loan = this.ledgerStore.loan();
-    const basis = loan.bankRules?.dayCountBasis || 'actual/365';
-    return loan.calculationMethod === 'daily'
-      ? `Daily OD (${basis}) · est.`
-      : 'Monthly reducing · est.';
-  });
-
   readonly simulationResult = computed(() => {
     const loan = this.ledgerStore.loan();
     const out = this.ledgerStore.currentOutstanding();
     return simulate(out, loan.monthlyTarget, loan.currentRateBps);
   });
-
-  handleQuickAction(action: 'contribution' | 'bankPayment' | 'history' | 'settings' | 'insights'): void {
-    if (action === 'contribution' || action === 'bankPayment') {
-      this.openAddWith(action);
-    } else {
-      this.router.navigate(['/' + action]);
-    }
-  }
 
   openAddWith(type: 'contribution' | 'bankPayment'): void {
     this.initialSheetType.set(type);
