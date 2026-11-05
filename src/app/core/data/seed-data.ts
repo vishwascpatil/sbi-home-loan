@@ -1,10 +1,9 @@
 import {
-  bankPaymentSplit,
+  BalanceSnapshot,
   LedgerState,
   Loan,
   Member,
-  MonthlyReducingBalanceEngine,
-  PaymentMode,
+  RateChange,
   toPaise,
   Transaction,
 } from '../engine';
@@ -15,136 +14,106 @@ export function getInitialSeedData(): LedgerState {
     type: 'Overdraft (OD)',
     accountNumber: '43054757071',
     sanctionedLimit: toPaise(12636108), // ₹1,26,36,108.00
-    openingOutstanding: toPaise(12105189), // ₹1,21,05,189.00
+    openingOutstanding: toPaise(11886289), // ₹1,18,86,289.00 as of November baseline
     openingDate: '2024-06-12',
     maturityDate: '2044-06-12',
-    currentRateBps: 790, // 7.90%
-    monthlyTarget: toPaise(240000), // ₹2,40,000.00
-    calculationMethod: 'monthly',
+    currentRateBps: 790, // 7.90% p.a.
+    monthlyTarget: toPaise(240000), // ₹2,40,000.00 (pool sum of member targets)
+    calculationMethod: 'daily',
     bankRules: {
       dayCountBasis: 'actual/365',
       debitFrequency: 'monthlyLastDay',
       isCapitalised: true,
+      customDebitDay: 30,
     },
     createdAt: '2024-06-12T00:00:00.000Z',
-    updatedAt: '2024-06-12T00:00:00.000Z',
+    updatedAt: new Date().toISOString(),
   };
 
   const members: Member[] = [
     {
-      id: 'mem-1',
-      name: 'Member 1',
+      id: 'mem-vishwas',
+      name: 'Vishwas',
       active: true,
-      target: toPaise(50000),
+      target: toPaise(105000), // ₹1,05,000.00
       colorIndex: 0,
       createdAt: '2024-06-12T00:00:00.000Z',
       updatedAt: '2024-06-12T00:00:00.000Z',
     },
     {
-      id: 'mem-2',
-      name: 'Member 2',
+      id: 'mem-vikas',
+      name: 'Vikas',
       active: true,
-      target: toPaise(40000),
+      target: toPaise(105000), // ₹1,05,000.00
       colorIndex: 1,
       createdAt: '2024-06-12T00:00:00.000Z',
       updatedAt: '2024-06-12T00:00:00.000Z',
     },
     {
-      id: 'mem-3',
-      name: 'Member 3',
+      id: 'mem-bhavya',
+      name: 'Bhavya',
       active: true,
-      target: toPaise(60000),
+      target: toPaise(10000), // ₹10,000.00
       colorIndex: 2,
       createdAt: '2024-06-12T00:00:00.000Z',
       updatedAt: '2024-06-12T00:00:00.000Z',
     },
     {
-      id: 'mem-4',
-      name: 'Member 4',
+      id: 'mem-shruthi',
+      name: 'Shruthi',
       active: true,
-      target: toPaise(45000),
+      target: toPaise(10000), // ₹10,000.00
       colorIndex: 3,
       createdAt: '2024-06-12T00:00:00.000Z',
       updatedAt: '2024-06-12T00:00:00.000Z',
     },
     {
-      id: 'mem-5',
-      name: 'Member 5',
+      id: 'mem-csp',
+      name: 'CSP',
       active: true,
-      target: toPaise(35000),
+      target: toPaise(10000), // ₹10,000.00
       colorIndex: 4,
       createdAt: '2024-06-12T00:00:00.000Z',
       updatedAt: '2024-06-12T00:00:00.000Z',
     },
   ];
 
-  const engine = new MonthlyReducingBalanceEngine();
+  // Clean ledger starting from November passbook baseline — no assumed historical transactions
   const transactions: Transaction[] = [];
 
-  // Generate 6 preceding months of realistic historical activity
-  const now = new Date();
-  const baseContributions = [50000, 40000, 60000, 45000, 35000];
-  const modes: PaymentMode[] = ['UPI', 'UPI', 'Bank transfer', 'UPI', 'Cash'];
-
-  for (let k = 5; k >= 0; k--) {
-    const monthDate = new Date(now.getFullYear(), now.getMonth() - k, 1);
-    const yyyy = monthDate.getFullYear();
-    const mm = String(monthDate.getMonth() + 1).padStart(2, '0');
-    const monthStr = `${yyyy}-${mm}`;
-
-    // Member contributions
-    baseContributions.forEach((baseAmt, i) => {
-      // Small variation per month
-      const variation = ((i * 3 + k * 7) % 5 - 2) * 2500;
-      const amt = toPaise(baseAmt + variation);
-      const day = String(1 + (i % 3)).padStart(2, '0');
-      const dateStr = `${monthStr}-${day}`;
-
-      transactions.push({
-        id: crypto.randomUUID(),
-        type: 'contribution',
-        memberId: members[i]!.id,
-        amount: amt,
-        date: dateStr,
-        forMonth: monthStr,
-        mode: modes[i] || 'UPI',
-        reference: `UPI-${monthStr.replace('-', '')}-${i + 1}`,
-        notes: `Monthly contribution for ${monthStr}`,
-        createdAt: `${dateStr}T09:00:00.000Z`,
-        updatedAt: `${dateStr}T09:00:00.000Z`,
-      });
-    });
-
-    // Monthly bank payment
-    const estInterest = engine.calculateInterest(loan.openingOutstanding, loan.currentRateBps, monthStr);
-    const paymentAmount = toPaise(200000); // ₹2,00,000 monthly bank payment
-    const split = bankPaymentSplit(paymentAmount, estInterest);
-    const bankPayDate = `${monthStr}-05`;
-
-    transactions.push({
+  const rateChanges: RateChange[] = [
+    {
       id: crypto.randomUUID(),
-      type: 'bankPayment',
-      amount: paymentAmount,
-      interestPortion: split.interestPortion,
-      principalPortion: split.principalPortion,
-      isEstimatedSplit: true,
-      date: bankPayDate,
-      forMonth: monthStr,
-      mode: 'Bank transfer',
-      reference: `NEFT-SBI-${monthStr.replace('-', '')}`,
-      notes: `Bank payment for ${monthStr}`,
-      createdAt: `${bankPayDate}T12:00:00.000Z`,
-      updatedAt: `${bankPayDate}T12:00:00.000Z`,
-    });
-  }
+      effectiveFrom: '2024-06-12',
+      rateBps: 790,
+      previousRateBps: 790,
+      reason: 'Current rate 7.90% p.a.',
+      createdAt: '2024-06-12T00:00:00.000Z',
+      updatedAt: '2024-06-12T00:00:00.000Z',
+    },
+  ];
+
+  const snapshots: BalanceSnapshot[] = [
+    {
+      id: crypto.randomUUID(),
+      date: '2024-11-01',
+      bankActualOutstanding: toPaise(11886289),
+      ledgerCalculatedOutstanding: toPaise(11886289),
+      variance: toPaise(0),
+      notes: 'Passbook balance baseline as of November',
+      createdAt: '2024-11-01T00:00:00.000Z',
+      updatedAt: '2024-11-01T00:00:00.000Z',
+    },
+  ];
 
   return {
     loan,
     members,
     transactions,
-    rateChanges: [],
-    snapshots: [],
+    rateChanges,
+    snapshots,
     interestEntries: [],
+    statements: [],
     settings: {
       theme: 'light',
       dateFormat: 'DD/MM/YYYY',
@@ -158,9 +127,13 @@ export function getInitialSeedData(): LedgerState {
         action: 'create',
         entityType: 'loan',
         entityId: loan.id,
-        payloadAfter: { accountNumber: loan.accountNumber },
+        payloadAfter: {
+          accountNumber: loan.accountNumber,
+          sanctionedLimit: loan.sanctionedLimit,
+          openingOutstanding: loan.openingOutstanding,
+          rateBps: loan.currentRateBps,
+        },
       },
     ],
   };
 }
-

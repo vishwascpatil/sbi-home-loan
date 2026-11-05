@@ -47,6 +47,13 @@ const MEMBER_GRADIENTS = [
               <h3 class="member-title">{{ m.name }}</h3>
 
               <div class="metric-block">
+                <span class="metric-label">Monthly limit (Due 5th)</span>
+                <span class="metric-value tabular-nums highlight">
+                  {{ m.target ? formatPaise(m.target) : '₹0' }} · {{ (m.targetSharePercentage || m.sharePercentage).toFixed(1) }}%
+                </span>
+              </div>
+
+              <div class="metric-block">
                 <span class="metric-label">This month</span>
                 <span class="metric-value tabular-nums">{{ formatPaise(m.thisMonthContribution) }}</span>
               </div>
@@ -54,13 +61,13 @@ const MEMBER_GRADIENTS = [
               <div class="metric-block">
                 <span class="metric-label">Lifetime contribution</span>
                 <span class="metric-value tabular-nums">
-                  {{ formatCompactPaise(m.lifetimeContribution) }} · {{ m.sharePercentage.toFixed(1) }}%
+                  {{ formatCompactPaise(m.lifetimeContribution) }}
                 </span>
               </div>
 
               <!-- Share Progress Bar -->
               <div style="margin-top: 8px">
-                <app-progress-bar [progressPercent]="m.sharePercentage" [height]="6" />
+                <app-progress-bar [progressPercent]="m.targetSharePercentage || m.sharePercentage" [height]="6" />
               </div>
 
               <div class="card-footer-sub">
@@ -184,6 +191,10 @@ const MEMBER_GRADIENTS = [
       font-size: 13px;
       font-weight: 800;
       color: var(--ink);
+
+      &.highlight {
+        color: #0071e3;
+      }
     }
 
     .card-footer-sub {

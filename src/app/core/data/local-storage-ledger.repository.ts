@@ -9,8 +9,8 @@ interface StoragePayload {
   data: LedgerState;
 }
 
-const STORAGE_KEY = 'loan_tracker_ledger_v1';
-const CURRENT_SCHEMA_VERSION = 1;
+const STORAGE_KEY = 'loan_tracker_ledger_v2';
+const CURRENT_SCHEMA_VERSION = 2;
 
 @Injectable({
   providedIn: 'root',
@@ -40,6 +40,11 @@ export class LocalStorageLedgerRepository implements LedgerRepository {
     }
 
     try {
+      if (typeof localStorage !== 'undefined') {
+        // Clear old dummy mock storage key if present
+        localStorage.removeItem('loan_tracker_ledger_v1');
+      }
+
       const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
       if (!raw) {
         const seed = getInitialSeedData();
@@ -50,6 +55,15 @@ export class LocalStorageLedgerRepository implements LedgerRepository {
 
       const parsed = JSON.parse(raw) as StoragePayload | LedgerState;
       const state = this.migrateSchema(parsed);
+
+      // Upgrade if stale mock data with generic "Member 1" or outdated opening balance is found
+      if (state.members.some((m) => m.name.startsWith('Member ')) || state.loan.openingOutstanding !== getInitialSeedData().loan.openingOutstanding) {
+        const freshSeed = getInitialSeedData();
+        await this.save(freshSeed);
+        this.inMemoryCache = freshSeed;
+        return freshSeed;
+      }
+
       this.inMemoryCache = state;
       return state;
     } catch {

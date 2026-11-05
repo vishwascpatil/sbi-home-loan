@@ -218,11 +218,14 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
               <div class="row-main">
                 <span class="row-title">{{ m.name }}</span>
                 <span class="row-subtitle">
-                  This month {{ formatPaise(m.thisMonthContribution) }} · Lifetime {{ formatCompactPaise(m.lifetimeContribution) }}
+                  Limit {{ m.target ? formatPaise(m.target) : '₹0' }}/mo · Due 5th
+                  @if (m.thisMonthContribution > 0) {
+                    · Paid {{ formatPaise(m.thisMonthContribution) }}
+                  }
                 </span>
               </div>
               <div class="row-end">
-                <span class="share-badge tabular-nums">{{ m.sharePercentage.toFixed(1) }}%</span>
+                <span class="share-badge tabular-nums">{{ (m.targetSharePercentage || m.sharePercentage).toFixed(1) }}%</span>
               </div>
             </div>
           }

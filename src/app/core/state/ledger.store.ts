@@ -48,7 +48,7 @@ export class LedgerStore {
 
   // Core State Signals
   readonly loan = signal<Loan>(getInitialSeedData().loan);
-  readonly members = signal<Member[]>([]);
+  readonly members = signal<Member[]>(getInitialSeedData().members);
   readonly transactions = signal<Transaction[]>([]);
   readonly rateChanges = signal<RateChange[]>([]);
   readonly snapshots = signal<BalanceSnapshot[]>([]);

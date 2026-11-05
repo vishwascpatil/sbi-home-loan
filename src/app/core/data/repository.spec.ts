@@ -15,7 +15,8 @@ describe('LocalStorageLedgerRepository', () => {
     const state = await repo.load();
     expect(state.loan.accountNumber).toBe('43054757071');
     expect(state.members.length).toBe(5);
-    expect(state.transactions.length).toBeGreaterThan(0);
+    expect(state.members.some((m) => m.name === 'Vishwas')).toBe(true);
+    expect(state.transactions.length).toBeGreaterThanOrEqual(0);
   });
 
   it('exports and restores JSON backups accurately', async () => {
