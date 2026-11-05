@@ -13,20 +13,6 @@ import { NotificationsStore } from '../../../core/state';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule],
   template: `
-    <!-- Top-Right Floating Bell Button -->
-    <button
-      type="button"
-      class="bell-trigger-btn"
-      (click)="store.toggleTray()"
-      aria-label="Toggle notifications center"
-      [attr.aria-expanded]="store.isTrayOpen()"
-    >
-      <span class="bell-icon">🔔</span>
-      @if (store.unreadCount() > 0) {
-        <span class="unread-pill">{{ store.unreadCount() }}</span>
-      }
-    </button>
-
     <!-- Slide-Out / Dropdown Tray Backdrop -->
     @if (store.isTrayOpen()) {
       <div
@@ -136,57 +122,6 @@ import { NotificationsStore } from '../../../core/state';
     }
   `,
   styles: [`
-    .bell-trigger-btn {
-      position: fixed;
-      top: 14px;
-      right: 18px;
-      z-index: 1000;
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      background: rgba(255, 255, 255, 0.9);
-      color: var(--ink, #1d1d1f);
-      display: grid;
-      place-items: center;
-      cursor: pointer;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-
-      &:hover {
-        transform: scale(1.08);
-        border-color: rgba(0, 113, 227, 0.3);
-      }
-
-      &:active {
-        transform: scale(0.94);
-      }
-    }
-
-    .bell-icon {
-      font-size: 1.15rem;
-    }
-
-    .unread-pill {
-      position: absolute;
-      top: -2px;
-      right: -2px;
-      background: #ff3b30;
-      color: #ffffff;
-      font-size: 0.68rem;
-      font-weight: 800;
-      min-width: 18px;
-      height: 18px;
-      padding: 0 4px;
-      border-radius: var(--radius-pill, 9999px);
-      display: grid;
-      place-items: center;
-      border: 2px solid #ffffff;
-      box-shadow: 0 2px 6px rgba(255, 59, 48, 0.4);
-    }
-
     /* Backdrop & Drawer */
     .tray-backdrop {
       position: fixed;

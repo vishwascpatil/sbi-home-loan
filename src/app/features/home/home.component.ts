@@ -41,19 +41,6 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
             <h1 class="profile-user-name">Vishwas</h1>
           </div>
         </div>
-
-        <button
-          type="button"
-          class="top-circle-action-btn"
-          (click)="isDailyLedgerOpen.set(true)"
-          aria-label="View Daily OD Accrual breakdown"
-          title="Daily OD Interest Accrual"
-        >
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#111216" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-          </svg>
-        </button>
       </header>
 
       <!-- 2. Matte Black Hero Card (Current Loan Balance) -->
