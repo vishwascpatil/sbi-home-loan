@@ -1,32 +1,63 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+
+const KNOWN_AVATARS: Record<string, string> = {
+  vishwas: '/profiles/vishwas.jpeg',
+  vikas: '/profiles/vikas.jpeg',
+  bhavya: '/profiles/bhavya.jpeg',
+  shruthi: '/profiles/shruthi.jpeg',
+  csp: '/profiles/csp.jpeg',
+};
 
 const MEMBER_GRADIENTS = [
-  'linear-gradient(135deg, #6c4cff, #a78bfa)', // 0: Indigo
-  'linear-gradient(135deg, #ff5f9e, #ff9a8b)', // 1: Rose / Peach
-  'linear-gradient(135deg, #0fb27c, #6ee7b7)', // 2: Emerald
-  'linear-gradient(135deg, #f59f00, #ffd166)', // 3: Amber
-  'linear-gradient(135deg, #2e90ff, #7dd3fc)', // 4: Azure
+  'linear-gradient(135deg, #111216, #2a2b32)', // Obsidian
+  'linear-gradient(135deg, #3b82f6, #60a5fa)', // Blue
+  'linear-gradient(135deg, #0fb27c, #6ee7b7)', // Emerald
+  'linear-gradient(135deg, #f59f00, #ffd166)', // Amber
+  'linear-gradient(135deg, #ec4899, #f472b6)', // Pink
 ];
 
 @Component({
   selector: 'app-avatar',
+  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <span
-      class="avatar-circle"
-      [style.width.px]="size()"
-      [style.height.px]="size()"
-      [style.font-size.px]="fontSize()"
-      [style.background]="gradient()"
-    >
-      {{ initials() }}
-    </span>
+    @if (resolvedImage() && !imageFailed()) {
+      <img
+        class="avatar-photo"
+        [src]="resolvedImage()!"
+        [alt]="name()"
+        [style.width.px]="size()"
+        [style.height.px]="size()"
+        [style.border-radius]="circular() ? '50%' : '32%'"
+        (error)="imageFailed.set(true)"
+      />
+    } @else {
+      <span
+        class="avatar-circle"
+        [style.width.px]="size()"
+        [style.height.px]="size()"
+        [style.font-size.px]="fontSize()"
+        [style.border-radius]="circular() ? '50%' : '32%'"
+        [style.background]="gradient()"
+      >
+        {{ initials() }}
+      </span>
+    }
   `,
   styles: `
+    .avatar-photo {
+      display: inline-block;
+      object-fit: cover;
+      object-position: center;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      user-select: none;
+      background: #f2f3f6;
+    }
+
     .avatar-circle {
       display: inline-grid;
       place-items: center;
-      border-radius: 32%;
       color: #ffffff;
       font-weight: 800;
       letter-spacing: -0.02em;
@@ -40,6 +71,17 @@ export class AvatarComponent {
   readonly name = input.required<string>();
   readonly colorIndex = input<number>(0);
   readonly size = input<number>(40);
+  readonly avatarUrl = input<string | undefined>(undefined);
+  readonly circular = input<boolean>(false);
+
+  readonly imageFailed = signal(false);
+
+  readonly resolvedImage = computed(() => {
+    const explicit = this.avatarUrl();
+    if (explicit) return explicit;
+    const key = this.name().trim().toLowerCase();
+    return KNOWN_AVATARS[key] || undefined;
+  });
 
   readonly fontSize = computed(() => Math.round(this.size() * 0.42));
 
@@ -69,4 +111,3 @@ export class AvatarComponent {
     return n.slice(0, 2).toUpperCase();
   });
 }
-

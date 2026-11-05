@@ -56,6 +56,19 @@ export class LocalStorageLedgerRepository implements LedgerRepository {
       const parsed = JSON.parse(raw) as StoragePayload | LedgerState;
       const state = this.migrateSchema(parsed);
 
+      const avatarMap: Record<string, string> = {
+        vishwas: '/profiles/vishwas.jpeg',
+        vikas: '/profiles/vikas.jpeg',
+        bhavya: '/profiles/bhavya.jpeg',
+        shruthi: '/profiles/shruthi.jpeg',
+        csp: '/profiles/csp.jpeg',
+      };
+      for (const m of state.members) {
+        if (!m.avatarUrl && avatarMap[m.name.toLowerCase().trim()]) {
+          m.avatarUrl = avatarMap[m.name.toLowerCase().trim()];
+        }
+      }
+
       // Upgrade if stale mock data with generic "Member 1" or outdated opening balance is found
       if (state.members.some((m) => m.name.startsWith('Member ')) || state.loan.openingOutstanding !== getInitialSeedData().loan.openingOutstanding) {
         const freshSeed = getInitialSeedData();

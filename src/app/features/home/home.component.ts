@@ -35,9 +35,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       <!-- 1. Top User Profile Bar (Screenshot Matched) -->
       <header class="app-top-bar">
         <div class="user-profile-cluster">
-          <div class="profile-avatar-circle">
-            <span>V</span>
-          </div>
+          <app-avatar name="Vishwas" [size]="44" [circular]="true" />
           <div class="profile-text-wrap">
             <span class="profile-greeting">Welcome back</span>
             <h1 class="profile-user-name">Vishwas</h1>

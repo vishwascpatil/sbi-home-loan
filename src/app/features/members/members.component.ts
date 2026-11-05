@@ -171,7 +171,7 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
               <!-- Member Header Row -->
               <div class="member-top-row">
                 <div class="member-identity-group">
-                  <app-avatar [name]="m.name" [colorIndex]="$index" [size]="44" />
+                  <app-avatar [name]="m.name" [colorIndex]="$index" [size]="44" [avatarUrl]="m.avatarUrl" />
                   <div class="member-text-group">
                     <span class="member-name">{{ m.name }}</span>
                     <span class="member-due-date">Due 5th of each month</span>

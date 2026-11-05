@@ -43,6 +43,7 @@ export interface GroupFundsSummary {
 export interface MemberStatistics {
   memberId: string;
   name: string;
+  avatarUrl?: string;
   target?: Paise;
   targetSharePercentage?: number;
   lifetimeContribution: Paise;
@@ -265,6 +266,7 @@ export function memberStatistics(
 ): MemberStatistics {
   const member = ledger.members.find((m) => m.id === memberId);
   const name = member ? member.name : 'Unknown';
+  const avatarUrl = member?.avatarUrl;
   const target = member?.target;
   const totalTarget = ledger.members.reduce((sum, m) => addPaise(sum, m.target || ZERO_PAISE), ZERO_PAISE);
   const targetSharePercentage = (target && totalTarget > 0) ? (target / totalTarget) * 100 : 0;
@@ -295,6 +297,7 @@ export function memberStatistics(
   return {
     memberId,
     name,
+    avatarUrl,
     target,
     targetSharePercentage,
     lifetimeContribution,

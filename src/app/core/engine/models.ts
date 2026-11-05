@@ -109,6 +109,7 @@ export interface Member extends BaseEntity {
   active: boolean;
   target?: Paise;
   colorIndex: number;
+  avatarUrl?: string;
 }
 
 export interface ContributionTransaction extends BaseEntity {

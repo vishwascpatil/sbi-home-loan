@@ -389,7 +389,7 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
               <div class="share-row">
                 <div class="share-row-top">
                   <div class="member-pill">
-                    <app-avatar [name]="m.name" [colorIndex]="$index" [size]="28" />
+                    <app-avatar [name]="m.name" [colorIndex]="$index" [size]="28" [avatarUrl]="m.avatarUrl" />
                     <span class="m-name">{{ m.name }}</span>
                   </div>
                   <span class="m-percent tabular-nums">{{ m.sharePercentage.toFixed(1) }}%</span>
