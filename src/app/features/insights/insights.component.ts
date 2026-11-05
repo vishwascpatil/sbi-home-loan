@@ -7,7 +7,6 @@ import {
 import { LedgerStore } from '../../core/state';
 import { BarChartComponent } from '../../shared/ui';
 import {
-  computeAmortizationHistory,
   computeRupeeSplit,
   ContributionTransaction,
   formatCompactPaise,
@@ -108,65 +107,6 @@ import {
                 <small class="stat-percent">{{ rupeeSplit().interestPercent.toFixed(1) }}% of total paid</small>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- 5. Section: Loan Reduction vs Interest Over Time (Numbers) -->
-      <section class="page-section">
-        <div class="insight-squircle-card">
-          <h2 class="card-main-title">Loan Reduction vs Bank Interest Over Time</h2>
-          <span class="card-sub-caption">Monthly progression showing how your loan balance decreases and bank interest paid</span>
-
-          <!-- High-level Metric Stat Tiles -->
-          <div class="amort-stats-grid">
-            <div class="amort-stat-tile green">
-              <span class="amort-stat-sub">Total Loan Reduced</span>
-              <strong class="amort-stat-num tabular-nums">{{ formatPaise(rupeeSplit().totalPrincipalReduced) }}</strong>
-              <small class="amort-stat-badge">Paid towards loan</small>
-            </div>
-            <div class="amort-stat-tile dark">
-              <span class="amort-stat-sub">Total Bank Interest</span>
-              <strong class="amort-stat-num tabular-nums">{{ formatPaise(rupeeSplit().totalInterestPaid) }}</strong>
-              <small class="amort-stat-badge">Bank charges</small>
-            </div>
-            <div class="amort-stat-tile muted">
-              <span class="amort-stat-sub">Current Balance</span>
-              <strong class="amort-stat-num tabular-nums">{{ formatPaise(ledgerStore.currentOutstanding()) }}</strong>
-              <small class="amort-stat-badge">Remaining to clear</small>
-            </div>
-          </div>
-
-          <!-- Monthly Progression Table -->
-          <div class="amort-table-wrapper">
-            <table class="amort-data-table">
-              <thead>
-                <tr>
-                  <th>Month</th>
-                  <th class="text-right">Loan Reduced</th>
-                  <th class="text-right">Bank Interest</th>
-                  <th class="text-right">Remaining Balance</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (pt of amortizationHistoryReversed(); track pt.period) {
-                  <tr>
-                    <td class="month-cell">
-                      <strong>{{ pt.label }}</strong>
-                    </td>
-                    <td class="text-right tabular-nums text-green font-semibold">
-                      +{{ formatPaise(pt.cumulativePrincipal) }}
-                    </td>
-                    <td class="text-right tabular-nums text-dark font-semibold">
-                      {{ formatPaise(pt.cumulativeInterest) }}
-                    </td>
-                    <td class="text-right tabular-nums text-muted">
-                      {{ formatPaise(pt.closingOutstanding) }}
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
           </div>
         </div>
       </section>
@@ -397,138 +337,10 @@ import {
       font-weight: 500;
       color: #8e8e93;
     }
-
-    /* Amortization Numbers Stats Grid */
-    .amort-stats-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-top: 4px;
-    }
-
-    @media (max-width: 500px) {
-      .amort-stats-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .amort-stat-tile {
-      background: #f8f9fb;
-      border-radius: 18px;
-      padding: 12px 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-
-      &.green {
-        border-left: 3px solid #0fb27c;
-      }
-
-      &.dark {
-        border-left: 3px solid #111216;
-      }
-
-      &.muted {
-        border-left: 3px solid #8e8e93;
-      }
-    }
-
-    .amort-stat-sub {
-      font-size: 11px;
-      font-weight: 700;
-      color: #8e8e93;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .amort-stat-num {
-      font-size: 15px;
-      font-weight: 800;
-      color: #111216;
-      letter-spacing: -0.02em;
-    }
-
-    .amort-stat-badge {
-      font-size: 11px;
-      color: #8e8e93;
-      font-weight: 500;
-    }
-
-    /* Amortization Table */
-    .amort-table-wrapper {
-      width: 100%;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      margin-top: 10px;
-      border-radius: 18px;
-      border: 1px solid rgba(0, 0, 0, 0.04);
-      background: #f8f9fb;
-    }
-
-    .amort-data-table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 380px;
-      font-size: 12px;
-
-      th {
-        padding: 10px 14px;
-        text-align: left;
-        font-size: 10px;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        color: #8e8e93;
-        background: #f1f3f7;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.04);
-      }
-
-      td {
-        padding: 10px 14px;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.03);
-      }
-
-      tr:last-child td {
-        border-bottom: none;
-      }
-    }
-
-    .month-cell {
-      color: #111216;
-      font-weight: 700;
-    }
-
-    .text-right {
-      text-align: right;
-    }
-
-    .text-green {
-      color: #0fb27c;
-    }
-
-    .text-dark {
-      color: #111216;
-    }
-
-    .text-muted {
-      color: #8e8e93;
-    }
-
-    .font-semibold {
-      font-weight: 700;
-    }
   `,
 })
 export class InsightsComponent {
   readonly ledgerStore = inject(LedgerStore);
-
-  readonly amortizationHistory = computed(() => {
-    return computeAmortizationHistory(this.ledgerStore.ledgerState());
-  });
-
-  readonly amortizationHistoryReversed = computed(() => {
-    return [...this.amortizationHistory()].reverse();
-  });
 
   readonly rupeeSplit = computed(() => {
     return computeRupeeSplit(this.ledgerStore.ledgerState());
