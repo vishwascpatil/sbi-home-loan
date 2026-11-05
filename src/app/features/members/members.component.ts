@@ -43,8 +43,8 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
             </svg>
           </div>
           <div class="profile-text-wrap">
-            <span class="profile-greeting">Due 5th of every month</span>
-            <h1 class="profile-user-name">Members & Pool</h1>
+            <span class="profile-greeting">Due by 5th every month</span>
+            <h1 class="profile-user-name">Family Members</h1>
           </div>
         </div>
 
@@ -52,8 +52,8 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
           type="button"
           class="top-circle-action-btn"
           (click)="openAddContribution()"
-          aria-label="Record member contribution"
-          title="Record Member Deposit"
+          aria-label="Add member payment"
+          title="Add Member Money"
         >
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#111216" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -63,18 +63,18 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       </header>
 
       <!-- 2. Matte Black Hero Card (Go Premium style in screenshot) -->
-      <div class="matte-hero-banner" role="region" aria-label="Monthly Contribution Pool Overview">
+      <div class="matte-hero-banner" role="region" aria-label="Monthly Money to Collect">
         <div class="hero-left-content">
           <div class="hero-badge-pill">
             <span class="lightning-bolt">⚡</span>
-            <span>Monthly Target Pool · {{ activeCount() }} Members</span>
+            <span>Total Money to Collect · {{ activeCount() }} Members</span>
           </div>
           <div class="hero-number-wrap">
             <div class="hero-balance-headline tabular-nums" [appCountUp]="totalMonthlyTarget()">
               {{ formatPaise(totalMonthlyTarget()) }}
             </div>
             <span class="hero-balance-sub">
-              ₹1.05L × 2 (87.5%) · ₹10k × 3 (12.5%) · Due 5th
+              ₹1.05L for 2 people · ₹10k for 3 people · Due 5th
             </span>
           </div>
         </div>
@@ -83,8 +83,8 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
           type="button"
           class="hero-circle-cta"
           (click)="openAddContribution()"
-          aria-label="Record Member Deposit"
-          title="Record Member Deposit"
+          aria-label="Add Member Money"
+          title="Add Member Money"
         >
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#111216" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="9 18 15 12 9 6"></polyline>
@@ -94,7 +94,7 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
 
       <!-- 3. Section: Overview ("Wellness" style in screenshot) -->
       <section class="page-section">
-        <h2 class="section-main-heading">Pool Overview</h2>
+        <h2 class="section-main-heading">Collection Status</h2>
 
         <div class="dual-squircle-grid">
           <!-- Card 1: This Month Collection -->
@@ -114,7 +114,7 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
                   {{ formatPaise(totalThisMonth()) }}
                 </span>
                 <span class="metric-label-sub">
-                  Collected of {{ formatCompactPaise(totalMonthlyTarget()) }} pool
+                  Collected so far out of {{ formatCompactPaise(totalMonthlyTarget()) }} needed
                 </span>
               </div>
               <div class="mini-progress-wrap">
@@ -131,18 +131,18 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
             aria-label="View member share breakdown in insights"
           >
             <div class="card-top-header">
-              <span class="card-caption-title">Quota Share</span>
+              <span class="card-caption-title">Who Pays What</span>
               <span class="card-chevron-icon">›</span>
             </div>
             <div class="card-metric-body">
               <div class="metric-stat-row">
                 <div>
                   <span class="metric-big-num">87.5%</span>
-                  <span class="metric-label-sub">Major (2)</span>
+                  <span class="metric-label-sub">Main Share (2)</span>
                 </div>
                 <div>
                   <span class="metric-big-num">12.5%</span>
-                  <span class="metric-label-sub">Minor (3)</span>
+                  <span class="metric-label-sub">Remaining (3)</span>
                 </div>
               </div>
               <div class="share-bar-wrap">
@@ -157,11 +157,11 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       <section class="page-section">
         <div class="section-title-bar">
           <div>
-            <h2 class="section-main-heading">All Members</h2>
-            <span class="section-sub-caption">5 Active Contributors · Monthly limit due 5th</span>
+            <h2 class="section-main-heading">All 5 Members</h2>
+            <span class="section-sub-caption">Monthly amount each person needs to pay by the 5th</span>
           </div>
           <button type="button" class="section-see-all-btn" (click)="router.navigate(['/history'])">
-            All History ›
+            Payment History ›
           </button>
         </div>
 
@@ -174,17 +174,17 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
                   <app-avatar [name]="m.name" [colorIndex]="$index" [size]="44" [avatarUrl]="m.avatarUrl" />
                   <div class="member-text-group">
                     <span class="member-name">{{ m.name }}</span>
-                    <span class="member-due-date">Due 5th of each month</span>
+                    <span class="member-due-date">Due on the 5th</span>
                   </div>
                 </div>
                 <div class="member-badge-cluster">
-                  <span class="pool-share-pill">{{ (m.targetSharePercentage || m.sharePercentage).toFixed(1) }}% Pool</span>
+                  <span class="pool-share-pill">{{ (m.targetSharePercentage || m.sharePercentage).toFixed(1) }}% share</span>
                   <button
                     type="button"
                     class="member-icon-circle-btn"
                     (click)="viewMemberHistory(m.memberId)"
                     [attr.aria-label]="'View history for ' + m.name"
-                    title="View contribution history"
+                    title="View payment history"
                   >
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#111216" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                       <polyline points="9 18 15 12 9 6"></polyline>
@@ -196,19 +196,19 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
               <!-- Metric Row: Monthly Limit, This Month, Lifetime -->
               <div class="member-metrics-row">
                 <div class="member-metric-col">
-                  <span class="metric-col-label">Monthly Limit</span>
+                  <span class="metric-col-label">Monthly Share</span>
                   <span class="metric-col-val tabular-nums highlight">
                     {{ m.target ? formatPaise(m.target) : '₹0' }}
                   </span>
                 </div>
                 <div class="member-metric-col">
-                  <span class="metric-col-label">This Month</span>
+                  <span class="metric-col-label">Paid This Month</span>
                   <span class="metric-col-val tabular-nums">
                     {{ formatPaise(m.thisMonthContribution) }}
                   </span>
                 </div>
                 <div class="member-metric-col">
-                  <span class="metric-col-label">Lifetime</span>
+                  <span class="metric-col-label">Total Paid Ever</span>
                   <span class="metric-col-val tabular-nums muted">
                     {{ formatCompactPaise(m.lifetimeContribution) }}
                   </span>
@@ -223,15 +223,15 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
                     [class.completed]="m.target && m.thisMonthContribution >= m.target"
                   >
                     @if (m.target && m.thisMonthContribution >= m.target) {
-                      ✓ Target Met
+                      ✓ Fully Paid
                     } @else if (m.thisMonthContribution > 0) {
-                      Partial ({{ getMemberProgress(m).toFixed(0) }}%)
+                      Partially Paid ({{ getMemberProgress(m).toFixed(0) }}%)
                     } @else {
-                      Pending (Due 5th)
+                      Not Paid Yet (Due 5th)
                     }
                   </span>
                   <span class="progress-ratio tabular-nums">
-                    {{ formatPaise(m.thisMonthContribution) }} / {{ m.target ? formatPaise(m.target) : '₹0' }}
+                    {{ formatPaise(m.thisMonthContribution) }} of {{ m.target ? formatPaise(m.target) : '₹0' }}
                   </span>
                 </div>
                 <app-progress-bar
@@ -244,9 +244,9 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
               <!-- Footer Meta & Quick Actions -->
               <div class="member-card-footer">
                 <div class="footer-meta-info">
-                  <span>{{ m.contributionCount }} deposits</span>
+                  <span>{{ m.contributionCount }} payments made</span>
                   @if (m.lastContributionDate) {
-                    <span> · Last {{ m.lastContributionDate }}</span>
+                    <span> · Last on {{ m.lastContributionDate }}</span>
                   }
                 </div>
                 <div class="footer-actions">
@@ -255,14 +255,14 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
                     class="member-action-btn-black"
                     (click)="openAddContribution(m.memberId)"
                   >
-                    ＋ Deposit
+                    ＋ Add Money
                   </button>
                   <button
                     type="button"
                     class="member-action-btn-subtle"
                     (click)="viewMemberHistory(m.memberId)"
                   >
-                    History ›
+                    Past Payments ›
                   </button>
                 </div>
               </div>
@@ -275,7 +275,7 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       <div class="footnote-info-card">
         <span class="footnote-icon">ℹ️</span>
         <span class="footnote-text">
-          Individual limits total ₹2,40,000 pooled every 5th to service the loan overdraft facility. All balances update dynamically across the ledger.
+          Together, the 5 members contribute ₹2,40,000 every month by the 5th to pay the home loan. Every payment is tracked here automatically.
         </span>
       </div>
 

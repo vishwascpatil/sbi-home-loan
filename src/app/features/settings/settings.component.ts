@@ -51,7 +51,7 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
     <div class="settings-page">
       <header class="settings-header">
         <div>
-          <small class="header-sub">Preferences & Parameters</small>
+          <small class="header-sub">App & Loan Settings</small>
           <h1 class="header-title">Settings</h1>
         </div>
       </header>
@@ -69,12 +69,12 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
 
       <!-- Loan Parameters Editor -->
       <app-glass-card [staggerIndex]="0">
-        <h2 class="card-title">Loan Parameters</h2>
-        <p class="section-sub">Configure account details and target thresholds.</p>
+        <h2 class="card-title">Loan Details</h2>
+        <p class="section-sub">Your loan account number, total approved limit, and monthly target.</p>
 
         <div class="settings-form-grid">
           <div class="setting-item">
-            <label class="setting-label" for="loan-type">Loan Type</label>
+            <label class="setting-label" for="loan-type">Type of Loan</label>
             <input
               id="loan-type"
               type="text"
@@ -86,13 +86,13 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
 
           <div class="setting-item">
             <label class="setting-label" for="loan-account">
-              Account Number
+              Bank Account Number
               <button
                 type="button"
                 class="eye-btn"
                 (click)="settings.toggleMaskAccountNumber()"
               >
-                {{ settings.maskAccountNumber() ? '👁️ Reveal' : '🔒 Mask' }}
+                {{ settings.maskAccountNumber() ? '👁️ Show' : '🔒 Hide' }}
               </button>
             </label>
             <input
@@ -105,7 +105,7 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
           </div>
 
           <div class="setting-item">
-            <label class="setting-label" for="loan-limit">Sanctioned Limit (₹)</label>
+            <label class="setting-label" for="loan-limit">Total Loan Approved by Bank (₹)</label>
             <input
               id="loan-limit"
               type="number"
@@ -116,7 +116,7 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
           </div>
 
           <div class="setting-item">
-            <label class="setting-label" for="loan-target">Monthly Repayment Target (₹)</label>
+            <label class="setting-label" for="loan-target">Total Monthly Target to Collect (₹)</label>
             <input
               id="loan-target"
               type="number"
@@ -130,16 +130,16 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
 
       <!-- Interest Rate Update Section -->
       <app-glass-card [staggerIndex]="1">
-        <h2 class="card-title">Update Interest Rate</h2>
+        <h2 class="card-title">Change Interest Rate</h2>
         <p class="section-sub">
-          Current rate is <strong>{{ (loan().currentRateBps / 100).toFixed(2) }}%</strong>.
-          Updates append a dated rate change to the ledger.
+          Current interest is <strong>{{ (loan().currentRateBps / 100).toFixed(2) }}%</strong>.
+          Enter the new rate when the bank changes it. Past records stay accurate.
         </p>
 
         <form class="rate-change-form" (ngSubmit)="applyRateChange()">
           <div class="setting-row">
             <div class="setting-item" style="flex: 1">
-              <label class="setting-label" for="new-rate">New Annual Rate (%)</label>
+              <label class="setting-label" for="new-rate">New Bank Interest Rate (%)</label>
               <input
                 id="new-rate"
                 type="number"
@@ -153,7 +153,7 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
             </div>
 
             <div class="setting-item" style="flex: 1">
-              <label class="setting-label" for="rate-date">Effective Date</label>
+              <label class="setting-label" for="rate-date">Date Changed</label>
               <input
                 id="rate-date"
                 type="date"
@@ -166,7 +166,7 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
           </div>
 
           <button type="submit" class="apply-rate-btn">
-            Record Rate Change
+            Save New Rate
           </button>
         </form>
       </app-glass-card>
@@ -174,30 +174,30 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
       <!-- Reconciliation & Period Locking Section -->
       <app-glass-card [staggerIndex]="2">
         <div class="card-title-row">
-          <h2 class="card-title">Reconciliation & Period Locking</h2>
+          <h2 class="card-title">Match with Bank & Lock Past Months</h2>
           <span
             class="status-badge"
             [class.reconciled]="isCurrentMonthReconciled()"
             [class.estimated]="!isCurrentMonthReconciled()"
           >
-            {{ isCurrentMonthReconciled() ? '✓ Reconciled' : 'Estimated' }}
+            {{ isCurrentMonthReconciled() ? '✓ Matches Bank' : 'Estimated' }}
           </span>
         </div>
         <p class="section-sub">
-          Computed balance: <strong>{{ formatPaise(ledgerStore.currentOutstanding()) }}</strong>.
-          Locked until period: <strong>{{ loan().lockedUntilPeriod || 'None (Open)' }}</strong>.
+          Current loan left: <strong>{{ formatPaise(ledgerStore.currentOutstanding()) }}</strong>.
+          Locked up to: <strong>{{ loan().lockedUntilPeriod || 'None (Open)' }}</strong>.
         </p>
 
         <div class="reconcile-actions-grid">
           <button type="button" class="wizard-launch-btn" (click)="isReconciliationOpen.set(true)">
-            ⚖️ Launch Reconciliation Wizard
+            ⚖️ Compare with Bank Passbook
           </button>
         </div>
 
         <div class="close-month-box" style="margin-top: 14px">
           <div class="setting-row">
             <div class="setting-item" style="flex: 1">
-              <label class="setting-label" for="close-period-select">Period to Finalize</label>
+              <label class="setting-label" for="close-period-select">Month to Lock</label>
               <input
                 id="close-period-select"
                 type="month"
@@ -211,7 +211,7 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
                 class="close-period-btn"
                 (click)="triggerMonthClose()"
               >
-                🔒 Close & Lock
+                🔒 Lock Month
               </button>
             </div>
           </div>
@@ -221,9 +221,9 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
       <!-- Member Management -->
       <app-glass-card [staggerIndex]="3">
         <div class="card-title-row">
-          <h2 class="card-title">Members Management</h2>
+          <h2 class="card-title">Family Members</h2>
           <button type="button" class="add-m-btn" (click)="addNewMemberPrompt()">
-            ＋ Add Member
+            ＋ Add New Person
           </button>
         </div>
 
@@ -252,10 +252,10 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
 
       <!-- Calculation Method Preference -->
       <app-glass-card [staggerIndex]="4">
-        <h2 class="card-title">Preferences</h2>
+        <h2 class="card-title">How Interest is Calculated</h2>
 
         <div class="setting-group" style="margin-top: 14px">
-          <span class="setting-label" id="method-label">Interest Engine</span>
+          <span class="setting-label" id="method-label">Calculation Mode</span>
           <app-segmented-control
             [options]="methodOptions"
             [selectedValue]="loan().calculationMethod"
@@ -267,15 +267,15 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
       <!-- Bank Rules Settings (Day-Count & Accrual Rules) -->
       <app-glass-card [staggerIndex]="5">
         <div class="card-title-row">
-          <h2 class="card-title">Bank Rules & Day-Count Basis</h2>
+          <h2 class="card-title">Bank Rules & Daily Calculation</h2>
           <button type="button" class="view-ledger-pill-btn" (click)="isDailyLedgerOpen.set(true)">
-            📊 View Daily Ledger
+            📊 View Daily Interest Table
           </button>
         </div>
-        <p class="section-sub">Bank calculation conventions for Overdraft (OD) interest accrual.</p>
+        <p class="section-sub">Rules your bank uses to calculate daily interest on your loan.</p>
 
         <div class="setting-group" style="margin-top: 14px">
-          <span class="setting-label">Day-Count Basis</span>
+          <span class="setting-label">Days in a Year</span>
           <app-segmented-control
             [options]="dayCountOptions"
             [selectedValue]="loan().bankRules?.dayCountBasis || 'actual/365'"
@@ -284,7 +284,7 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
         </div>
 
         <div class="setting-group" style="margin-top: 16px">
-          <span class="setting-label">Interest Debit Frequency</span>
+          <span class="setting-label">When Bank Charges Interest</span>
           <app-segmented-control
             [options]="debitFreqOptions"
             [selectedValue]="loan().bankRules?.debitFrequency || 'monthlyLastDay'"
@@ -301,29 +301,29 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
               [ngModel]="loan().bankRules?.isCapitalised ?? true"
               (ngModelChange)="toggleCapitalisation($event)"
             />
-            <span>Capitalise debited interest into outstanding principal</span>
+            <span>Add monthly interest directly to loan balance (Standard for SBI Maxgain)</span>
           </label>
         </div>
 
         <div class="info-note-box" style="margin-top: 14px">
           <span class="note-icon">ℹ️</span>
           <div class="note-text">
-            <strong>Value Date & Fixed-Point Accrual:</strong>
-            Transactions take effect from their recorded <code>valueDate</code> (or transaction date).
-            Accrual runs on unrounded fixed-point BigInt (scale 10⁶ paise) daily, rounding half-up only when interest is debited to the account.
+            <strong>Payment Date & Daily Interest:</strong>
+            Payments take effect on the day you pay them.
+            Interest is calculated on the remaining balance every single day, and added only when the bank debits interest at month-end.
           </div>
         </div>
       </app-glass-card>
 
       <!-- Estimated vs Bank-Actual Interest Variance -->
       <app-glass-card [staggerIndex]="6">
-        <h2 class="card-title">Interest Verification & Variance</h2>
-        <p class="section-sub">Compare ledger computed interest with bank passbook debits.</p>
+        <h2 class="card-title">Check Passbook Interest</h2>
+        <p class="section-sub">Enter the interest amount shown in your bank passbook to see if it matches our calculation.</p>
 
         <div class="reconcile-interest-form">
           <div class="setting-row">
             <div class="setting-item" style="flex: 1">
-              <label class="setting-label" for="verify-period">Period (Month)</label>
+              <label class="setting-label" for="verify-period">Month</label>
               <input
                 id="verify-period"
                 type="month"
@@ -332,7 +332,7 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
               />
             </div>
             <div class="setting-item" style="flex: 1">
-              <label class="setting-label" for="actual-interest-input">Actual Bank Debit (₹)</label>
+              <label class="setting-label" for="actual-interest-input">Interest Charged in Passbook (₹)</label>
               <input
                 id="actual-interest-input"
                 type="number"
@@ -346,15 +346,15 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
 
           <div class="variance-display-row" style="margin-top: 14px">
             <div class="variance-item">
-              <span class="var-sub">Estimated Interest</span>
+              <span class="var-sub">App Calculated Interest</span>
               <span class="var-val tabular-nums">{{ formatPaise(computedPeriodInterest()) }}</span>
             </div>
             <div class="variance-item">
-              <span class="var-sub">Bank Actual</span>
+              <span class="var-sub">Passbook Interest</span>
               <span class="var-val tabular-nums">{{ actualInterestInput ? '₹' + actualInterestInput : '—' }}</span>
             </div>
             <div class="variance-item">
-              <span class="var-sub">Variance</span>
+              <span class="var-sub">Difference</span>
               <span class="var-val tabular-nums" [class.highlight]="interestVariance() !== 0">
                 {{ formatPaise(interestVariance()) }}
               </span>
@@ -368,15 +368,15 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
             [disabled]="!actualInterestInput"
             (click)="recordActualInterestSnapshot()"
           >
-            Record Verified Bank Interest
+            Save Passbook Interest
           </button>
         </div>
       </app-glass-card>
 
       <!-- Notifications & Alert Preferences -->
       <app-glass-card [staggerIndex]="7">
-        <h2 class="card-title">Notifications & Smart Alerts</h2>
-        <p class="section-sub">Configure in-app alert triggers, anomaly detection, and quiet hours.</p>
+        <h2 class="card-title">Reminders & Alerts</h2>
+        <p class="section-sub">Choose when to get reminders, warnings, and quiet hours.</p>
 
         <div class="notif-pref-list">
           <label class="setting-checkbox-label">
@@ -387,8 +387,8 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
               (ngModelChange)="updateNotifPref('enableContributionReminders', $event)"
             />
             <div>
-              <strong>Monthly Contribution Reminders</strong>
-              <small class="pref-desc">Notify members when monthly targets are due.</small>
+              <strong>Family Member Reminders</strong>
+              <small class="pref-desc">Remind everyone before the 5th of every month.</small>
             </div>
           </label>
 
@@ -400,8 +400,8 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
               (ngModelChange)="updateNotifPref('enablePaymentDue', $event)"
             />
             <div>
-              <strong>Bank Payment (EMI) Reminders</strong>
-              <small class="pref-desc">Alert when monthly bank target is not yet fulfilled.</small>
+              <strong>Bank EMI Due Reminders</strong>
+              <small class="pref-desc">Alert if the bank payment hasn't been made for the month.</small>
             </div>
           </label>
 
@@ -413,8 +413,8 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
               (ngModelChange)="updateNotifPref('enableLimitExpiry', $event)"
             />
             <div>
-              <strong>Loan Limit & Tenure Expiry Warnings</strong>
-              <small class="pref-desc">Warn at 90, 30, and 7 days before sanction limit expiry.</small>
+              <strong>Loan End-Date Warnings</strong>
+              <small class="pref-desc">Warn 90, 30, and 7 days before loan tenure expires.</small>
             </div>
           </label>
 
@@ -426,15 +426,15 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
               (ngModelChange)="updateNotifPref('enableAnomalyAlerts', $event)"
             />
             <div>
-              <strong>Unusual Transaction & Anomaly Detection</strong>
-              <small class="pref-desc">Flag duplicate entries within 24h, amounts &gt;3× median, and bank variances.</small>
+              <strong>Warn on Mistakes & Double Payments</strong>
+              <small class="pref-desc">Warn if a payment is entered twice or if an unusually large amount is typed.</small>
             </div>
           </label>
         </div>
 
         <div class="quiet-hours-row" style="margin-top: 14px; display: flex; gap: 12px;">
           <div class="setting-item" style="flex: 1">
-            <label class="setting-label" for="quiet-start">Quiet Hours Start</label>
+            <label class="setting-label" for="quiet-start">Do Not Disturb Starts</label>
             <input
               id="quiet-start"
               type="time"
@@ -444,7 +444,7 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
             />
           </div>
           <div class="setting-item" style="flex: 1">
-            <label class="setting-label" for="quiet-end">Quiet Hours End</label>
+            <label class="setting-label" for="quiet-end">Do Not Disturb Ends</label>
             <input
               id="quiet-end"
               type="time"
@@ -461,35 +461,35 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
             class="reconcile-btn"
             (click)="requestWebPush()"
           >
-            🔔 Enable Web Push Notifications
+            🔔 Turn on Phone / Browser Notifications
           </button>
           <small class="pref-desc" style="display: block; margin-top: 6px">
-            Push notifications work via the browser service worker. On iOS, install the app to your Home Screen first.
+            Get alerts on your phone. On iPhone, tap 'Add to Home Screen' in Safari first.
           </small>
         </div>
       </app-glass-card>
 
       <!-- Backup, Restore & Data Reset -->
       <app-glass-card [staggerIndex]="8">
-        <h2 class="card-title">Data & Backup</h2>
-        <p class="section-sub">Download your complete encrypted ledger or restore from a JSON backup.</p>
+        <h2 class="card-title">Save or Restore Your Data</h2>
+        <p class="section-sub">Download a backup file so you never lose your records, or restore from a saved file.</p>
 
         <div class="backup-actions-grid">
           <button type="button" class="backup-btn" (click)="downloadBackup()">
-            💾 Download Backup JSON
+            💾 Download Backup File
           </button>
 
           <label class="backup-btn upload-label">
-            📂 Restore Backup JSON
+            📂 Restore from Backup File
             <input type="file" accept=".json" (change)="onFileRestore($event)" hidden />
           </label>
 
           <button type="button" class="sample-btn" (click)="loadSampleData()">
-            🔄 Load Sample Data
+            🔄 Load Example Data
           </button>
 
           <a routerLink="/admin/audit" class="sample-btn" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
-            🛡️ Audit Log & Integrity
+            🛡️ View Change History Log
           </a>
 
           <button
@@ -497,22 +497,22 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
             class="reset-btn"
             (click)="isConfirmClearOpen.set(true)"
           >
-            🗑️ Clear All Data
+            🗑️ Delete All Data
           </button>
         </div>
 
         <div class="security-notice">
-          <strong>Security Notice:</strong>
-          Browser localStorage is unencrypted. Do not store sensitive banking login credentials or OTPs in this app.
+          <strong>Security Tip:</strong>
+          Never type bank passwords or OTPs here. This app only tracks your loan and member payments.
         </div>
       </app-glass-card>
 
       <!-- Confirm Clear Data Sheet -->
       <app-confirm-sheet
         [isOpen]="isConfirmClearOpen()"
-        title="Clear All Ledger Data"
-        message="Are you sure you want to clear all transactions and records? This action cannot be undone unless you have a JSON backup."
-        confirmText="Clear All Data"
+        title="Delete All Data"
+        message="Are you sure you want to delete all payment records? You will lose all data unless you have downloaded a backup file."
+        confirmText="Yes, Delete Everything"
         [isDanger]="true"
         (confirmed)="clearAllData()"
         (cancelled)="isConfirmClearOpen.set(false)"
@@ -1014,19 +1014,19 @@ export class SettingsComponent {
   });
 
   readonly methodOptions: SegmentOption<CalculationMethod>[] = [
-    { label: 'Monthly Reducing', value: 'monthly' },
-    { label: 'Daily OD (Day-Accurate)', value: 'daily' },
+    { label: 'Monthly (Normal)', value: 'monthly' },
+    { label: 'Daily (Overdraft / Maxgain)', value: 'daily' },
   ];
 
   readonly dayCountOptions: SegmentOption<DayCountBasis>[] = [
-    { label: 'Actual/365 (SBI/HDFC)', value: 'actual/365' },
-    { label: '360 (US)', value: '360' },
-    { label: 'Actual/Actual (ISMA)', value: 'actual/actual' },
+    { label: '365 Days (SBI/HDFC)', value: 'actual/365' },
+    { label: '360 Days', value: '360' },
+    { label: '365 / 366 (Leap)', value: 'actual/actual' },
   ];
 
   readonly debitFreqOptions: SegmentOption<DebitFrequency>[] = [
-    { label: 'Monthly (Last Day)', value: 'monthlyLastDay' },
-    { label: 'Quarterly', value: 'quarterly' },
+    { label: 'Month-End (30th/31st)', value: 'monthlyLastDay' },
+    { label: 'Every 3 Months', value: 'quarterly' },
     { label: 'Custom Day', value: 'customDay' },
   ];
 
@@ -1043,17 +1043,17 @@ export class SettingsComponent {
 
   async updateDayCountBasis(basis: DayCountBasis): Promise<void> {
     await this.ledgerStore.updateBankRules({ dayCountBasis: basis });
-    this.toast.show(`Day-count basis set to ${basis}`, 'info');
+    this.toast.show(`Days in year set to ${basis}`, 'info');
   }
 
   async updateDebitFrequency(freq: DebitFrequency): Promise<void> {
     await this.ledgerStore.updateBankRules({ debitFrequency: freq });
-    this.toast.show(`Debit frequency set to ${freq}`, 'info');
+    this.toast.show(`Interest charge timing updated`, 'info');
   }
 
   async toggleCapitalisation(capitalise: boolean): Promise<void> {
     await this.ledgerStore.updateBankRules({ isCapitalised: capitalise });
-    this.toast.show(`Interest capitalisation ${capitalise ? 'enabled' : 'disabled'}`, 'info');
+    this.toast.show(`Adding interest to balance ${capitalise ? 'enabled' : 'disabled'}`, 'info');
   }
 
   async recordActualInterestSnapshot(): Promise<void> {
@@ -1068,40 +1068,40 @@ export class SettingsComponent {
       date: `${this.verificationPeriod}-28`,
       forMonth: this.verificationPeriod,
       mode: 'Bank transfer',
-      notes: `Verified Bank Interest Debit (Variance: ${formatPaise(variance)})`,
+      notes: `Verified Bank Interest Debit (Difference: ${formatPaise(variance)})`,
     });
 
-    this.toast.show(`Verified bank interest recorded (Variance: ${formatPaise(variance)})`, 'success');
+    this.toast.show(`Passbook interest recorded (Difference: ${formatPaise(variance)})`, 'success');
     this.actualInterestInput = null;
   }
 
   async triggerMonthClose(): Promise<void> {
     const res = await this.ledgerStore.closeMonthPeriod(this.periodToClose);
     this.toast.show(
-      `Period ${this.periodToClose} finalized & locked. Interest: ${formatPaise(res.entry.calculatedInterest)}`,
+      `Month ${this.periodToClose} locked. Interest: ${formatPaise(res.entry.calculatedInterest)}`,
       'success'
     );
   }
 
   async updateLoanParam(key: string, value: unknown): Promise<void> {
     await this.ledgerStore.updateLoanDetails({ [key]: value });
-    this.toast.show('Loan parameters updated', 'success');
+    this.toast.show('Loan details saved', 'success');
   }
 
   async applyRateChange(): Promise<void> {
     if (!this.newRateInput || this.newRateInput <= 0) {
-      this.toast.show('Please enter a valid rate', 'danger');
+      this.toast.show('Please enter a valid interest rate', 'danger');
       return;
     }
     const rateBps = Math.round(this.newRateInput * 100);
     await this.ledgerStore.updateRate(rateBps, this.rateEffectiveDate, 'User settings update');
-    this.toast.show(`Interest rate updated to ${this.newRateInput}%`, 'success');
+    this.toast.show(`Interest rate changed to ${this.newRateInput}%`, 'success');
     this.newRateInput = null;
   }
 
   async applyReconciliation(): Promise<void> {
     if (!this.actualBalanceInput || this.actualBalanceInput <= 0) {
-      this.toast.show('Please enter actual statement balance', 'danger');
+      this.toast.show('Please enter balance from bank passbook', 'danger');
       return;
     }
     const actual = toPaise(this.actualBalanceInput);
@@ -1111,8 +1111,8 @@ export class SettingsComponent {
     const varRupees = Math.abs(toRupees(result.variance)).toLocaleString('en-IN');
     const msg =
       result.variance === 0
-        ? 'Reconciled! Zero variance with bank balance.'
-        : `Reconciled! Variance of ₹${varRupees} recorded.`;
+        ? 'Matches bank passbook exactly!'
+        : `Recorded difference of ₹${varRupees} with bank passbook.`;
     this.toast.show(msg, result.variance === 0 ? 'success' : 'info');
     this.actualBalanceInput = null;
   }
@@ -1120,7 +1120,7 @@ export class SettingsComponent {
   async addNewMemberPrompt(): Promise<void> {
     const count = this.ledgerStore.members().length + 1;
     await this.ledgerStore.addMember(`Member ${count}`);
-    this.toast.show(`Member ${count} added`, 'success');
+    this.toast.show(`New member added`, 'success');
   }
 
   async renameMember(id: string, name: string): Promise<void> {
@@ -1133,7 +1133,7 @@ export class SettingsComponent {
 
   async updateCalculationMethod(method: CalculationMethod): Promise<void> {
     await this.ledgerStore.updateLoanDetails({ calculationMethod: method });
-    this.toast.show(`Calculation method set to ${method}`, 'info');
+    this.toast.show(`Calculation mode updated`, 'info');
   }
 
   async downloadBackup(): Promise<void> {
@@ -1145,7 +1145,7 @@ export class SettingsComponent {
     a.download = `loan-tracker-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    this.toast.show('Backup downloaded', 'success');
+    this.toast.show('Backup file downloaded', 'success');
   }
 
   async onFileRestore(event: Event): Promise<void> {
@@ -1162,7 +1162,7 @@ export class SettingsComponent {
         this.pendingRestoreDiff.set(diff);
         this.isRestoreModalOpen.set(true);
       } catch {
-        this.toast.show('Failed to inspect backup file', 'danger');
+        this.toast.show('Could not read backup file', 'danger');
       }
     };
     reader.readAsText(file);
@@ -1180,7 +1180,7 @@ export class SettingsComponent {
       this.pendingRestoreDiff.set(null);
       this.toast.show('Backup restored successfully', 'success');
     } catch {
-      this.toast.show('Failed to restore backup: Invalid schema or corrupted data', 'danger');
+      this.toast.show('Could not restore: File is invalid or damaged', 'danger');
     }
   }
 
@@ -1192,13 +1192,13 @@ export class SettingsComponent {
 
   async loadSampleData(): Promise<void> {
     await this.ledgerStore.loadSampleData();
-    this.toast.show('Sample data loaded', 'success');
+    this.toast.show('Example data loaded', 'success');
   }
 
   async clearAllData(): Promise<void> {
     await this.ledgerStore.clearAllData();
     this.isConfirmClearOpen.set(false);
-    this.toast.show('All ledger records cleared', 'danger');
+    this.toast.show('All data deleted', 'danger');
   }
 
   updateNotifPref(key: string, value: boolean | string): void {
@@ -1208,11 +1208,11 @@ export class SettingsComponent {
   async requestWebPush(): Promise<void> {
     const res = await this.notifsStore.requestPushPermission();
     if (res === 'granted') {
-      this.toast.show('Web push notifications enabled successfully', 'success');
+      this.toast.show('Notifications enabled successfully', 'success');
     } else if (res === 'unsupported') {
-      this.toast.show('Browser notifications are not supported in this environment', 'info');
+      this.toast.show('Notifications are not supported in this browser', 'info');
     } else {
-      this.toast.show('Notification permission was denied or dismissed', 'danger');
+      this.toast.show('Notification permission was not allowed', 'danger');
     }
   }
 }

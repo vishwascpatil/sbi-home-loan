@@ -62,8 +62,8 @@ const PAYMENT_MODES: PaymentMode[] = [
           <div class="locked-period-alert" role="alert">
             <span class="lock-icon">🔒</span>
             <div class="lock-content">
-              <strong>Period {{ forMonthInput }} is Locked</strong>
-              <p>Accounting period is closed. Edits require an audited unlock.</p>
+              <strong>Month {{ forMonthInput }} is Locked</strong>
+              <p>This month was finalized. Unlock to make any changes.</p>
             </div>
             <button
               type="button"
@@ -85,7 +85,7 @@ const PAYMENT_MODES: PaymentMode[] = [
         <!-- Member Selector for Contributions / Withdrawals -->
         @if (selectedType() === 'contribution' || selectedType() === 'withdrawal') {
           <div class="form-group member-picker-group">
-            <span class="field-label" id="member-select-label">Select Member</span>
+            <span class="field-label" id="member-select-label">Who Paid?</span>
             <div class="member-chips-scroll" role="group" aria-labelledby="member-select-label">
               @for (m of ledgerStore.activeMembers(); track m.id) {
                 <app-chip
@@ -127,17 +127,17 @@ const PAYMENT_MODES: PaymentMode[] = [
               <span class="split-value tabular-nums">{{ formattedInterest() }}</span>
             </div>
             <div class="split-row highlight">
-              <span class="split-label">Principal Reduction:</span>
+              <span class="split-label">Loan Reduced By:</span>
               <span class="split-value tabular-nums">{{ formattedPrincipal() }}</span>
             </div>
             <div class="form-group" style="margin-top: 10px; margin-bottom: 0;">
-              <label class="field-label" for="custom-interest">Actual Bank Interest (optional)</label>
+              <label class="field-label" for="custom-interest">Exact Interest in Passbook (optional)</label>
               <input
                 id="custom-interest"
                 type="text"
                 inputmode="decimal"
                 class="form-input"
-                placeholder="Leave blank to use estimate"
+                placeholder="Leave blank to use estimated interest"
                 [ngModel]="customInterestInput()"
                 (ngModelChange)="customInterestInput.set($event)"
                 name="customInterest"
@@ -176,7 +176,7 @@ const PAYMENT_MODES: PaymentMode[] = [
 
         <!-- Optional Value Date -->
         <div class="form-group">
-          <label class="field-label" for="tx-value-date">Value Date (Optional, defaults to transaction date)</label>
+          <label class="field-label" for="tx-value-date">Date Payment Took Effect (Optional)</label>
           <input
             id="tx-value-date"
             type="date"
@@ -188,7 +188,7 @@ const PAYMENT_MODES: PaymentMode[] = [
 
         <!-- Payment Mode -->
         <div class="form-group">
-          <label class="field-label" for="tx-mode">Payment Mode</label>
+          <label class="field-label" for="tx-mode">How was it paid?</label>
           <select id="tx-mode" class="form-select" [(ngModel)]="modeInput" name="mode">
             @for (mode of paymentModes; track mode) {
               <option [value]="mode">{{ mode }}</option>
@@ -198,24 +198,24 @@ const PAYMENT_MODES: PaymentMode[] = [
 
         <!-- Reference & Notes -->
         <div class="form-group">
-          <label class="field-label" for="tx-ref">Reference No. (optional)</label>
+          <label class="field-label" for="tx-ref">UPI / Cheque / Ref Number (optional)</label>
           <input
             id="tx-ref"
             type="text"
             class="form-input"
-            placeholder="UPI Ref, Cheque No, Transaction ID"
+            placeholder="e.g. UPI Ref, Cheque No, Transaction ID"
             [(ngModel)]="referenceInput"
             name="reference"
           />
         </div>
 
         <div class="form-group">
-          <label class="field-label" for="tx-notes">Notes (optional)</label>
+          <label class="field-label" for="tx-notes">Note (optional)</label>
           <input
             id="tx-notes"
             type="text"
             class="form-input"
-            placeholder="Additional details"
+            placeholder="Add any notes here"
             [(ngModel)]="notesInput"
             name="notes"
           />
@@ -234,7 +234,7 @@ const PAYMENT_MODES: PaymentMode[] = [
               [disabled]="isLocked()"
               (click)="isConfirmDeleteOpen.set(true)"
             >
-              Delete Entry
+              Delete Payment
             </button>
           }
         </div>
@@ -244,9 +244,9 @@ const PAYMENT_MODES: PaymentMode[] = [
     <!-- Delete Confirmation Sheet -->
     <app-confirm-sheet
       [isOpen]="isConfirmDeleteOpen()"
-      title="Delete Entry"
-      message="Are you sure you want to delete this record? The entire ledger and all historical balances will automatically recalculate."
-      confirmText="Delete Entry"
+      title="Delete Payment"
+      message="Are you sure you want to delete this payment? All loan balances will automatically recalculate."
+      confirmText="Yes, Delete Payment"
       [isDanger]="true"
       (confirmed)="confirmDelete()"
       (cancelled)="isConfirmDeleteOpen.set(false)"
@@ -255,13 +255,13 @@ const PAYMENT_MODES: PaymentMode[] = [
     <!-- Unlock Period Bottom Sheet -->
     <app-bottom-sheet
       [isOpen]="isUnlockPromptOpen()"
-      title="Unlock Accounting Period"
+      title="Unlock Month"
       (dismissed)="isUnlockPromptOpen.set(false)"
     >
       <div class="unlock-body">
         <p class="unlock-desc">
-          Unlocking period <strong>{{ forMonthInput }}</strong> will allow modifications.
-          Historical edits will trigger ledger recalculations and an audit entry will be logged.
+          Unlocking month <strong>{{ forMonthInput }}</strong> allows you to edit or delete payments.
+          All balances will automatically update.
         </p>
         <div class="form-group" style="margin-top: 12px">
           <label class="field-label" for="unlock-reason">Reason for Unlocking</label>
@@ -269,7 +269,7 @@ const PAYMENT_MODES: PaymentMode[] = [
             id="unlock-reason"
             type="text"
             class="form-input"
-            placeholder="e.g. Bank statement retroactive correction"
+            placeholder="e.g. Mistyped payment date or amount"
             [(ngModel)]="unlockReasonInput"
           />
         </div>
@@ -280,7 +280,7 @@ const PAYMENT_MODES: PaymentMode[] = [
           [disabled]="!unlockReasonInput.trim()"
           (click)="confirmUnlockPeriod()"
         >
-          Confirm Audited Unlock
+          Confirm Unlock
         </button>
       </div>
     </app-bottom-sheet>
@@ -546,10 +546,10 @@ export class AddEditTransactionSheetComponent implements OnChanges {
   unlockReasonInput = '';
 
   readonly typeOptions: SegmentOption<FormType>[] = [
-    { label: 'Contribution', value: 'contribution' },
-    { label: 'Bank Payment', value: 'bankPayment' },
-    { label: 'Withdrawal', value: 'withdrawal' },
-    { label: 'Adjustment', value: 'principalAdjustment' },
+    { label: 'Member Paid', value: 'contribution' },
+    { label: 'Bank Payment (EMI)', value: 'bankPayment' },
+    { label: 'Money Drawn', value: 'withdrawal' },
+    { label: 'Balance Fix', value: 'principalAdjustment' },
   ];
 
   readonly selectedType = signal<FormType>('contribution');
@@ -571,29 +571,29 @@ export class AddEditTransactionSheetComponent implements OnChanges {
   });
 
   readonly sheetTitle = computed(() => {
-    if (this.isEdit()) return 'Edit Transaction';
+    if (this.isEdit()) return 'Edit Payment';
     switch (this.selectedType()) {
       case 'contribution':
-        return 'Record Contribution';
+        return 'Record Member Payment';
       case 'bankPayment':
-        return 'Record Bank Payment';
+        return 'Record Bank EMI / Payment';
       case 'withdrawal':
-        return 'Record Withdrawal';
+        return 'Record Loan Withdrawal';
       case 'principalAdjustment':
-        return 'Principal Adjustment';
+        return 'Adjust Loan Balance';
     }
   });
 
   readonly submitActionLabel = computed(() => {
     switch (this.selectedType()) {
       case 'contribution':
-        return 'Add Contribution';
+        return 'Save Member Payment';
       case 'bankPayment':
-        return 'Record Payment';
+        return 'Save Bank Payment';
       case 'withdrawal':
-        return 'Record Withdrawal';
+        return 'Save Withdrawal';
       case 'principalAdjustment':
-        return 'Save Adjustment';
+        return 'Save Balance Fix';
     }
   });
 

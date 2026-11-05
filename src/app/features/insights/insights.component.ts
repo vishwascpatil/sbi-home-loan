@@ -65,8 +65,8 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
             </svg>
           </div>
           <div class="profile-text-wrap">
-            <span class="profile-greeting">Analytics & Projections</span>
-            <h1 class="profile-user-name">Insights</h1>
+            <span class="profile-greeting">Loan Forecast & Stats</span>
+            <h1 class="profile-user-name">Loan Insights</h1>
           </div>
         </div>
 
@@ -74,8 +74,8 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
           type="button"
           class="top-circle-action-btn"
           (click)="promptSaveScenario()"
-          aria-label="Save current projection scenario"
-          title="Save Scenario"
+          aria-label="Save this calculation plan"
+          title="Save Plan"
         >
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#111216" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
@@ -86,11 +86,11 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
       </header>
 
       <!-- 2. Matte Black Hero Banner ("Go Premium" style in screenshot) -->
-      <div class="matte-hero-banner" role="region" aria-label="Payoff Trajectory Overview">
+      <div class="matte-hero-banner" role="region" aria-label="Debt Free Target Overview">
         <div class="hero-left-content">
           <div class="hero-badge-pill">
             <span class="lightning-bolt">⚡</span>
-            <span>Repayment Trajectory · Day-Accurate OD</span>
+            <span>Debt-Free Target · Daily Interest</span>
           </div>
           <div class="hero-number-wrap">
             @if (customSimResult()) {
@@ -98,13 +98,13 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
                 {{ customSimResult()!.closureDate }}
               </div>
               <span class="hero-balance-sub">
-                {{ customSimResult()!.months }} months ·
+                Takes {{ customSimResult()!.months }} months ·
                 {{ interestDifference().isSaved ? 'Saves ' : 'Costs ' }}
-                {{ formatCompactPaise(interestDifference().interestSaved) }} vs baseline
+                {{ formatCompactPaise(interestDifference().interestSaved) }} in interest
               </span>
             } @else {
-              <div class="hero-balance-headline">Adjust Parameters</div>
-              <span class="hero-balance-sub">Monthly payment insufficient to close debt</span>
+              <div class="hero-balance-headline">Increase Monthly Payment</div>
+              <span class="hero-balance-sub">Monthly payment is too small to cover bank interest</span>
             }
           </div>
         </div>
@@ -113,8 +113,8 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
           type="button"
           class="hero-circle-cta"
           (click)="scrollToSimulator()"
-          aria-label="Jump to Simulator Controls"
-          title="Configure Simulation"
+          aria-label="Change Monthly Payment"
+          title="Try Different Monthly Payment"
         >
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#111216" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="9 18 15 12 9 6"></polyline>
@@ -124,13 +124,13 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
 
       <!-- 3. Section: Overview Dual Squircle Grid ("Wellness" style in screenshot) -->
       <section class="page-section">
-        <h2 class="section-main-heading">Analytics Overview</h2>
+        <h2 class="section-main-heading">Quick Summary</h2>
 
         <div class="dual-squircle-grid">
           <!-- Card 1: Monthly Deposit Average -->
           <div class="squircle-metric-card">
             <div class="card-top-header">
-              <span class="card-caption-title">Avg Monthly Pool</span>
+              <span class="card-caption-title">Average Monthly Deposit</span>
               <span class="card-chevron-icon">›</span>
             </div>
             <div class="card-metric-body">
@@ -138,13 +138,13 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
                 <span class="metric-big-num tabular-nums" [appCountUp]="monthlyAverage()">
                   {{ formatPaise(monthlyAverage()) }}
                 </span>
-                <span class="metric-label-sub">Last 6 months pool average</span>
+                <span class="metric-label-sub">Average collected per month</span>
               </div>
               <div class="metric-pair secondary">
                 <span class="metric-small-num">
-                  Top: {{ highestContributor().name }}
+                  Top Contributor: {{ highestContributor().name }}
                 </span>
-                <span class="metric-label-sub">{{ formatCompactPaise(highestContributor().lifetimeContribution) }} lifetime</span>
+                <span class="metric-label-sub">{{ formatCompactPaise(highestContributor().lifetimeContribution) }} total paid</span>
               </div>
             </div>
           </div>
@@ -152,18 +152,18 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
           <!-- Card 2: Rupee Equity Ratio -->
           <div class="squircle-metric-card">
             <div class="card-top-header">
-              <span class="card-caption-title">Rupee Breakdown</span>
+              <span class="card-caption-title">Where Your Money Goes</span>
               <span class="card-chevron-icon">›</span>
             </div>
             <div class="card-metric-body">
               <div class="metric-stat-row">
                 <div>
                   <span class="metric-big-num">{{ rupeeSplit().principalPercent.toFixed(0) }}%</span>
-                  <span class="metric-label-sub">Principal</span>
+                  <span class="metric-label-sub">Loan Reduced</span>
                 </div>
                 <div>
                   <span class="metric-big-num">{{ rupeeSplit().interestPercent.toFixed(0) }}%</span>
-                  <span class="metric-label-sub">Interest</span>
+                  <span class="metric-label-sub">Bank Interest</span>
                 </div>
               </div>
               <!-- Mini Dual Split Track -->
@@ -181,18 +181,18 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
         <div class="insight-squircle-card">
           <div class="card-header-action-row">
             <div>
-              <h2 class="card-main-title">Repayment Simulator v2</h2>
-              <span class="card-sub-caption">Day-accurate projection with prepayments & rate shifts</span>
+              <h2 class="card-main-title">What-If Calculator</h2>
+              <span class="card-sub-caption">See how paying extra or changing interest rates helps you finish faster</span>
             </div>
             <button type="button" class="action-pill-black" (click)="promptSaveScenario()">
-              💾 Save Scenario
+              💾 Save Plan
             </button>
           </div>
 
           <!-- Saved Scenarios Chips -->
           @if (savedScenarios().length > 0) {
             <div class="saved-scenarios-bar">
-              <span class="saved-label">Saved:</span>
+              <span class="saved-label">Saved Plans:</span>
               <div class="saved-chips-scroll">
                 @for (sc of savedScenarios(); track sc.id) {
                   <button type="button" class="saved-chip" (click)="loadSavedScenario(sc)">
@@ -201,7 +201,7 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
                       type="button"
                       class="del-scenario-icon"
                       (click)="deleteSavedScenario(sc.id, $event)"
-                      aria-label="Delete scenario"
+                      aria-label="Delete saved plan"
                     >
                       ✕
                     </button>
@@ -214,7 +214,7 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
           <!-- Interactive Controls Grid -->
           <div class="sim-controls-grid">
             <div class="sim-field">
-              <label class="custom-label" for="custom-payment">Monthly Pool Payment (₹)</label>
+              <label class="custom-label" for="custom-payment">Monthly Amount You Pay (₹)</label>
               <input
                 id="custom-payment"
                 type="number"
@@ -227,7 +227,7 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
             </div>
 
             <div class="sim-field">
-              <label class="custom-label" for="pay-day">Payment Day of Month</label>
+              <label class="custom-label" for="pay-day">Day You Pay Each Month</label>
               <select
                 id="pay-day"
                 class="sim-select"
@@ -235,7 +235,7 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
                 (ngModelChange)="paymentDayOfMonth.set(+$event)"
               >
                 <option [value]="1">1st of month</option>
-                <option [value]="5">5th of month (Pool Due)</option>
+                <option [value]="5">5th of month (Standard Due Date)</option>
                 <option [value]="10">10th of month</option>
                 <option [value]="15">15th of month</option>
                 <option [value]="20">20th of month</option>
@@ -247,7 +247,7 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
 
           <!-- Rate Shift Selector -->
           <div class="rate-shift-row">
-            <span class="custom-label">Interest Rate Shift</span>
+            <span class="custom-label">If Bank Changes Interest Rate:</span>
             <div class="rate-shift-chips">
               @for (shift of rateShiftOptions; track shift.value) {
                 <button
@@ -266,9 +266,9 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
           <div class="events-management-row">
             <div class="event-col">
               <div class="event-col-header">
-                <span class="custom-label">Scheduled Prepayments</span>
+                <span class="custom-label">Extra Lump-Sum Payments</span>
                 <button type="button" class="add-event-mini-btn" (click)="addPrepaymentPrompt()">
-                  ＋ Prepay
+                  ＋ Add Extra Payment
                 </button>
               </div>
               @if (prepayments().length > 0) {
@@ -276,20 +276,20 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
                   @for (p of prepayments(); track $index) {
                     <span class="event-pill prepay">
                       {{ p.date }}: +{{ formatCompactPaise(p.amount) }}
-                      <button type="button" (click)="removePrepayment($index)" aria-label="Remove prepayment">✕</button>
+                      <button type="button" (click)="removePrepayment($index)" aria-label="Remove extra payment">✕</button>
                     </span>
                   }
                 </div>
               } @else {
-                <span class="empty-subtext">No prepayments added</span>
+                <span class="empty-subtext">No extra payments added</span>
               }
             </div>
 
             <div class="event-col">
               <div class="event-col-header">
-                <span class="custom-label">Extra Drawdowns</span>
+                <span class="custom-label">Extra Money Taken (Withdrawals)</span>
                 <button type="button" class="add-event-mini-btn" (click)="addDrawdownPrompt()">
-                  ＋ Drawdown
+                  ＋ Add Withdrawal
                 </button>
               </div>
               @if (drawdowns().length > 0) {
@@ -297,12 +297,12 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
                   @for (d of drawdowns(); track $index) {
                     <span class="event-pill draw">
                       {{ d.date }}: −{{ formatCompactPaise(d.amount) }}
-                      <button type="button" (click)="removeDrawdown($index)" aria-label="Remove drawdown">✕</button>
+                      <button type="button" (click)="removeDrawdown($index)" aria-label="Remove withdrawal">✕</button>
                     </span>
                   }
                 </div>
               } @else {
-                <span class="empty-subtext">No drawdowns added</span>
+                <span class="empty-subtext">No extra money taken</span>
               }
             </div>
           </div>
@@ -321,27 +321,27 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
           @if (customSimResult()) {
             <div class="sim-summary-tile">
               <div class="sim-stat-box">
-                <span class="sim-stat-label">Estimated Payoff</span>
+                <span class="sim-stat-label">Debt-Free Date</span>
                 <span class="sim-stat-val">{{ customSimResult()!.closureDate }}</span>
                 <span class="sim-stat-sub">{{ customSimResult()!.months }} months</span>
               </div>
               <div class="sim-stat-box">
-                <span class="sim-stat-label">Future Interest (est.)</span>
+                <span class="sim-stat-label">Future Bank Interest</span>
                 <span class="sim-stat-val tabular-nums">{{ formatPaise(customSimResult()!.totalInterest) }}</span>
                 <span class="sim-stat-sub highlight">
                   {{ interestDifference().isSaved ? 'Saves ' : 'Costs ' }}
-                  {{ formatCompactPaise(interestDifference().interestSaved) }} vs base
+                  {{ formatCompactPaise(interestDifference().interestSaved) }} in interest
                 </span>
               </div>
               <div class="sim-stat-box">
-                <span class="sim-stat-label">Total Outflow</span>
+                <span class="sim-stat-label">Total Money You Will Pay</span>
                 <span class="sim-stat-val tabular-nums">{{ formatCompactPaise(customSimResult()!.totalPaid) }}</span>
-                <span class="sim-stat-sub">Principal + Interest</span>
+                <span class="sim-stat-sub">Loan Balance + Bank Interest</span>
               </div>
             </div>
           } @else {
             <div class="alert-fail-card">
-              ⚠️ Never closes with current parameters: monthly payment is insufficient to cover accrued interest.
+              ⚠️ The loan will never finish with this payment: the amount is too small to cover the bank's monthly interest.
             </div>
           }
         </div>
@@ -350,29 +350,29 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
       <!-- 5. Section: Contribution Analytics & Trend -->
       <section class="page-section">
         <div class="insight-squircle-card">
-          <h2 class="card-main-title">Contribution Analytics</h2>
-          <span class="card-sub-caption">Monthly trend & member contributions over past 6 months</span>
+          <h2 class="card-main-title">Monthly Deposit Trend</h2>
+          <span class="card-sub-caption">Total money the family deposited each month over past 6 months</span>
 
           <div class="stats-3-grid">
             <div class="stat-mini-card">
-              <span class="stat-mini-label">Avg / Month</span>
+              <span class="stat-mini-label">Average / Month</span>
               <strong class="stat-mini-val tabular-nums">{{ formatPaise(monthlyAverage()) }}</strong>
-              <small class="stat-mini-sub">6 month rolling avg</small>
+              <small class="stat-mini-sub">6 month average</small>
             </div>
             <div class="stat-mini-card">
               <span class="stat-mini-label">Highest Contributor</span>
               <strong class="stat-mini-val">{{ highestContributor().name || '—' }}</strong>
-              <small class="stat-mini-sub tabular-nums">{{ formatCompactPaise(highestContributor().lifetimeContribution) }}</small>
+              <small class="stat-mini-sub tabular-nums">{{ formatCompactPaise(highestContributor().lifetimeContribution) }} total</small>
             </div>
             <div class="stat-mini-card">
               <span class="stat-mini-label">Lowest Contributor</span>
               <strong class="stat-mini-val">{{ lowestContributor().name || '—' }}</strong>
-              <small class="stat-mini-sub tabular-nums">{{ formatCompactPaise(lowestContributor().lifetimeContribution) }}</small>
+              <small class="stat-mini-sub tabular-nums">{{ formatCompactPaise(lowestContributor().lifetimeContribution) }} total</small>
             </div>
           </div>
 
           <div class="chart-embed-wrapper" style="margin-top: 20px">
-            <span class="custom-label" style="margin-bottom: 8px; display: block">Monthly Volume (₹)</span>
+            <span class="custom-label" style="margin-bottom: 8px; display: block">Total Deposited Each Month (₹)</span>
             <app-bar-chart [data]="monthlyBarData()" />
           </div>
         </div>
@@ -381,8 +381,8 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
       <!-- 6. Section: Share of Contributions -->
       <section class="page-section">
         <div class="insight-squircle-card">
-          <h2 class="card-main-title">Share of Contributions</h2>
-          <span class="card-sub-caption">Distribution of lifetime member payments across the 5 members</span>
+          <h2 class="card-main-title">Who Contributed What (Total Ever)</h2>
+          <span class="card-sub-caption">Percentage of all money paid by each family member since start</span>
 
           <div class="share-breakdown-list">
             @for (m of ledgerStore.memberStats(); track m.memberId) {
@@ -408,31 +408,31 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
       <!-- 7. Section: Where Each Rupee Went -->
       <section class="page-section">
         <div class="insight-squircle-card">
-          <h2 class="card-main-title">Where Each Rupee Went</h2>
-          <span class="card-sub-caption">Lifetime breakdown into equity built vs bank interest cost</span>
+          <h2 class="card-main-title">Where Did All Your Money Go?</h2>
+          <span class="card-sub-caption">How much of your money actually reduced the loan vs went to bank interest</span>
 
           <div class="rupee-split-container">
             <div class="split-bar-track">
               <div
                 class="split-segment principal"
                 [style.width.%]="rupeeSplit().principalPercent"
-                [title]="'Principal Repaid: ' + rupeeSplit().principalPercent.toFixed(1) + '%'"
+                [title]="'Reduced Loan: ' + rupeeSplit().principalPercent.toFixed(1) + '%'"
               ></div>
               <div
                 class="split-segment interest"
                 [style.width.%]="rupeeSplit().interestPercent"
-                [title]="'Interest Cost: ' + rupeeSplit().interestPercent.toFixed(1) + '%'"
+                [title]="'Bank Interest: ' + rupeeSplit().interestPercent.toFixed(1) + '%'"
               ></div>
             </div>
 
             <div class="split-stats-grid">
               <div class="split-stat-card principal">
-                <span class="stat-badge green">Principal Equity</span>
+                <span class="stat-badge green">Reduced Your Loan</span>
                 <strong class="stat-amount tabular-nums">{{ formatPaise(rupeeSplit().totalPrincipalReduced) }}</strong>
                 <small class="stat-percent">{{ rupeeSplit().principalPercent.toFixed(1) }}% of total paid</small>
               </div>
               <div class="split-stat-card interest">
-                <span class="stat-badge dark">Interest Cost</span>
+                <span class="stat-badge dark">Bank Interest Charges</span>
                 <strong class="stat-amount tabular-nums">{{ formatPaise(rupeeSplit().totalInterestPaid) }}</strong>
                 <small class="stat-percent">{{ rupeeSplit().interestPercent.toFixed(1) }}% of total paid</small>
               </div>
@@ -444,8 +444,8 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
       <!-- 8. Section: Historical Amortization -->
       <section class="page-section">
         <div class="insight-squircle-card">
-          <h2 class="card-main-title">Historical Amortization</h2>
-          <span class="card-sub-caption">Cumulative progression of principal reduction vs interest costs</span>
+          <h2 class="card-main-title">Loan Reduction vs Interest Over Time</h2>
+          <span class="card-sub-caption">Track how the loan goes down as you keep paying interest</span>
           <div class="chart-embed-wrapper">
             <app-amortization-area-chart [points]="amortizationHistory()" />
           </div>
@@ -455,8 +455,8 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
       <!-- 9. Section: 365-Day Contribution Activity -->
       <section class="page-section">
         <div class="insight-squircle-card">
-          <h2 class="card-main-title">365-Day Contribution Activity</h2>
-          <span class="card-sub-caption">Daily member deposit intensity over the past 12 months</span>
+          <h2 class="card-main-title">Yearly Payment Calendar</h2>
+          <span class="card-sub-caption">Days when family members deposited money over the last year</span>
           <div class="chart-embed-wrapper">
             <app-contribution-heatmap [days]="contributionHeatmapDays()" />
           </div>
@@ -466,8 +466,8 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
       <!-- 10. Section: Member Consistency & Streaks -->
       <section class="page-section">
         <div class="insight-squircle-card">
-          <h2 class="card-main-title">Member Consistency & Streaks</h2>
-          <span class="card-sub-caption">On-time adherence and active payment streaks over past 6 months</span>
+          <h2 class="card-main-title">On-Time Payment Streaks</h2>
+          <span class="card-sub-caption">Who pays regularly on or before the 5th of each month</span>
 
           <div class="consistency-list">
             @for (c of memberConsistency(); track c.memberId) {

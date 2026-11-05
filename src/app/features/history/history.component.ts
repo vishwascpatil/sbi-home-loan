@@ -40,8 +40,8 @@ import { BankImportSheetComponent } from '../bank-import/bank-import-sheet.compo
     <div class="history-page">
       <header class="history-header">
         <div>
-          <small class="header-count">{{ filteredTransactions().length }} records</small>
-          <h1 class="header-title">History</h1>
+          <small class="header-count">{{ filteredTransactions().length }} payments</small>
+          <h1 class="header-title">Payment History</h1>
         </div>
 
         <div class="header-actions">
@@ -70,10 +70,10 @@ import { BankImportSheetComponent } from '../bank-import/bank-import-sheet.compo
             All
           </app-chip>
           <app-chip [selected]="selectedType() === 'contribution'" (clicked)="selectedType.set('contribution')">
-            Contributions
+            Member Payments
           </app-chip>
           <app-chip [selected]="selectedType() === 'bankPayment'" (clicked)="selectedType.set('bankPayment')">
-            Bank Payments
+            Bank EMI Payments
           </app-chip>
           <app-chip [selected]="selectedType() === 'withdrawal'" (clicked)="selectedType.set('withdrawal')">
             Withdrawals
@@ -99,7 +99,7 @@ import { BankImportSheetComponent } from '../bank-import/bank-import-sheet.compo
 
           @if (hasActiveFilters()) {
             <button type="button" class="reset-filter-btn" (click)="clearFilters()">
-              Clear
+              Reset Filters
             </button>
           }
         </div>

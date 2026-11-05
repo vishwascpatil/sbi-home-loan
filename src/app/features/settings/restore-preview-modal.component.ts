@@ -33,9 +33,9 @@ import { BackupDiffSummary } from '../../core/engine';
           <header class="modal-header">
             <div>
               <span class="badge" [class.danger]="!diff()?.isValid">
-                {{ diff()?.isValid ? 'SCHEMA VALID (V' + diff()?.schemaVersion + ')' : 'INVALID BACKUP' }}
+                {{ diff()?.isValid ? 'BACKUP FILE VERIFIED' : 'INVALID BACKUP FILE' }}
               </span>
-              <h3 id="restore-title" class="modal-title">Restore Backup Preview</h3>
+              <h3 id="restore-title" class="modal-title">Preview Backup File</h3>
             </div>
             <button
               type="button"
@@ -51,7 +51,7 @@ import { BackupDiffSummary } from '../../core/engine';
           <div class="modal-body">
             @if (!diff()?.isValid) {
               <div class="error-alert">
-                <strong>Cannot Restore This File:</strong>
+                <strong>Cannot Read This File:</strong>
                 <ul>
                   @for (err of diff()?.validationErrors; track err) {
                     <li>{{ err }}</li>
@@ -61,25 +61,25 @@ import { BackupDiffSummary } from '../../core/engine';
             } @else {
               <!-- Loan Metadata Card -->
               <div class="loan-card">
-                <span class="loan-label">Backup Loan Profile:</span>
+                <span class="loan-label">Loan in Backup:</span>
                 <strong class="loan-title">{{ diff()?.loanName }}</strong>
                 <small class="loan-ac">Account: {{ diff()?.accountNumber }}</small>
               </div>
 
               <!-- Entity Count Diff Table -->
               <div class="diff-table-container">
-                <h4 class="table-title">Entity Comparison (Dry-Run Diff)</h4>
+                <h4 class="table-title">What Will Be Restored</h4>
                 <table class="diff-table">
                   <thead>
                     <tr>
-                      <th>Entity</th>
-                      <th class="text-right">Current State</th>
-                      <th class="text-right">Incoming Backup</th>
+                      <th>Record Type</th>
+                      <th class="text-right">Currently on Phone</th>
+                      <th class="text-right">In Backup File</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
-                      <td>Transactions</td>
+                      <td>Payments & Debits</td>
                       <td class="text-right tabular-nums">{{ diff()?.currentCounts?.transactions }}</td>
                       <td class="text-right tabular-nums font-bold highlight">
                         {{ diff()?.incomingCounts?.transactions }}
@@ -87,27 +87,27 @@ import { BackupDiffSummary } from '../../core/engine';
                       </td>
                     </tr>
                     <tr>
-                      <td>Members</td>
+                      <td>Family Members</td>
                       <td class="text-right tabular-nums">{{ diff()?.currentCounts?.members }}</td>
                       <td class="text-right tabular-nums font-bold">{{ diff()?.incomingCounts?.members }}</td>
                     </tr>
                     <tr>
-                      <td>Balance Snapshots</td>
+                      <td>Passbook Balance Checks</td>
                       <td class="text-right tabular-nums">{{ diff()?.currentCounts?.snapshots }}</td>
                       <td class="text-right tabular-nums font-bold">{{ diff()?.incomingCounts?.snapshots }}</td>
                     </tr>
                     <tr>
-                      <td>Interest Entries</td>
+                      <td>Monthly Interest Records</td>
                       <td class="text-right tabular-nums">{{ diff()?.currentCounts?.interestEntries }}</td>
                       <td class="text-right tabular-nums font-bold">{{ diff()?.incomingCounts?.interestEntries }}</td>
                     </tr>
                     <tr>
-                      <td>Statement Snapshots</td>
+                      <td>Saved Statement Snapshots</td>
                       <td class="text-right tabular-nums">{{ diff()?.currentCounts?.statements }}</td>
                       <td class="text-right tabular-nums font-bold">{{ diff()?.incomingCounts?.statements }}</td>
                     </tr>
                     <tr>
-                      <td>Audit Records</td>
+                      <td>History Changes</td>
                       <td class="text-right tabular-nums">{{ diff()?.currentCounts?.auditLog }}</td>
                       <td class="text-right tabular-nums font-bold">{{ diff()?.incomingCounts?.auditLog }}</td>
                     </tr>
@@ -118,7 +118,7 @@ import { BackupDiffSummary } from '../../core/engine';
               <div class="warning-box">
                 <span class="warning-icon">⚠️</span>
                 <p class="warning-text">
-                  Restoring will overwrite your current active ledger with the backup data. An audit entry will be recorded in the timeline.
+                  Restoring will replace all current data on your phone with the records saved in this backup file.
                 </p>
               </div>
             }
@@ -139,7 +139,7 @@ import { BackupDiffSummary } from '../../core/engine';
               [disabled]="!diff()?.isValid"
               (click)="confirmed.emit()"
             >
-              Confirm & Apply Restore
+              Restore My Data
             </button>
           </footer>
         </div>

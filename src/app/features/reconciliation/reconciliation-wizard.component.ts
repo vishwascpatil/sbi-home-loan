@@ -30,7 +30,7 @@ type ResolutionType = 'snapshot' | 'correction' | 'investigate';
   template: `
     <app-bottom-sheet
       [isOpen]="isOpen()"
-      title="Bank Reconciliation Wizard"
+      title="Check Against Bank Passbook"
       (dismissed)="dismissed.emit()"
     >
       <div class="wizard-container">
@@ -38,7 +38,7 @@ type ResolutionType = 'snapshot' | 'correction' | 'investigate';
         <div class="wizard-inputs">
           <div class="form-row">
             <div class="form-group">
-              <label class="field-label" for="rec-date">Statement Date</label>
+              <label class="field-label" for="rec-date">Passbook / Statement Date</label>
               <input
                 id="rec-date"
                 type="date"
@@ -48,7 +48,7 @@ type ResolutionType = 'snapshot' | 'correction' | 'investigate';
               />
             </div>
             <div class="form-group">
-              <label class="field-label" for="rec-period">Accounting Period</label>
+              <label class="field-label" for="rec-period">Month</label>
               <input
                 id="rec-period"
                 type="month"
@@ -61,7 +61,7 @@ type ResolutionType = 'snapshot' | 'correction' | 'investigate';
 
           <div class="form-group">
             <label class="field-label" for="bank-actual-out">
-              Bank Actual Outstanding Principal (₹)
+              Loan Balance Shown in Bank Passbook (₹)
             </label>
             <div class="input-wrap">
               <span class="currency-prefix">₹</span>
@@ -70,7 +70,7 @@ type ResolutionType = 'snapshot' | 'correction' | 'investigate';
                 type="number"
                 step="0.01"
                 class="form-input prefix-padding tabular-nums"
-                placeholder="e.g. 12105189"
+                placeholder="e.g. 11886289"
                 [ngModel]="actualOutstandingInput()"
                 (ngModelChange)="actualOutstandingInput.set($event)"
               />
@@ -79,7 +79,7 @@ type ResolutionType = 'snapshot' | 'correction' | 'investigate';
 
           <div class="form-group">
             <label class="field-label" for="bank-actual-int">
-              Bank Actual Interest Charged (₹, optional)
+              Interest Charged by Bank This Month (₹, optional)
             </label>
             <div class="input-wrap">
               <span class="currency-prefix">₹</span>
@@ -88,7 +88,7 @@ type ResolutionType = 'snapshot' | 'correction' | 'investigate';
                 type="number"
                 step="0.01"
                 class="form-input prefix-padding tabular-nums"
-                placeholder="e.g. 79692.49"
+                placeholder="e.g. 78249"
                 [ngModel]="actualInterestInput()"
                 (ngModelChange)="actualInterestInput.set($event)"
               />
@@ -99,29 +99,29 @@ type ResolutionType = 'snapshot' | 'correction' | 'investigate';
         <!-- Step 2: Variance Analysis -->
         <div class="variance-card">
           <div class="variance-header">
-            <span class="var-title">Comparison vs Ledger</span>
+            <span class="var-title">Compare App vs Bank Passbook</span>
             <span
               class="status-badge"
               [class.reconciled]="isExactMatch()"
               [class.estimated]="!isExactMatch()"
             >
-              {{ isExactMatch() ? '✓ Reconciled' : 'Estimated / Variance' }}
+              {{ isExactMatch() ? '✓ Exact Match' : 'Difference Found' }}
             </span>
           </div>
 
           <div class="comparison-grid">
             <div class="comp-col">
-              <span class="comp-label">Ledger Outstanding</span>
+              <span class="comp-label">Loan in App</span>
               <span class="comp-val tabular-nums">{{ formatPaise(ledgerOutstanding()) }}</span>
             </div>
             <div class="comp-col">
-              <span class="comp-label">Bank Outstanding</span>
+              <span class="comp-label">Loan in Passbook</span>
               <span class="comp-val tabular-nums">
                 {{ actualOutstandingPaise() > 0 ? formatPaise(actualOutstandingPaise()) : '—' }}
               </span>
             </div>
             <div class="comp-col highlight">
-              <span class="comp-label">Principal Variance</span>
+              <span class="comp-label">Difference in Balance</span>
               <span
                 class="comp-val tabular-nums"
                 [class.variance-zero]="principalVariance() === 0"
@@ -135,15 +135,15 @@ type ResolutionType = 'snapshot' | 'correction' | 'investigate';
           @if (actualInterestPaise() > 0) {
             <div class="interest-comp-row">
               <div class="comp-col">
-                <span class="comp-label">Estimated Interest</span>
+                <span class="comp-label">Interest in App</span>
                 <span class="comp-val tabular-nums">{{ formatPaise(computedInterest()) }}</span>
               </div>
               <div class="comp-col">
-                <span class="comp-label">Bank Interest</span>
+                <span class="comp-label">Interest in Passbook</span>
                 <span class="comp-val tabular-nums">{{ formatPaise(actualInterestPaise()) }}</span>
               </div>
               <div class="comp-col highlight">
-                <span class="comp-label">Interest Variance</span>
+                <span class="comp-label">Difference in Interest</span>
                 <span
                   class="comp-val tabular-nums"
                   [class.variance-zero]="interestVariance() === 0"
@@ -158,7 +158,7 @@ type ResolutionType = 'snapshot' | 'correction' | 'investigate';
 
         <!-- Step 3: Resolution Path Selector -->
         <div class="resolution-section">
-          <span class="field-label">Choose Reconciliation Action</span>
+          <span class="field-label">How would you like to handle this?</span>
 
           <div class="resolution-options">
             <label class="res-card" [class.selected]="selectedAction() === 'snapshot'">
@@ -170,8 +170,8 @@ type ResolutionType = 'snapshot' | 'correction' | 'investigate';
                 (ngModelChange)="selectedAction.set($event)"
               />
               <div class="res-info">
-                <strong>Record Balance Snapshot</strong>
-                <p>Audits statement balance & variance without modifying ledger entries.</p>
+                <strong>Record Passbook Check Only</strong>
+                <p>Saves what the bank statement shows without changing your payments.</p>
               </div>
             </label>
 
@@ -184,8 +184,8 @@ type ResolutionType = 'snapshot' | 'correction' | 'investigate';
                 (ngModelChange)="selectedAction.set($event)"
               />
               <div class="res-info">
-                <strong>Record Manual Correction</strong>
-                <p>Posts an adjusting transaction to bring ledger into exact match with bank.</p>
+                <strong>Fix Difference Automatically</strong>
+                <p>Adds an adjustment entry so the app balance matches the passbook exactly.</p>
               </div>
             </label>
 
@@ -198,19 +198,19 @@ type ResolutionType = 'snapshot' | 'correction' | 'investigate';
                 (ngModelChange)="selectedAction.set($event)"
               />
               <div class="res-info">
-                <strong>Flag for Investigation</strong>
-                <p>Marks variance for audit and saves notes for member group review.</p>
+                <strong>Save Note & Review Later</strong>
+                <p>Saves the difference with a note so you can check with the bank later.</p>
               </div>
             </label>
           </div>
 
           <div class="form-group" style="margin-top: 12px">
-            <label class="field-label" for="notes-input">Reconciliation Notes / Reason</label>
+            <label class="field-label" for="notes-input">Note or Reason (optional)</label>
             <input
               id="notes-input"
               type="text"
               class="form-input"
-              placeholder="e.g. Month-end bank statement verification"
+              placeholder="e.g. Month-end passbook verification"
               [(ngModel)]="notesInput"
             />
           </div>
@@ -222,7 +222,7 @@ type ResolutionType = 'snapshot' | 'correction' | 'investigate';
                 type="checkbox"
                 [(ngModel)]="closeAndLockPeriod"
               />
-              <span>Close month and lock accounting period (<strong>{{ statementPeriod() }}</strong>)</span>
+              <span>Lock this month (<strong>{{ statementPeriod() }}</strong>) so no accidental changes happen</span>
             </label>
           </div>
         </div>
@@ -235,7 +235,7 @@ type ResolutionType = 'snapshot' | 'correction' | 'investigate';
             [disabled]="actualOutstandingPaise() <= 0"
             (click)="applyReconciliationAction()"
           >
-            Confirm & Save Reconciliation
+            Save & Confirm
           </button>
         </div>
       </div>

@@ -11,7 +11,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         <div class="brand-avatar">₹</div>
         <div class="brand-details">
           <h2 class="brand-title">Loan Tracker</h2>
-          <span class="brand-badge">Group OD</span>
+          <span class="brand-badge">Home Loan</span>
         </div>
       </div>
 
@@ -20,7 +20,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
           <svg class="rail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10" />
           </svg>
-          <span>Dashboard</span>
+          <span>Home</span>
         </a>
 
         <a routerLink="/members" routerLinkActive="active" class="rail-link">
@@ -37,7 +37,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
             <line x1="12" y1="20" x2="12" y2="4"></line>
             <line x1="6" y1="20" x2="6" y2="14"></line>
           </svg>
-          <span>Insights & Sim</span>
+          <span>Insights</span>
         </a>
 
         <a routerLink="/history" routerLinkActive="active" class="rail-link">
@@ -45,7 +45,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
             <circle cx="12" cy="12" r="10"></circle>
             <polyline points="12 6 12 12 16 14"></polyline>
           </svg>
-          <span>History & CSV</span>
+          <span>Payment History</span>
         </a>
 
         <a routerLink="/settings" routerLinkActive="active" class="rail-link">
