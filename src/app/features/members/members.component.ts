@@ -107,8 +107,8 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
           <button
             type="button"
             class="squircle-metric-card"
-            (click)="router.navigate(['/insights'])"
-            aria-label="View member share breakdown in insights"
+            (click)="router.navigate(['/home'])"
+            aria-label="View member share breakdown on home"
           >
             <div class="card-top-header">
               <span class="card-caption-title">Who Pays What</span>

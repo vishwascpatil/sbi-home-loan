@@ -159,7 +159,7 @@ export function generateLedgerNotifications(
         message: `Interest rate adjusted to ${(latestRate.rateBps / 100).toFixed(2)}% p.a. effective from ${latestRate.effectiveFrom}.`,
         severity: 'info',
         timestamp: latestRate.createdAt,
-        actionRoute: '/insights',
+        actionRoute: '/settings',
       });
     }
   }

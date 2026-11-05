@@ -30,8 +30,8 @@ export const routes: Routes = [
   },
   {
     path: 'insights',
-    loadComponent: () =>
-      import('./features/insights/insights.component').then((m) => m.InsightsComponent),
+    redirectTo: 'home',
+    pathMatch: 'full',
   },
   {
     path: 'history',

@@ -3,16 +3,21 @@ import { Router } from '@angular/router';
 import { LedgerStore, SettingsStore } from '../../core/state';
 import {
   AvatarComponent,
+  BarChartComponent,
   SparklineChartComponent,
 } from '../../shared/ui';
 import { CountUpDirective } from '../../shared/ui/count-up/count-up.directive';
 import {
+  computeRupeeSplit,
+  ContributionTransaction,
   formatCompactPaise,
   formatPaise,
   getTransactionAmount,
   getTransactionMode,
   Paise,
   simulate,
+  simulateV2,
+  toPaise,
   toRupees,
   Transaction,
 } from '../../core/engine';
@@ -26,6 +31,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
   imports: [
     CountUpDirective,
     SparklineChartComponent,
+    BarChartComponent,
     AvatarComponent,
     AddEditTransactionSheetComponent,
     DailyLedgerSheetComponent,
@@ -105,26 +111,28 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
             </div>
           </button>
 
-          <!-- Card 2: Debt Free Date -->
-          <button
-            type="button"
+          <!-- Card 2: Debt Free Target -->
+          <div
             class="squircle-metric-card"
-            (click)="router.navigate(['/insights'])"
-            aria-label="View Debt Free Target"
+            aria-label="Debt Free Target"
           >
             <div class="card-top-header">
               <span class="card-caption-title">Debt Free By</span>
-              <span class="card-chevron-icon">›</span>
+              <span class="card-badge-chip">{{ baselineSimResult()?.closureDate || 'Active' }}</span>
             </div>
             <div class="card-metric-body">
               <div class="metric-stat-row">
                 <div>
-                  <span class="metric-big-num">5.2</span>
+                  <span class="metric-big-num tabular-nums">
+                    {{ ((baselineSimResult()?.months || 62) / 12).toFixed(1) }}
+                  </span>
                   <span class="metric-label-sub">Years Left</span>
                 </div>
                 <div>
-                  <span class="metric-big-num">2030</span>
-                  <span class="metric-label-sub">Freedom Year</span>
+                  <span class="metric-big-num tabular-nums">
+                    {{ baselineSimResult()?.months || 62 }}
+                  </span>
+                  <span class="metric-label-sub">Months Target</span>
                 </div>
               </div>
               @if (simulationResult()) {
@@ -133,7 +141,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
                 </div>
               }
             </div>
-          </button>
+          </div>
         </div>
       </section>
 
@@ -170,6 +178,61 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
               <span class="arc-pct-text">{{ repaidPercent().toFixed(1) }}%</span>
               <span class="arc-pct-sub">PAID OFF</span>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. Section: Where Did All Your Money Go? -->
+      <section class="home-section">
+        <div class="insight-squircle-card">
+          <h2 class="section-main-heading">Where Did All Your Money Go?</h2>
+          <span class="section-sub-caption">
+            @if (hasRecordedPayments()) {
+              How much of your deposited money actually reduced the loan vs went to bank interest
+            } @else {
+              Estimated breakdown of your ₹{{ (toRupees(ledgerStore.loan().monthlyTarget) || 240000).toLocaleString('en-IN') }} monthly target between loan reduction and bank interest
+            }
+          </span>
+
+          <div class="rupee-split-container">
+            <div class="split-bar-track">
+              <div
+                class="split-segment principal"
+                [style.width.%]="rupeeSplit().principalPercent"
+                [title]="'Reduced Loan: ' + rupeeSplit().principalPercent.toFixed(1) + '%'"
+              ></div>
+              <div
+                class="split-segment interest"
+                [style.width.%]="rupeeSplit().interestPercent"
+                [title]="'Bank Interest: ' + rupeeSplit().interestPercent.toFixed(1) + '%'"
+              ></div>
+            </div>
+
+            <div class="split-stats-grid">
+              <div class="split-stat-card principal">
+                <span class="stat-badge green">Reduced Your Loan</span>
+                <strong class="stat-amount tabular-nums">{{ formatPaise(rupeeSplit().totalPrincipalReduced) }}</strong>
+                <small class="stat-percent">{{ rupeeSplit().principalPercent.toFixed(1) }}% of total paid</small>
+              </div>
+              <div class="split-stat-card interest">
+                <span class="stat-badge dark">Bank Interest Charges</span>
+                <strong class="stat-amount tabular-nums">{{ formatPaise(rupeeSplit().totalInterestPaid) }}</strong>
+                <small class="stat-percent">{{ rupeeSplit().interestPercent.toFixed(1) }}% of total paid</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. Section: Monthly Deposit Trend -->
+      <section class="home-section">
+        <div class="insight-squircle-card">
+          <h2 class="section-main-heading">Monthly Deposit Trend</h2>
+          <span class="section-sub-caption">Total money deposited each month over past 6 months</span>
+
+          <div class="chart-embed-wrapper" style="margin-top: 14px">
+            <span class="custom-chart-label" style="margin-bottom: 8px; display: block">Total Deposited Each Month (₹)</span>
+            <app-bar-chart [data]="monthlyBarData()" />
           </div>
         </div>
       </section>
@@ -828,6 +891,108 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       color: #8e8e93;
       margin: 0;
     }
+
+    /* Luxury Squircle Card for Insights on Home */
+    .insight-squircle-card {
+      background: #ffffff;
+      border-radius: 26px;
+      padding: 22px 24px;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .card-badge-chip {
+      font-size: 11px;
+      font-weight: 800;
+      color: #10b981;
+      background: rgba(16, 185, 129, 0.12);
+      padding: 3px 8px;
+      border-radius: var(--radius-pill, 99px);
+    }
+
+    .custom-chart-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #8e8e93;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .chart-embed-wrapper {
+      margin-top: 4px;
+    }
+
+    /* Rupee Split */
+    .rupee-split-container {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .split-bar-track {
+      height: 18px;
+      border-radius: 99px;
+      background: #f2f3f6;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .split-segment {
+      height: 100%;
+      transition: width 0.3s ease;
+      &.principal { background: #0fb27c; }
+      &.interest { background: #111216; }
+    }
+
+    .split-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .split-stat-card {
+      background: #f8f9fb;
+      border-radius: 18px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      border: 1px solid var(--line, rgba(0,0,0,0.06));
+    }
+
+    .stat-badge {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      width: fit-content;
+
+      &.green {
+        background: rgba(15, 178, 124, 0.15);
+        color: #0fb27c;
+      }
+
+      &.dark {
+        background: #111216;
+        color: #ffffff;
+      }
+    }
+
+    .stat-amount {
+      font-size: 16px;
+      font-weight: 800;
+      color: #111216;
+      letter-spacing: -0.02em;
+    }
+
+    .stat-percent {
+      font-size: 11px;
+      font-weight: 500;
+      color: #8e8e93;
+    }
   `,
 })
 export class HomeComponent {
@@ -884,6 +1049,58 @@ export class HomeComponent {
     const loan = this.ledgerStore.loan();
     const out = this.ledgerStore.currentOutstanding();
     return simulate(out, loan.monthlyTarget, loan.currentRateBps);
+  });
+
+  readonly rupeeSplit = computed(() => {
+    return computeRupeeSplit(this.ledgerStore.ledgerState());
+  });
+
+  readonly hasRecordedPayments = computed<boolean>(() => {
+    return this.ledgerStore
+      .transactions()
+      .some((t) => !t.deletedAt && (t.type === 'contribution' || t.type === 'bankPayment'));
+  });
+
+  readonly monthlyBarData = computed(() => {
+    const txs = this.ledgerStore
+      .transactions()
+      .filter((t): t is ContributionTransaction => t.type === 'contribution' && !t.deletedAt);
+    const monthsMap = new Map<string, number>();
+
+    const now = new Date();
+    for (let k = 5; k >= 0; k--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - k, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      monthsMap.set(key, 0);
+    }
+
+    for (const t of txs) {
+      if (monthsMap.has(t.forMonth)) {
+        monthsMap.set(t.forMonth, (monthsMap.get(t.forMonth) || 0) + t.amount / 100);
+      }
+    }
+
+    return Array.from(monthsMap.entries()).map(([monthKey, val]) => {
+      const d = new Date(`${monthKey}-01T12:00:00`);
+      const label = d.toLocaleDateString('en-IN', { month: 'short' });
+      return { label, value: Math.round(val) };
+    });
+  });
+
+  readonly baselineSimResult = computed(() => {
+    const principal = this.ledgerStore.currentOutstanding();
+    const rateBps = this.ledgerStore.loan().currentRateBps;
+    const monthlyTarget = this.ledgerStore.loan().monthlyTarget || toPaise(240000);
+    return simulateV2({
+      principal,
+      monthlyPayment: monthlyTarget,
+      rateBps,
+      paymentDayOfMonth: 5,
+      rateShiftBps: 0,
+      prepayments: [],
+      drawdowns: [],
+      dayCountBasis: this.ledgerStore.loan().bankRules?.dayCountBasis || 'actual/365',
+    });
   });
 
   openAddWith(type: 'contribution' | 'bankPayment'): void {
