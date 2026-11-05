@@ -73,16 +73,28 @@ const PAYMENT_MODES: PaymentMode[] = [
         <!-- 1. Who Paid? -->
         <div class="form-group member-picker-group">
           <span class="field-label" id="member-select-label">Who Paid?</span>
-          <div class="member-chips-scroll" role="group" aria-labelledby="member-select-label">
+          <div class="members-grid-row" role="group" aria-labelledby="member-select-label">
             @for (m of ledgerStore.activeMembers(); track m.id) {
               <button
                 type="button"
-                class="member-select-pill"
+                class="member-select-card"
                 [class.selected]="selectedMemberId() === m.id"
                 (click)="selectMember(m)"
+                [attr.aria-label]="m.name"
               >
-                <app-avatar [name]="m.name" [colorIndex]="m.colorIndex" [size]="32" [avatarUrl]="m.avatarUrl" />
-                <span class="m-pill-name">{{ m.name }}</span>
+                <div class="avatar-ring-container">
+                  <app-avatar
+                    [name]="m.name"
+                    [colorIndex]="m.colorIndex"
+                    [size]="50"
+                    [avatarUrl]="m.avatarUrl"
+                    [circular]="true"
+                  />
+                  @if (selectedMemberId() === m.id) {
+                    <span class="selected-check-badge" aria-hidden="true">✓</span>
+                  }
+                </div>
+                <span class="member-name-label">{{ m.name }}</span>
               </button>
             }
           </div>
@@ -189,8 +201,8 @@ const PAYMENT_MODES: PaymentMode[] = [
     .tx-form {
       display: flex;
       flex-direction: column;
-      gap: 16px;
-      padding-top: 6px;
+      gap: 18px;
+      padding-top: 4px;
     }
 
     .form-group {
@@ -207,55 +219,85 @@ const PAYMENT_MODES: PaymentMode[] = [
       letter-spacing: 0.04em;
     }
 
-    .member-chips-scroll {
+    .members-grid-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      padding: 6px 0 8px;
+    }
+
+    .member-select-card {
       display: flex;
-      gap: 10px;
-      overflow-x: auto;
-      padding: 4px 0 8px;
-      scrollbar-width: none;
-    }
-
-    .member-chips-scroll::-webkit-scrollbar {
-      display: none;
-    }
-
-    .member-select-pill {
-      display: inline-flex;
+      flex-direction: column;
       align-items: center;
-      gap: 10px;
-      padding: 6px 16px 6px 6px;
-      border-radius: var(--radius-pill, 9999px);
-      border: 1.5px solid var(--line, #e5e5ea);
-      background: #ffffff;
-      color: var(--ink, #111216);
+      gap: 8px;
+      background: transparent;
+      border: none;
+      padding: 4px 2px;
       cursor: pointer;
-      font-size: 13px;
-      font-weight: 700;
-      white-space: nowrap;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+      border-radius: 18px;
+      outline: none;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 
       &:hover {
-        border-color: #111216;
-        transform: translateY(-1px);
+        transform: translateY(-2px);
       }
 
-      &.selected {
-        background: #111216;
-        color: #ffffff;
-        border-color: #111216;
-        box-shadow: 0 4px 12px rgba(17, 18, 22, 0.25);
-
-        .m-pill-name {
-          color: #ffffff;
-        }
+      &:active {
+        transform: scale(0.92);
       }
     }
 
-    .m-pill-name {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--ink, #111216);
+    .avatar-ring-container {
+      position: relative;
+      display: inline-flex;
+      border-radius: 50%;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .member-select-card.selected .avatar-ring-container {
+      transform: scale(1.08);
+      box-shadow: 0 0 0 3px #ffffff, 0 0 0 5.5px #111216, 0 8px 20px rgba(17, 18, 22, 0.25);
+    }
+
+    .selected-check-badge {
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #111216;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 800;
+      display: grid;
+      place-items: center;
+      border: 2px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+      animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.5); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .member-name-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted, #767a90);
+      text-align: center;
+      letter-spacing: -0.01em;
+      transition: all 0.2s ease;
+      max-width: 100%;
+      overflow: visible;
+      word-break: break-word;
+    }
+
+    .member-select-card.selected .member-name-label {
+      color: #111216;
+      font-weight: 800;
     }
 
     .amount-input-wrap {
@@ -318,7 +360,7 @@ const PAYMENT_MODES: PaymentMode[] = [
       display: flex;
       flex-direction: column;
       gap: 10px;
-      margin-top: 10px;
+      margin-top: 8px;
     }
 
     .submit-btn {
