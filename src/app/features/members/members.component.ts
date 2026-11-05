@@ -31,35 +31,15 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
   ],
   template: `
     <div class="members-page-container">
-      <!-- 1. Top Bar (Matching Screenshot & Home Top Bar) -->
+      <!-- 1. Top Bar (Matching Home Top Bar) -->
       <header class="app-top-bar">
         <div class="user-profile-cluster">
-          <div class="profile-avatar-circle" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
-          </div>
+          <app-avatar name="Vishwas" [size]="44" [circular]="true" />
           <div class="profile-text-wrap">
             <span class="profile-greeting">Due by 5th every month</span>
             <h1 class="profile-user-name">Family Members</h1>
           </div>
         </div>
-
-        <button
-          type="button"
-          class="top-circle-action-btn"
-          (click)="openAddContribution()"
-          aria-label="Add member payment"
-          title="Add Member Money"
-        >
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#111216" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-        </button>
       </header>
 
       <!-- 2. Matte Black Hero Card (Go Premium style in screenshot) -->
@@ -67,7 +47,7 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
         <div class="hero-left-content">
           <div class="hero-badge-pill">
             <span class="lightning-bolt">⚡</span>
-            <span>Total Money to Collect · {{ activeCount() }} Members</span>
+            <span>Total Monthly Target · {{ activeCount() }} Members</span>
           </div>
           <div class="hero-number-wrap">
             <div class="hero-balance-headline tabular-nums" [appCountUp]="totalMonthlyTarget()">
@@ -114,7 +94,7 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
                   {{ formatPaise(totalThisMonth()) }}
                 </span>
                 <span class="metric-label-sub">
-                  Collected so far out of {{ formatCompactPaise(totalMonthlyTarget()) }} needed
+                  Collected of {{ formatCompactPaise(totalMonthlyTarget()) }}
                 </span>
               </div>
               <div class="mini-progress-wrap">
@@ -136,13 +116,13 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
             </div>
             <div class="card-metric-body">
               <div class="metric-stat-row">
-                <div>
+                <div class="stat-col">
                   <span class="metric-big-num">87.5%</span>
-                  <span class="metric-label-sub">Main Share (2)</span>
+                  <span class="metric-label-sub">Main (2)</span>
                 </div>
-                <div>
+                <div class="stat-col">
                   <span class="metric-big-num">12.5%</span>
-                  <span class="metric-label-sub">Remaining (3)</span>
+                  <span class="metric-label-sub">Others (3)</span>
                 </div>
               </div>
               <div class="share-bar-wrap">
@@ -161,7 +141,7 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
             <span class="section-sub-caption">Monthly amount each person needs to pay by the 5th</span>
           </div>
           <button type="button" class="section-see-all-btn" (click)="router.navigate(['/history'])">
-            Payment History ›
+            History ›
           </button>
         </div>
 
@@ -193,7 +173,7 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
                 </div>
               </div>
 
-              <!-- Metric Row: Monthly Limit, This Month, Lifetime -->
+              <!-- Metric Row: Monthly Share, This Month, Lifetime -->
               <div class="member-metrics-row">
                 <div class="member-metric-col">
                   <span class="metric-col-label">Monthly Share</span>
@@ -202,13 +182,13 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
                   </span>
                 </div>
                 <div class="member-metric-col">
-                  <span class="metric-col-label">Paid This Month</span>
+                  <span class="metric-col-label">This Month</span>
                   <span class="metric-col-val tabular-nums">
                     {{ formatPaise(m.thisMonthContribution) }}
                   </span>
                 </div>
                 <div class="member-metric-col">
-                  <span class="metric-col-label">Total Paid Ever</span>
+                  <span class="metric-col-label">Total Paid</span>
                   <span class="metric-col-val tabular-nums muted">
                     {{ formatCompactPaise(m.lifetimeContribution) }}
                   </span>
@@ -227,11 +207,11 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
                     } @else if (m.thisMonthContribution > 0) {
                       Partially Paid ({{ getMemberProgress(m).toFixed(0) }}%)
                     } @else {
-                      Not Paid Yet (Due 5th)
+                      Not Paid Yet
                     }
                   </span>
                   <span class="progress-ratio tabular-nums">
-                    {{ formatPaise(m.thisMonthContribution) }} of {{ m.target ? formatPaise(m.target) : '₹0' }}
+                    {{ formatCompactPaise(m.thisMonthContribution) }} / {{ m.target ? formatCompactPaise(m.target) : '₹0' }}
                   </span>
                 </div>
                 <app-progress-bar
@@ -244,9 +224,9 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
               <!-- Footer Meta & Quick Actions -->
               <div class="member-card-footer">
                 <div class="footer-meta-info">
-                  <span>{{ m.contributionCount }} payments made</span>
+                  <span>{{ m.contributionCount }} {{ m.contributionCount === 1 ? 'payment' : 'payments' }}</span>
                   @if (m.lastContributionDate) {
-                    <span> · Last on {{ m.lastContributionDate }}</span>
+                    <span> · Last {{ m.lastContributionDate }}</span>
                   }
                 </div>
                 <div class="footer-actions">
@@ -262,7 +242,7 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
                     class="member-action-btn-subtle"
                     (click)="viewMemberHistory(m.memberId)"
                   >
-                    Past Payments ›
+                    History ›
                   </button>
                 </div>
               </div>
@@ -294,6 +274,10 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
     .members-page-container {
       display: flex;
       flex-direction: column;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
       padding: 0 0 96px;
     }
 
@@ -304,23 +288,14 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       align-items: center;
       margin: 8px 0 20px;
       padding: 0 4px;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .user-profile-cluster {
       display: flex;
       align-items: center;
       gap: 12px;
-    }
-
-    .profile-avatar-circle {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: #111216;
-      color: #ffffff;
-      display: grid;
-      place-items: center;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
     }
 
     .profile-text-wrap {
@@ -343,28 +318,6 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       margin: 0;
     }
 
-    .top-circle-action-btn {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: #ffffff;
-      border: 1px solid rgba(0, 0, 0, 0.04);
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
-      cursor: pointer;
-      display: grid;
-      place-items: center;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-
-      &:hover {
-        background: #f7f8fa;
-        transform: scale(1.05);
-      }
-
-      &:active {
-        transform: scale(0.95);
-      }
-    }
-
     /* 2. Matte Black Hero Card */
     .matte-hero-banner {
       background: #111216;
@@ -377,6 +330,9 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       align-items: center;
       box-shadow: 0 12px 32px -6px rgba(0, 0, 0, 0.22);
       cursor: pointer;
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
       transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 
       &:hover {
@@ -392,6 +348,8 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       display: flex;
       flex-direction: column;
       gap: 10px;
+      min-width: 0;
+      overflow: hidden;
     }
 
     .hero-badge-pill {
@@ -402,17 +360,22 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       font-weight: 600;
       color: rgba(255, 255, 255, 0.9);
       letter-spacing: -0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .lightning-bolt {
       color: #f59e0b;
       font-size: 14px;
+      flex-shrink: 0;
     }
 
     .hero-number-wrap {
       display: flex;
       flex-direction: column;
       gap: 3px;
+      min-width: 0;
     }
 
     .hero-balance-headline {
@@ -421,17 +384,23 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       letter-spacing: -0.035em;
       line-height: 1.1;
       color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .hero-balance-sub {
       font-size: 12px;
       font-weight: 500;
       color: rgba(255, 255, 255, 0.6);
+      word-break: break-word;
     }
 
     .hero-circle-cta {
       width: 44px;
       height: 44px;
+      min-width: 44px;
+      min-height: 44px;
       border-radius: 50%;
       background: #ffffff;
       border: none;
@@ -456,6 +425,8 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       display: flex;
       flex-direction: column;
       margin-bottom: 26px;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .section-main-heading {
@@ -463,14 +434,16 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       font-weight: 800;
       letter-spacing: -0.025em;
       color: #111216;
-      margin: 0 0 14px 4px;
+      margin: 0 0 14px;
+      padding: 0 4px;
     }
 
     .section-title-bar {
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
-      margin: 0 4px 14px;
+      margin: 0 0 14px;
+      padding: 0 4px;
     }
 
     .section-sub-caption {
@@ -489,6 +462,7 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       font-weight: 700;
       cursor: pointer;
       padding: 4px 6px;
+      white-space: nowrap;
       transition: color 0.15s ease;
 
       &:hover {
@@ -500,23 +474,28 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
     .dual-squircle-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 14px;
+      gap: 12px;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .squircle-metric-card {
       background: #ffffff;
       border: none;
       width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+      overflow: hidden;
       text-align: left;
       font-family: inherit;
       border-radius: 26px;
-      padding: 18px 20px;
+      padding: 16px 16px;
       box-shadow: var(--shadow-card);
       cursor: pointer;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      min-height: 150px;
+      min-height: 140px;
       transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
 
       &:hover {
@@ -536,55 +515,78 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
     }
 
     .card-caption-title {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
       color: #111216;
       letter-spacing: -0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .card-chevron-icon {
       font-size: 16px;
       color: #9ca3af;
       font-weight: 700;
+      flex-shrink: 0;
     }
 
     .card-metric-body {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
+      min-width: 0;
     }
 
     .metric-pair {
       display: flex;
       flex-direction: column;
       gap: 2px;
+      min-width: 0;
     }
 
     .metric-big-num {
-      font-size: clamp(18px, 4.5vw, 22px);
+      font-size: clamp(16px, 4.2vw, 21px);
       font-weight: 800;
       letter-spacing: -0.02em;
       color: #111216;
       line-height: 1.15;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .metric-label-sub {
       font-size: 11px;
       font-weight: 500;
       color: #8e8e93;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .mini-progress-wrap {
-      margin-top: 6px;
+      margin-top: 4px;
+      width: 100%;
     }
 
     .metric-stat-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .stat-col {
       display: flex;
-      gap: 16px;
+      flex-direction: column;
+      min-width: 0;
     }
 
     .share-bar-wrap {
-      margin-top: 6px;
+      margin-top: 4px;
+      width: 100%;
     }
 
     /* 4. Squircle Cards List for Members */
@@ -592,16 +594,22 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       display: flex;
       flex-direction: column;
       gap: 14px;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .member-squircle-card {
       background: #ffffff;
       border-radius: 26px;
-      padding: 20px 22px;
+      padding: 18px 18px;
       box-shadow: var(--shadow-card);
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow: hidden;
       transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
 
       &:hover {
@@ -615,24 +623,33 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 8px;
+      width: 100%;
+      min-width: 0;
     }
 
     .member-identity-group {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
+      min-width: 0;
+      flex: 1;
     }
 
     .member-text-group {
       display: flex;
       flex-direction: column;
+      min-width: 0;
     }
 
     .member-name {
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 800;
       color: #111216;
       letter-spacing: -0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .member-due-date {
@@ -644,28 +661,33 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
     .member-badge-cluster {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
+      flex-shrink: 0;
     }
 
     .pool-share-pill {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       background: #f2f3f6;
       color: #111216;
       padding: 4px 10px;
       border-radius: 9999px;
       letter-spacing: -0.01em;
+      white-space: nowrap;
     }
 
     .member-icon-circle-btn {
-      width: 32px;
-      height: 32px;
+      width: 34px;
+      height: 34px;
+      min-width: 34px;
+      min-height: 34px;
       border-radius: 50%;
       background: #f2f3f6;
       border: none;
       display: grid;
       place-items: center;
       cursor: pointer;
+      padding: 0;
       transition: all 0.2s ease;
 
       &:hover {
@@ -683,32 +705,41 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
     /* Metrics Row */
     .member-metrics-row {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 12px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
       background: #f8f9fb;
-      padding: 12px 16px;
-      border-radius: 18px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .member-metric-col {
       display: flex;
       flex-direction: column;
       gap: 2px;
+      min-width: 0;
     }
 
     .metric-col-label {
       font-size: 10px;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.03em;
       color: #8e8e93;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .metric-col-val {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 800;
       letter-spacing: -0.02em;
       color: #111216;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
 
       &.highlight {
         color: #111216;
@@ -725,18 +756,23 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       display: flex;
       flex-direction: column;
       gap: 6px;
+      width: 100%;
     }
 
     .progress-label-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 8px;
+      font-size: 11px;
     }
 
     .progress-status-badge {
-      font-size: 11px;
       font-weight: 700;
       color: #6b7280;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
 
       &.completed {
         color: #0fb27c;
@@ -744,9 +780,10 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
     }
 
     .progress-ratio {
-      font-size: 11px;
       font-weight: 600;
       color: #8e8e93;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     /* Member Card Footer */
@@ -754,19 +791,28 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
       padding-top: 4px;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .footer-meta-info {
       font-size: 11px;
       font-weight: 500;
       color: #8e8e93;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
     }
 
     .footer-actions {
       display: flex;
       align-items: center;
       gap: 8px;
+      flex-shrink: 0;
     }
 
     .member-action-btn-black {
@@ -775,9 +821,14 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       border: none;
       border-radius: 9999px;
       padding: 6px 14px;
+      min-height: 36px;
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
       &:hover {
@@ -796,9 +847,14 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       border: none;
       border-radius: 9999px;
       padding: 6px 14px;
+      min-height: 36px;
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       transition: all 0.2s ease;
 
       &:hover {
@@ -812,7 +868,7 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
 
     /* Footnote Info Card */
     .footnote-info-card {
-      margin: 10px 4px 0;
+      margin: 10px 0 0;
       background: #ffffff;
       border-radius: 20px;
       padding: 14px 18px;
@@ -820,6 +876,8 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       display: flex;
       align-items: center;
       gap: 12px;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .footnote-icon {
@@ -832,6 +890,27 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       font-weight: 500;
       line-height: 1.45;
       color: #8e8e93;
+    }
+
+    @media (max-width: 440px) {
+      .member-card-footer {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+
+      .footer-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .member-action-btn-black,
+      .member-action-btn-subtle {
+        width: 100%;
+        min-height: 40px;
+      }
     }
   `,
 })
