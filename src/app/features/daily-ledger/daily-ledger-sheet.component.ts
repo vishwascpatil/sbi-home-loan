@@ -18,10 +18,10 @@ import { DailyLedgerRecord, formatPaise, Paise, paise } from '../../core/engine'
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, FormsModule, BottomSheetComponent],
   template: `
-    <app-bottom-sheet [isOpen]="isOpen()" [title]="'Daily OD Interest Ledger'" (dismissed)="dismissed.emit()">
+    <app-bottom-sheet [isOpen]="isOpen()" [title]="'Daily Interest Breakdown'" (dismissed)="dismissed.emit()">
       <div class="daily-ledger-body">
         <div class="month-selector-bar">
-          <label for="ledger-period-input" class="period-label">Period</label>
+          <label for="ledger-period-input" class="period-label">Month</label>
           <input
             id="ledger-period-input"
             type="month"
@@ -30,14 +30,14 @@ import { DailyLedgerRecord, formatPaise, Paise, paise } from '../../core/engine'
             (ngModelChange)="selectedPeriod.set($event)"
           />
           <div class="method-badge">
-            {{ ledgerStore.loan().bankRules?.dayCountBasis || 'actual/365' }}
+            Daily Reducing Balance
           </div>
         </div>
 
         @if (dailyRecords().length > 0) {
           <div class="summary-cards-row">
             <div class="sum-card">
-              <span class="sum-label">Month Interest (est.)</span>
+              <span class="sum-label">Interest This Month</span>
               <span class="sum-value">{{ formatPaise(totalAccrued()) }}</span>
             </div>
             <div class="sum-card">
@@ -45,22 +45,22 @@ import { DailyLedgerRecord, formatPaise, Paise, paise } from '../../core/engine'
               <span class="sum-value">{{ dailyRecords().length }} days</span>
             </div>
             <div class="sum-card">
-              <span class="sum-label">Closing Balance</span>
+              <span class="sum-label">Remaining Balance</span>
               <span class="sum-value">{{ formatPaise(finalClosing()) }}</span>
             </div>
           </div>
 
           <div class="ledger-table-wrap">
-            <table class="daily-table" aria-label="Daily Interest Ledger">
+            <table class="daily-table" aria-label="Daily Interest Breakdown">
               <thead>
                 <tr>
                   <th>Date</th>
-                  <th>Opening</th>
-                  <th>Movement</th>
-                  <th>Closing</th>
+                  <th>Start Balance</th>
+                  <th>Payments / Debits</th>
+                  <th>End Balance</th>
                   <th>Rate</th>
-                  <th>Daily Accrued</th>
-                  <th>Cumulative</th>
+                  <th>Today's Interest</th>
+                  <th>Total Interest</th>
                 </tr>
               </thead>
               <tbody>

@@ -56,19 +56,19 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
         </button>
       </header>
 
-      <!-- 2. Matte Black Hero Card (Go Premium style in screenshot) -->
-      <div class="matte-hero-banner" role="region" aria-label="Overdraft Facility Overview">
+      <!-- 2. Matte Black Hero Card (Current Loan Balance) -->
+      <div class="matte-hero-banner" role="region" aria-label="Current Loan Balance">
         <div class="hero-left-content">
           <div class="hero-badge-pill">
             <span class="lightning-bolt">⚡</span>
-            <span>Overdraft Facility · {{ (ledgerStore.loan().currentRateBps / 100).toFixed(2) }}% p.a.</span>
+            <span>Total Loan Left to Pay · {{ (ledgerStore.loan().currentRateBps / 100).toFixed(2) }}% Interest</span>
           </div>
           <div class="hero-number-wrap">
             <div class="hero-balance-headline tabular-nums" [appCountUp]="ledgerStore.currentOutstanding()">
               {{ formatPaise(ledgerStore.currentOutstanding()) }}
             </div>
             <span class="hero-balance-sub">
-              Live EOD accrual · ₹2,573/day est.
+              Adds ₹2,573 interest every day · Debited on 30th
             </span>
           </div>
         </div>
@@ -77,7 +77,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
           type="button"
           class="hero-circle-cta"
           (click)="openAddWith('bankPayment')"
-          aria-label="Record Bank Payment"
+          aria-label="Pay Bank EMI"
           title="Record Bank Payment"
         >
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#111216" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -86,9 +86,9 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
         </button>
       </div>
 
-      <!-- 3. Section: Overview ("Wellness" style in screenshot) -->
+      <!-- 3. Section: This Month & Future -->
       <section class="home-section">
-        <h2 class="section-main-heading">Overview</h2>
+        <h2 class="section-main-heading">This Month & Future</h2>
 
         <div class="dual-squircle-grid">
           <!-- Card 1: This Month -->
@@ -107,37 +107,37 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
                 <span class="metric-big-num tabular-nums" [appCountUp]="summary().principalReduced">
                   {{ formatPaise(summary().principalReduced) }}
                 </span>
-                <span class="metric-label-sub">Principal Reduced</span>
+                <span class="metric-label-sub">Loan Reduced</span>
               </div>
               <div class="metric-pair secondary">
                 <span class="metric-small-num tabular-nums">
                   {{ formatPaise(summary().interestIncurredEst, { showPaise: true, isEstimated: true }) }}
                 </span>
-                <span class="metric-label-sub">Daily Interest (Est.)</span>
+                <span class="metric-label-sub">Interest Added (Est.)</span>
               </div>
             </div>
           </button>
 
-          <!-- Card 2: Trajectory & Sparkline -->
+          <!-- Card 2: Debt Free Date -->
           <button
             type="button"
             class="squircle-metric-card"
             (click)="router.navigate(['/insights'])"
-            aria-label="View Payoff Trajectory"
+            aria-label="View Debt Free Target"
           >
             <div class="card-top-header">
-              <span class="card-caption-title">Payoff</span>
+              <span class="card-caption-title">Debt Free By</span>
               <span class="card-chevron-icon">›</span>
             </div>
             <div class="card-metric-body">
               <div class="metric-stat-row">
                 <div>
                   <span class="metric-big-num">5.2</span>
-                  <span class="metric-label-sub">Years</span>
+                  <span class="metric-label-sub">Years Left</span>
                 </div>
                 <div>
                   <span class="metric-big-num">2030</span>
-                  <span class="metric-label-sub">Est. Payoff</span>
+                  <span class="metric-label-sub">Freedom Year</span>
                 </div>
               </div>
               @if (simulationResult()) {
@@ -150,23 +150,23 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
         </div>
       </section>
 
-      <!-- 4. Section: Feature Progress Card ("Overall Progress" with 3D ring in screenshot) -->
+      <!-- 4. Section: Feature Progress Card -->
       <section class="home-section">
         <div class="progress-feature-card">
           <div class="progress-card-info">
-            <span class="progress-eyebrow">Repayment Progress</span>
+            <span class="progress-eyebrow">Overall Progress</span>
             <h3 class="progress-main-title">
-              {{ formatPaise(repaidAmount()) }} Repaid
+              {{ formatPaise(repaidAmount()) }} Cleared
             </h3>
             <p class="progress-desc">
-              {{ repaidPercent().toFixed(1) }}% of {{ formatCompactPaise(ledgerStore.loan().sanctionedLimit) }} sanction limit repaid to date.
+              You have cleared {{ repaidPercent().toFixed(1) }}% of the total {{ formatCompactPaise(ledgerStore.loan().sanctionedLimit) }} loan amount so far.
             </p>
             <button
               type="button"
               class="action-pill-black"
               (click)="openAddWith('contribution')"
             >
-              ＋ Record Deposit
+              ＋ Add Member Deposit
             </button>
           </div>
 
@@ -188,21 +188,21 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
             </svg>
             <div class="arc-inner-label">
               <span class="arc-pct-text">{{ repaidPercent().toFixed(1) }}%</span>
-              <span class="arc-pct-sub">REPAID</span>
+              <span class="arc-pct-sub">PAID OFF</span>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- 5. Section: Members & Monthly Limits ("Past Activities" style in screenshot) -->
+      <!-- 5. Section: Family Members & Targets -->
       <section class="home-section">
         <div class="section-title-bar">
           <div>
-            <h2 class="section-main-heading">Members & Limits</h2>
-            <span class="section-sub-caption">5 Members · Due 5th of each month · ₹2,40,000 pool</span>
+            <h2 class="section-main-heading">Family Members & Targets</h2>
+            <span class="section-sub-caption">5 members pooling ₹2,40,000 · Due 5th of every month</span>
           </div>
           <button type="button" class="section-see-all-btn" (click)="router.navigate(['/members'])">
-            See all ›
+            View all ›
           </button>
         </div>
 
@@ -212,19 +212,19 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
               type="button"
               class="squircle-item-row"
               (click)="router.navigate(['/members'])"
-              [attr.aria-label]="m.name + ' limit details'"
+              [attr.aria-label]="m.name + ' target details'"
             >
               <div class="item-left-cluster">
-                <app-avatar [name]="m.name" [colorIndex]="$index" [size]="42" />
+                <app-avatar [name]="m.name" [colorIndex]="$index" [size]="42" [avatarUrl]="m.avatarUrl" />
                 <div class="item-text-info">
                   <span class="item-primary-name">{{ m.name }}</span>
                   <span class="item-secondary-sub">
-                    Limit {{ m.target ? formatPaise(m.target) : '₹0' }}/mo · Due 5th
+                    Pays {{ m.target ? formatPaise(m.target) : '₹0' }} / month · Due on 5th
                   </span>
                 </div>
               </div>
               <div class="item-right-cluster">
-                <span class="item-share-pill">{{ (m.targetSharePercentage || m.sharePercentage).toFixed(1) }}%</span>
+                <span class="item-share-pill">{{ (m.targetSharePercentage || m.sharePercentage).toFixed(1) }}% share</span>
                 <span class="item-chevron">›</span>
               </div>
             </button>
@@ -232,15 +232,15 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
         </div>
       </section>
 
-      <!-- 6. Section: Recent Activity -->
+      <!-- 6. Section: Recent Payments -->
       <section class="home-section">
         <div class="section-title-bar">
           <div>
-            <h2 class="section-main-heading">Recent Activity</h2>
-            <span class="section-sub-caption">Recorded Passbook & Member Activity</span>
+            <h2 class="section-main-heading">Recent Payments</h2>
+            <span class="section-sub-caption">Latest bank payments & member deposits</span>
           </div>
           <button type="button" class="section-see-all-btn" (click)="router.navigate(['/history'])">
-            See all ›
+            View all ›
           </button>
         </div>
 
@@ -250,7 +250,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
               type="button"
               class="squircle-item-row clickable"
               (click)="editSelectedTx(tx)"
-              [attr.aria-label]="'Edit transaction ' + getTxTitle(tx)"
+              [attr.aria-label]="'Edit payment ' + getTxTitle(tx)"
             >
               <div class="item-left-cluster">
                 <div class="activity-icon-bubble" [class.payment]="tx.type === 'bankPayment'">
@@ -276,7 +276,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
             </button>
           } @empty {
             <div class="squircle-empty-card">
-              <p class="empty-hint">No transactions recorded yet. Tap ＋ on the dock to add one.</p>
+              <p class="empty-hint">No payments recorded yet. Tap ＋ below to add a payment or deposit.</p>
             </div>
           }
         </div>
@@ -916,12 +916,12 @@ export class HomeComponent {
   getTxTitle(tx: Transaction): string {
     if (tx.type === 'contribution') {
       const member = this.ledgerStore.members().find((m) => m.id === tx.memberId);
-      return member ? member.name : 'Member';
+      return member ? `${member.name} (Deposit)` : 'Member Deposit';
     }
-    if (tx.type === 'bankPayment') return 'Bank Payment';
-    if (tx.type === 'withdrawal') return 'Withdrawal';
-    if (tx.type === 'principalAdjustment') return 'Principal Adjustment';
-    if (tx.type === 'manualCorrection') return 'Balance Reconciled';
-    return 'Transaction';
+    if (tx.type === 'bankPayment') return 'Payment to Bank (EMI)';
+    if (tx.type === 'withdrawal') return 'Money Withdrawn';
+    if (tx.type === 'principalAdjustment') return 'Balance Adjustment';
+    if (tx.type === 'manualCorrection') return 'Bank Passbook Match';
+    return 'Payment';
   }
 }
