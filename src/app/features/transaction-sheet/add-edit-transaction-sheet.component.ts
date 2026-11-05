@@ -536,6 +536,7 @@ export class AddEditTransactionSheetComponent implements OnChanges {
   readonly isOpen = input<boolean>(false);
   readonly editTransaction = input<Transaction | null>(null);
   readonly initialType = input<FormType>('contribution');
+  readonly initialMemberId = input<string | undefined>(undefined);
 
   readonly dismissed = output<void>();
 
@@ -759,7 +760,8 @@ export class AddEditTransactionSheetComponent implements OnChanges {
   private resetForm(): void {
     this.selectedType.set(this.initialType() || 'contribution');
     const firstMember = this.ledgerStore.activeMembers()[0];
-    this.selectedMemberId.set(firstMember ? firstMember.id : '');
+    const targetMember = this.initialMemberId() || (firstMember ? firstMember.id : '');
+    this.selectedMemberId.set(targetMember);
     this.amountInput.set('');
     this.customInterestInput.set('');
     this.dateInput = new Date().toISOString().slice(0, 10);
