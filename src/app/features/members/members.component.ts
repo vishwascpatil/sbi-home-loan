@@ -221,7 +221,7 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
                 />
               </div>
 
-              <!-- Footer Meta & Quick Actions -->
+              <!-- Footer Meta & History Action -->
               <div class="member-card-footer">
                 <div class="footer-meta-info">
                   <span>{{ m.contributionCount }} {{ m.contributionCount === 1 ? 'payment' : 'payments' }}</span>
@@ -229,22 +229,13 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
                     <span> · Last {{ m.lastContributionDate }}</span>
                   }
                 </div>
-                <div class="footer-actions">
-                  <button
-                    type="button"
-                    class="member-action-btn-black"
-                    (click)="openAddContribution(m.memberId)"
-                  >
-                    ＋ Add Money
-                  </button>
-                  <button
-                    type="button"
-                    class="member-action-btn-subtle"
-                    (click)="viewMemberHistory(m.memberId)"
-                  >
-                    History ›
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  class="member-action-btn-subtle"
+                  (click)="viewMemberHistory(m.memberId)"
+                >
+                  History ›
+                </button>
               </div>
             </div>
           }
@@ -808,50 +799,18 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       min-width: 0;
     }
 
-    .footer-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
-    }
-
-    .member-action-btn-black {
-      background: #111216;
-      color: #ffffff;
-      border: none;
-      border-radius: 9999px;
-      padding: 6px 14px;
-      min-height: 36px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      white-space: nowrap;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-
-      &:hover {
-        background: #2a2b32;
-        transform: translateY(-1px);
-      }
-
-      &:active {
-        transform: scale(0.95);
-      }
-    }
-
     .member-action-btn-subtle {
       background: #f2f3f6;
       color: #111216;
       border: none;
       border-radius: 9999px;
       padding: 6px 14px;
-      min-height: 36px;
+      min-height: 34px;
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
       white-space: nowrap;
+      flex-shrink: 0;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -892,24 +851,15 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       color: #8e8e93;
     }
 
-    @media (max-width: 440px) {
+    @media (max-width: 360px) {
       .member-card-footer {
         flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
-      }
-
-      .footer-actions {
-        width: 100%;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
+        align-items: flex-start;
         gap: 8px;
       }
 
-      .member-action-btn-black,
       .member-action-btn-subtle {
-        width: 100%;
-        min-height: 40px;
+        align-self: flex-end;
       }
     }
   `,
