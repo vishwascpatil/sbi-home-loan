@@ -13,16 +13,13 @@ import { FormsModule } from '@angular/forms';
 import {
   AvatarComponent,
   BottomSheetComponent,
-  ChipComponent,
   ConfirmSheetComponent,
-  SegmentedControlComponent,
-  SegmentOption,
   ToastService,
 } from '../../shared/ui';
 import { LedgerStore } from '../../core/state';
 import {
-  bankPaymentSplit,
-  formatPaise,
+  getTransactionAmount,
+  Member,
   Paise,
   PaymentMode,
   toPaise,
@@ -46,8 +43,6 @@ const PAYMENT_MODES: PaymentMode[] = [
     FormsModule,
     BottomSheetComponent,
     ConfirmSheetComponent,
-    SegmentedControlComponent,
-    ChipComponent,
     AvatarComponent,
   ],
   template: `
@@ -75,32 +70,25 @@ const PAYMENT_MODES: PaymentMode[] = [
           </div>
         }
 
-        <!-- Segmented Type Selector -->
-        <app-segmented-control
-          [options]="typeOptions"
-          [selectedValue]="selectedType()"
-          (changed)="onTypeChanged($event)"
-        />
-
-        <!-- Member Selector for Contributions / Withdrawals -->
-        @if (selectedType() === 'contribution' || selectedType() === 'withdrawal') {
-          <div class="form-group member-picker-group">
-            <span class="field-label" id="member-select-label">Who Paid?</span>
-            <div class="member-chips-scroll" role="group" aria-labelledby="member-select-label">
-              @for (m of ledgerStore.activeMembers(); track m.id) {
-                <app-chip
-                  [selected]="selectedMemberId() === m.id"
-                  (clicked)="selectedMemberId.set(m.id)"
-                >
-                  <app-avatar [name]="m.name" [colorIndex]="m.colorIndex" [size]="20" />
-                  <span>{{ m.name }}</span>
-                </app-chip>
-              }
-            </div>
+        <!-- 1. Who Paid? -->
+        <div class="form-group member-picker-group">
+          <span class="field-label" id="member-select-label">Who Paid?</span>
+          <div class="member-chips-scroll" role="group" aria-labelledby="member-select-label">
+            @for (m of ledgerStore.activeMembers(); track m.id) {
+              <button
+                type="button"
+                class="member-select-pill"
+                [class.selected]="selectedMemberId() === m.id"
+                (click)="selectMember(m)"
+              >
+                <app-avatar [name]="m.name" [colorIndex]="m.colorIndex" [size]="32" [avatarUrl]="m.avatarUrl" />
+                <span class="m-pill-name">{{ m.name }}</span>
+              </button>
+            }
           </div>
-        }
+        </div>
 
-        <!-- Amount Field -->
+        <!-- 2. Amount -->
         <div class="form-group">
           <label class="field-label" for="amount-input">Amount (₹)</label>
           <div class="amount-input-wrap">
@@ -119,112 +107,24 @@ const PAYMENT_MODES: PaymentMode[] = [
           </div>
         </div>
 
-        <!-- Live Split Preview for Bank Payments -->
-        @if (selectedType() === 'bankPayment' && numericAmount() > 0) {
-          <div class="split-preview-card">
-            <div class="split-row">
-              <span class="split-label">Estimated Interest:</span>
-              <span class="split-value tabular-nums">{{ formattedInterest() }}</span>
-            </div>
-            <div class="split-row highlight">
-              <span class="split-label">Loan Reduced By:</span>
-              <span class="split-value tabular-nums">{{ formattedPrincipal() }}</span>
-            </div>
-            <div class="form-group" style="margin-top: 10px; margin-bottom: 0;">
-              <label class="field-label" for="custom-interest">Exact Interest in Passbook (optional)</label>
-              <input
-                id="custom-interest"
-                type="text"
-                inputmode="decimal"
-                class="form-input"
-                placeholder="Leave blank to use estimated interest"
-                [ngModel]="customInterestInput()"
-                (ngModelChange)="customInterestInput.set($event)"
-                name="customInterest"
-              />
-            </div>
-          </div>
-        }
-
-        <!-- Date & For Month -->
-        <div class="form-row">
-          <div class="form-group">
-            <label class="field-label" for="tx-date">Date</label>
-            <input
-              id="tx-date"
-              type="date"
-              class="form-input"
-              [(ngModel)]="dateInput"
-              name="date"
-              (ngModelChange)="onDateChange($event)"
-              required
-            />
-          </div>
-
-          <div class="form-group">
-            <label class="field-label" for="tx-month">For Month</label>
-            <input
-              id="tx-month"
-              type="month"
-              class="form-input"
-              [(ngModel)]="forMonthInput"
-              name="forMonth"
-              required
-            />
-          </div>
-        </div>
-
-        <!-- Optional Value Date -->
+        <!-- 3. When Paid? -->
         <div class="form-group">
-          <label class="field-label" for="tx-value-date">Date Payment Took Effect (Optional)</label>
+          <label class="field-label" for="tx-date">When Paid?</label>
           <input
-            id="tx-value-date"
+            id="tx-date"
             type="date"
             class="form-input"
-            [(ngModel)]="valueDateInput"
-            name="valueDate"
-          />
-        </div>
-
-        <!-- Payment Mode -->
-        <div class="form-group">
-          <label class="field-label" for="tx-mode">How was it paid?</label>
-          <select id="tx-mode" class="form-select" [(ngModel)]="modeInput" name="mode">
-            @for (mode of paymentModes; track mode) {
-              <option [value]="mode">{{ mode }}</option>
-            }
-          </select>
-        </div>
-
-        <!-- Reference & Notes -->
-        <div class="form-group">
-          <label class="field-label" for="tx-ref">UPI / Cheque / Ref Number (optional)</label>
-          <input
-            id="tx-ref"
-            type="text"
-            class="form-input"
-            placeholder="e.g. UPI Ref, Cheque No, Transaction ID"
-            [(ngModel)]="referenceInput"
-            name="reference"
-          />
-        </div>
-
-        <div class="form-group">
-          <label class="field-label" for="tx-notes">Note (optional)</label>
-          <input
-            id="tx-notes"
-            type="text"
-            class="form-input"
-            placeholder="Add any notes here"
-            [(ngModel)]="notesInput"
-            name="notes"
+            [(ngModel)]="dateInput"
+            name="date"
+            (ngModelChange)="onDateChange($event)"
+            required
           />
         </div>
 
         <!-- Action Buttons -->
         <div class="sheet-actions">
           <button type="submit" class="submit-btn" [disabled]="numericAmount() <= 0 || isLocked()">
-            {{ isEdit() ? 'Save Changes' : submitActionLabel() }}
+            {{ isEdit() ? 'Save Changes' : 'Save Payment' }}
           </button>
 
           @if (isEdit()) {
@@ -299,23 +199,17 @@ const PAYMENT_MODES: PaymentMode[] = [
       gap: 6px;
     }
 
-    .form-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
     .field-label {
       font-size: 12px;
       font-weight: 700;
-      color: var(--muted);
+      color: var(--muted, #8e8e93);
       text-transform: uppercase;
       letter-spacing: 0.04em;
     }
 
     .member-chips-scroll {
       display: flex;
-      gap: 8px;
+      gap: 10px;
       overflow-x: auto;
       padding: 4px 0 8px;
       scrollbar-width: none;
@@ -323,6 +217,45 @@ const PAYMENT_MODES: PaymentMode[] = [
 
     .member-chips-scroll::-webkit-scrollbar {
       display: none;
+    }
+
+    .member-select-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 16px 6px 6px;
+      border-radius: var(--radius-pill, 9999px);
+      border: 1.5px solid var(--line, #e5e5ea);
+      background: #ffffff;
+      color: var(--ink, #111216);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+
+      &:hover {
+        border-color: #111216;
+        transform: translateY(-1px);
+      }
+
+      &.selected {
+        background: #111216;
+        color: #ffffff;
+        border-color: #111216;
+        box-shadow: 0 4px 12px rgba(17, 18, 22, 0.25);
+
+        .m-pill-name {
+          color: #ffffff;
+        }
+      }
+    }
+
+    .m-pill-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink, #111216);
     }
 
     .amount-input-wrap {
@@ -336,7 +269,7 @@ const PAYMENT_MODES: PaymentMode[] = [
       left: 14px;
       font-size: 26px;
       font-weight: 800;
-      color: var(--brand-a);
+      color: var(--brand-a, #111216);
       pointer-events: none;
     }
 
@@ -346,9 +279,9 @@ const PAYMENT_MODES: PaymentMode[] = [
       padding-left: 38px;
       padding-right: 16px;
       border-radius: var(--radius-tile, 18px);
-      border: 1.5px solid var(--line);
+      border: 1.5px solid var(--line, #e5e5ea);
       background: var(--bg-subtle, #f5f5f7);
-      color: var(--ink);
+      color: var(--ink, #111216);
       font-size: 28px;
       font-weight: 800;
       letter-spacing: -0.02em;
@@ -357,18 +290,18 @@ const PAYMENT_MODES: PaymentMode[] = [
     }
 
     .large-amount-input:focus {
-      border-color: var(--brand-a);
-      box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.15);
+      border-color: #111216;
+      box-shadow: 0 0 0 4px rgba(17, 18, 22, 0.1);
       background: #ffffff;
     }
 
-    .form-input, .form-select {
+    .form-input {
       width: 100%;
-      height: 46px;
+      height: 48px;
       border-radius: 14px;
-      border: 1px solid var(--line);
+      border: 1.5px solid var(--line, #e5e5ea);
       background: var(--bg-subtle, #f5f5f7);
-      color: var(--ink);
+      color: var(--ink, #111216);
       padding: 0 14px;
       font-size: 14px;
       font-weight: 600;
@@ -376,66 +309,40 @@ const PAYMENT_MODES: PaymentMode[] = [
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .form-input:focus, .form-select:focus {
-      border-color: var(--brand-a);
-      box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+    .form-input:focus {
+      border-color: #111216;
       background: #ffffff;
-    }
-
-    .split-preview-card {
-      background: var(--bg-subtle, #f5f5f7);
-      border: 1px solid var(--line);
-      border-radius: var(--radius-tile, 16px);
-      padding: 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .split-row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 13px;
-      font-weight: 600;
-    }
-
-    .split-row.highlight {
-      color: var(--success);
-      font-size: 14px;
-      font-weight: 800;
-      padding-top: 4px;
-      border-top: 1px solid var(--line);
     }
 
     .sheet-actions {
       display: flex;
       flex-direction: column;
       gap: 10px;
-      margin-top: 8px;
+      margin-top: 10px;
     }
 
     .submit-btn {
       width: 100%;
       height: 50px;
       border-radius: var(--radius-pill, 9999px);
-      background: linear-gradient(135deg, #0071e3 0%, #0056b3 100%);
+      background: #111216;
       color: #ffffff;
       border: none;
       font-size: 15px;
       font-weight: 800;
       letter-spacing: -0.01em;
       cursor: pointer;
-      box-shadow: 0 4px 16px rgba(0, 113, 227, 0.35);
+      box-shadow: 0 4px 14px rgba(17, 18, 22, 0.25);
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .submit-btn:hover:not(:disabled) {
       transform: translateY(-1px);
-      box-shadow: 0 8px 22px rgba(0, 113, 227, 0.45);
+      box-shadow: 0 8px 22px rgba(17, 18, 22, 0.35);
     }
 
     .submit-btn:active:not(:disabled) {
-      transform: scale(0.96);
+      transform: scale(0.97);
     }
 
     .submit-btn:disabled {
@@ -449,7 +356,7 @@ const PAYMENT_MODES: PaymentMode[] = [
       height: 44px;
       border-radius: var(--radius-pill, 9999px);
       background: transparent;
-      color: var(--danger);
+      color: var(--danger, #ff3b30);
       border: 1px solid rgba(255, 59, 48, 0.3);
       font-size: 14px;
       font-weight: 700;
@@ -494,22 +401,22 @@ const PAYMENT_MODES: PaymentMode[] = [
     .lock-content strong {
       display: block;
       font-size: 13px;
-      color: var(--danger);
+      color: var(--danger, #ff3b30);
     }
 
     .lock-content p {
       margin: 2px 0 0;
       font-size: 11px;
-      color: var(--muted);
+      color: var(--muted, #8e8e93);
       line-height: 1.35;
     }
 
     .unlock-pill-btn {
       padding: 6px 14px;
       border-radius: var(--radius-pill, 99px);
-      border: 1px solid var(--danger);
+      border: 1px solid var(--danger, #ff3b30);
       background: transparent;
-      color: var(--danger);
+      color: var(--danger, #ff3b30);
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
@@ -523,7 +430,7 @@ const PAYMENT_MODES: PaymentMode[] = [
 
     .unlock-desc {
       font-size: 13px;
-      color: var(--muted);
+      color: var(--muted, #8e8e93);
       line-height: 1.45;
       margin: 0;
     }
@@ -545,13 +452,6 @@ export class AddEditTransactionSheetComponent implements OnChanges {
   readonly isUnlockPromptOpen = signal<boolean>(false);
   unlockReasonInput = '';
 
-  readonly typeOptions: SegmentOption<FormType>[] = [
-    { label: 'Member Paid', value: 'contribution' },
-    { label: 'Bank Payment (EMI)', value: 'bankPayment' },
-    { label: 'Money Drawn', value: 'withdrawal' },
-    { label: 'Balance Fix', value: 'principalAdjustment' },
-  ];
-
   readonly selectedType = signal<FormType>('contribution');
   readonly selectedMemberId = signal<string>('');
   readonly amountInput = signal<string>('');
@@ -571,53 +471,13 @@ export class AddEditTransactionSheetComponent implements OnChanges {
   });
 
   readonly sheetTitle = computed(() => {
-    if (this.isEdit()) return 'Edit Payment';
-    switch (this.selectedType()) {
-      case 'contribution':
-        return 'Record Member Payment';
-      case 'bankPayment':
-        return 'Record Bank EMI / Payment';
-      case 'withdrawal':
-        return 'Record Loan Withdrawal';
-      case 'principalAdjustment':
-        return 'Adjust Loan Balance';
-    }
-  });
-
-  readonly submitActionLabel = computed(() => {
-    switch (this.selectedType()) {
-      case 'contribution':
-        return 'Save Member Payment';
-      case 'bankPayment':
-        return 'Save Bank Payment';
-      case 'withdrawal':
-        return 'Save Withdrawal';
-      case 'principalAdjustment':
-        return 'Save Balance Fix';
-    }
+    return this.isEdit() ? 'Edit Payment' : 'Add Payment';
   });
 
   readonly numericAmount = computed<Paise>(() => {
     const raw = this.amountInput();
     return toPaise(raw || '0');
   });
-
-  readonly splitPreview = computed(() => {
-    const amount = this.numericAmount();
-    const estInterest = this.ledgerStore.thisMonthSummary().interestIncurredEst;
-    const custom = this.customInterestInput().trim();
-    const actualInterest = custom ? toPaise(custom) : undefined;
-
-    return bankPaymentSplit(amount, estInterest, actualInterest);
-  });
-
-  readonly formattedInterest = computed(() =>
-    formatPaise(this.splitPreview().interestPortion, { showPaise: true, isEstimated: this.splitPreview().isEstimatedSplit })
-  );
-
-  readonly formattedPrincipal = computed(() =>
-    formatPaise(this.splitPreview().principalPortion, { showPaise: true })
-  );
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['editTransaction'] && this.editTransaction()) {
@@ -627,10 +487,11 @@ export class AddEditTransactionSheetComponent implements OnChanges {
     }
   }
 
-  onTypeChanged(type: FormType): void {
-    this.selectedType.set(type);
-    if (type === 'bankPayment' && this.modeInput === 'UPI') {
-      this.modeInput = 'Bank transfer';
+  selectMember(m: Member): void {
+    this.selectedMemberId.set(m.id);
+    const stats = this.ledgerStore.memberStats().find((s) => s.memberId === m.id);
+    if (stats?.target) {
+      this.amountInput.set((stats.target / 100).toString());
     }
   }
 
@@ -646,7 +507,7 @@ export class AddEditTransactionSheetComponent implements OnChanges {
 
   async saveTransaction(): Promise<void> {
     if (this.isLocked()) {
-      this.toast.show('Period is locked. Please unlock it to make changes.', 'danger');
+      this.toast.show('This month is locked. Please unlock it to make changes.', 'danger');
       return;
     }
 
@@ -656,80 +517,42 @@ export class AddEditTransactionSheetComponent implements OnChanges {
       return;
     }
 
-    const type = this.selectedType();
+    const memberId =
+      this.selectedMemberId() || this.ledgerStore.activeMembers()[0]?.id;
+    if (!memberId) {
+      this.toast.show('Please select who paid', 'danger');
+      return;
+    }
+
     const date = this.dateInput;
-    const valueDate = this.valueDateInput.trim() || undefined;
-    const forMonth = this.forMonthInput;
-    const mode = this.modeInput;
-    const ref = this.referenceInput.trim();
-    const notes = this.notesInput.trim();
+    const forMonth = this.dateInput.slice(0, 7);
+    const mode = this.modeInput || 'UPI';
 
     try {
       if (this.isEdit()) {
         const txId = this.editTransaction()!.id;
-        const updates: Partial<Transaction> = {
+        await this.ledgerStore.updateTransaction(txId, {
+          memberId,
+          amount: amt,
           date,
-          valueDate,
           forMonth,
           mode,
-          reference: ref || undefined,
-          notes: notes || undefined,
-        };
-
-        if (type === 'contribution') {
-          Object.assign(updates, {
-            amount: amt,
-            memberId: this.selectedMemberId(),
-          });
-        } else if (type === 'bankPayment') {
-          const split = this.splitPreview();
-          Object.assign(updates, {
-            amount: amt,
-            interestPortion: split.interestPortion,
-            principalPortion: split.principalPortion,
-            isEstimatedSplit: split.isEstimatedSplit,
-          });
-        }
-
-        await this.ledgerStore.updateTransaction(txId, updates);
-        this.toast.show('Transaction updated successfully', 'success');
+        });
+        this.toast.show('Payment updated successfully', 'success');
       } else {
-        if (type === 'contribution') {
-          const memberId =
-            this.selectedMemberId() || this.ledgerStore.activeMembers()[0]?.id;
-          if (!memberId) {
-            this.toast.show('Please select a member', 'danger');
-            return;
-          }
-          await this.ledgerStore.addContribution({
-            memberId,
-            amount: amt,
-            date,
-            forMonth,
-            mode,
-            reference: ref || undefined,
-            notes: notes || undefined,
-          });
-          this.toast.show('Contribution added', 'success');
-        } else if (type === 'bankPayment') {
-          const custom = this.customInterestInput().trim();
-          const actualInterest = custom ? toPaise(custom) : undefined;
-          await this.ledgerStore.recordBankPayment({
-            amount: amt,
-            interestPortion: actualInterest,
-            date,
-            forMonth,
-            mode,
-            reference: ref || undefined,
-            notes: notes || undefined,
-          });
-          this.toast.show('Bank payment recorded', 'success');
-        }
+        await this.ledgerStore.addContribution({
+          memberId,
+          amount: amt,
+          date,
+          forMonth,
+          mode,
+        });
+        this.toast.show('Payment saved', 'success');
       }
 
       this.dismissed.emit();
     } catch {
-      this.toast.show('Failed to save transaction', 'danger');
+      this.toast.show('Failed to save payment', 'danger');
     }
   }
 
@@ -740,7 +563,7 @@ export class AddEditTransactionSheetComponent implements OnChanges {
       return;
     }
     await this.ledgerStore.unlockPeriod(this.forMonthInput, reason);
-    this.toast.show(`Period ${this.forMonthInput} unlocked (Audited)`, 'info');
+    this.toast.show(`Month ${this.forMonthInput} unlocked`, 'info');
     this.isUnlockPromptOpen.set(false);
     this.unlockReasonInput = '';
   }
@@ -749,7 +572,7 @@ export class AddEditTransactionSheetComponent implements OnChanges {
     if (!this.editTransaction() || this.isLocked()) return;
     await this.ledgerStore.deleteTransaction(this.editTransaction()!.id);
     this.isConfirmDeleteOpen.set(false);
-    this.toast.show('Transaction deleted', 'danger');
+    this.toast.show('Payment deleted', 'danger');
     this.dismissed.emit();
   }
 
@@ -760,14 +583,25 @@ export class AddEditTransactionSheetComponent implements OnChanges {
   private resetForm(): void {
     this.selectedType.set(this.initialType() || 'contribution');
     const firstMember = this.ledgerStore.activeMembers()[0];
-    const targetMember = this.initialMemberId() || (firstMember ? firstMember.id : '');
-    this.selectedMemberId.set(targetMember);
-    this.amountInput.set('');
+    const targetMemberId = this.initialMemberId() || (firstMember ? firstMember.id : '');
+    this.selectedMemberId.set(targetMemberId);
+
+    if (targetMemberId) {
+      const stats = this.ledgerStore.memberStats().find((s) => s.memberId === targetMemberId);
+      if (stats?.target) {
+        this.amountInput.set((stats.target / 100).toString());
+      } else {
+        this.amountInput.set('');
+      }
+    } else {
+      this.amountInput.set('');
+    }
+
     this.customInterestInput.set('');
     this.dateInput = new Date().toISOString().slice(0, 10);
     this.forMonthInput = new Date().toISOString().slice(0, 7);
     this.valueDateInput = '';
-    this.modeInput = this.initialType() === 'bankPayment' ? 'Bank transfer' : 'UPI';
+    this.modeInput = 'UPI';
     this.referenceInput = '';
     this.notesInput = '';
   }
@@ -783,12 +617,7 @@ export class AddEditTransactionSheetComponent implements OnChanges {
 
     if (tx.type === 'contribution') {
       this.selectedMemberId.set(tx.memberId);
-      this.amountInput.set((tx.amount / 100).toFixed(2));
-    } else if (tx.type === 'bankPayment') {
-      this.amountInput.set((tx.amount / 100).toFixed(2));
-      this.customInterestInput.set(
-        tx.isEstimatedSplit ? '' : (tx.interestPortion / 100).toFixed(2)
-      );
     }
+    this.amountInput.set((getTransactionAmount(tx) / 100).toString());
   }
 }
