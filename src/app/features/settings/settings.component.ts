@@ -6,22 +6,18 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { LedgerStore, NotificationsStore, SettingsStore } from '../../core/state';
 import {
-  ConfirmSheetComponent,
   GlassCardComponent,
   SegmentedControlComponent,
   SegmentOption,
   ToastService,
 } from '../../shared/ui';
 import {
-  BackupDiffSummary,
   CalculationMethod,
   DayCountBasis,
   DebitFrequency,
   formatPaise,
-  inspectBackupDiff,
   Member,
   monthlySummary,
   Paise,
@@ -32,20 +28,16 @@ import {
 } from '../../core/engine';
 import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.component';
 import { ReconciliationWizardComponent } from '../reconciliation/reconciliation-wizard.component';
-import { RestorePreviewModalComponent } from './restore-preview-modal.component';
 
 @Component({
   selector: 'app-settings',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FormsModule,
-    RouterLink,
     GlassCardComponent,
     SegmentedControlComponent,
-    ConfirmSheetComponent,
     DailyLedgerSheetComponent,
     ReconciliationWizardComponent,
-    RestorePreviewModalComponent,
   ],
   template: `
     <div class="settings-page">
@@ -469,55 +461,6 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
         </div>
       </app-glass-card>
 
-      <!-- Backup, Restore & Data Reset -->
-      <app-glass-card [staggerIndex]="8">
-        <h2 class="card-title">Save or Restore Your Data</h2>
-        <p class="section-sub">Download a backup file so you never lose your records, or restore from a saved file.</p>
-
-        <div class="backup-actions-grid">
-          <button type="button" class="backup-btn" (click)="downloadBackup()">
-            💾 Download Backup File
-          </button>
-
-          <label class="backup-btn upload-label">
-            📂 Restore from Backup File
-            <input type="file" accept=".json" (change)="onFileRestore($event)" hidden />
-          </label>
-
-          <button type="button" class="sample-btn" (click)="loadSampleData()">
-            🔄 Load Example Data
-          </button>
-
-          <a routerLink="/admin/audit" class="sample-btn" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
-            🛡️ View Change History Log
-          </a>
-
-          <button
-            type="button"
-            class="reset-btn"
-            (click)="isConfirmClearOpen.set(true)"
-          >
-            🗑️ Delete All Data
-          </button>
-        </div>
-
-        <div class="security-notice">
-          <strong>Security Tip:</strong>
-          Never type bank passwords or OTPs here. This app only tracks your loan and member payments.
-        </div>
-      </app-glass-card>
-
-      <!-- Confirm Clear Data Sheet -->
-      <app-confirm-sheet
-        [isOpen]="isConfirmClearOpen()"
-        title="Delete All Data"
-        message="Are you sure you want to delete all payment records? You will lose all data unless you have downloaded a backup file."
-        confirmText="Yes, Delete Everything"
-        [isDanger]="true"
-        (confirmed)="clearAllData()"
-        (cancelled)="isConfirmClearOpen.set(false)"
-      />
-
       <!-- Daily Ledger Sheet -->
       <app-daily-ledger-sheet
         [isOpen]="isDailyLedgerOpen()"
@@ -528,14 +471,6 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
       <app-reconciliation-wizard
         [isOpen]="isReconciliationOpen()"
         (dismissed)="isReconciliationOpen.set(false)"
-      />
-
-      <!-- Restore Preview Modal -->
-      <app-restore-preview-modal
-        [isOpen]="isRestoreModalOpen()"
-        [diff]="pendingRestoreDiff()"
-        (confirmed)="confirmRestore()"
-        (cancelled)="cancelRestore()"
       />
     </div>
   `,
@@ -797,62 +732,6 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
       border-color: rgba(52, 199, 89, 0.25);
     }
 
-    .backup-actions-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 10px;
-      margin-top: 14px;
-    }
-
-    .backup-btn, .sample-btn, .reset-btn {
-      width: 100%;
-      height: 44px;
-      border-radius: var(--radius-pill, 9999px);
-      border: 1px solid var(--line);
-      background: #ffffff;
-      color: var(--ink);
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-      display: grid;
-      place-items: center;
-      text-align: center;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .backup-btn:hover, .sample-btn:hover, .reset-btn:hover {
-      transform: translateY(-1.5px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-    }
-
-    .backup-btn:active, .sample-btn:active, .reset-btn:active {
-      transform: scale(0.97);
-    }
-
-    .upload-label {
-      cursor: pointer;
-    }
-
-    .sample-btn {
-      color: var(--brand-a);
-    }
-
-    .reset-btn {
-      color: var(--danger);
-      border-color: rgba(255, 59, 48, 0.3);
-    }
-
-    .security-notice {
-      margin-top: 16px;
-      padding: 12px 14px;
-      border-radius: var(--radius-tile, 16px);
-      background: var(--bg-subtle, #f5f5f7);
-      border: 1px solid var(--line);
-      font-size: 11px;
-      color: var(--muted);
-      line-height: 1.45;
-    }
 
     .view-ledger-pill-btn {
       padding: 6px 14px;
@@ -996,12 +875,8 @@ export class SettingsComponent {
   readonly toPaise = toPaise;
 
   readonly loan = this.ledgerStore.loan;
-  readonly isConfirmClearOpen = signal<boolean>(false);
   readonly isDailyLedgerOpen = signal<boolean>(false);
   readonly isReconciliationOpen = signal<boolean>(false);
-  readonly isRestoreModalOpen = signal<boolean>(false);
-  readonly pendingRestoreDiff = signal<BackupDiffSummary | null>(null);
-  readonly pendingRestoreJson = signal<string | null>(null);
 
   newRateInput: number | null = null;
   rateEffectiveDate = new Date().toISOString().slice(0, 10);
@@ -1139,71 +1014,6 @@ export class SettingsComponent {
   async updateCalculationMethod(method: CalculationMethod): Promise<void> {
     await this.ledgerStore.updateLoanDetails({ calculationMethod: method });
     this.toast.show(`Calculation mode updated`, 'info');
-  }
-
-  async downloadBackup(): Promise<void> {
-    const json = await this.ledgerStore.exportBackup();
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `loan-tracker-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    this.toast.show('Backup file downloaded', 'success');
-  }
-
-  async onFileRestore(event: Event): Promise<void> {
-    const inputEl = event.target as HTMLInputElement;
-    if (!inputEl.files || inputEl.files.length === 0) return;
-
-    const file = inputEl.files[0]!;
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const rawText = reader.result as string;
-      try {
-        const diff = inspectBackupDiff(rawText, this.ledgerStore.ledgerState());
-        this.pendingRestoreJson.set(rawText);
-        this.pendingRestoreDiff.set(diff);
-        this.isRestoreModalOpen.set(true);
-      } catch {
-        this.toast.show('Could not read backup file', 'danger');
-      }
-    };
-    reader.readAsText(file);
-    inputEl.value = '';
-  }
-
-  async confirmRestore(): Promise<void> {
-    const json = this.pendingRestoreJson();
-    if (!json) return;
-
-    try {
-      await this.ledgerStore.restoreBackup(json);
-      this.isRestoreModalOpen.set(false);
-      this.pendingRestoreJson.set(null);
-      this.pendingRestoreDiff.set(null);
-      this.toast.show('Backup restored successfully', 'success');
-    } catch {
-      this.toast.show('Could not restore: File is invalid or damaged', 'danger');
-    }
-  }
-
-  cancelRestore(): void {
-    this.isRestoreModalOpen.set(false);
-    this.pendingRestoreJson.set(null);
-    this.pendingRestoreDiff.set(null);
-  }
-
-  async loadSampleData(): Promise<void> {
-    await this.ledgerStore.loadSampleData();
-    this.toast.show('Example data loaded', 'success');
-  }
-
-  async clearAllData(): Promise<void> {
-    await this.ledgerStore.clearAllData();
-    this.isConfirmClearOpen.set(false);
-    this.toast.show('All data deleted', 'danger');
   }
 
   updateNotifPref(key: string, value: boolean | string): void {
