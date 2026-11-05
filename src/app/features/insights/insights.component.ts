@@ -3,59 +3,41 @@ import {
   Component,
   computed,
   inject,
-  signal,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { LedgerStore } from '../../core/state';
 import {
   AmortizationAreaChartComponent,
   AvatarComponent,
   BarChartComponent,
-  ContributionHeatmapComponent,
   CountUpDirective,
-  OverlayProjectionChartComponent,
-  ProgressBarComponent,
-  ToastService,
 } from '../../shared/ui';
 import {
   computeAmortizationHistory,
-  computeContributionHeatmap,
   computeMemberConsistencyScores,
   computeRupeeSplit,
   ContributionTransaction,
-  DrawdownEvent,
   formatCompactPaise,
   formatPaise,
   Paise,
-  paise,
-  PrepaymentEvent,
-  SavedScenario,
   simulateV2,
-  subPaise,
   toPaise,
   toRupees,
   ZERO_PAISE,
 } from '../../core/engine';
-
-const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
 
 @Component({
   selector: 'app-insights',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FormsModule,
     CountUpDirective,
     BarChartComponent,
     AvatarComponent,
-    ProgressBarComponent,
-    OverlayProjectionChartComponent,
     AmortizationAreaChartComponent,
-    ContributionHeatmapComponent,
   ],
   template: `
     <div class="insights-page-container">
-      <!-- 1. Top Bar (Matching Screenshot, Home & Members) -->
+      <!-- 1. Top Bar -->
       <header class="app-top-bar">
         <div class="user-profile-cluster">
           <div class="profile-avatar-circle" aria-hidden="true">
@@ -69,23 +51,9 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
             <h1 class="profile-user-name">Loan Insights</h1>
           </div>
         </div>
-
-        <button
-          type="button"
-          class="top-circle-action-btn"
-          (click)="promptSaveScenario()"
-          aria-label="Save this calculation plan"
-          title="Save Plan"
-        >
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#111216" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-            <polyline points="17 21 17 13 7 13 7 21"></polyline>
-            <polyline points="7 3 7 8 15 8"></polyline>
-          </svg>
-        </button>
       </header>
 
-      <!-- 2. Matte Black Hero Banner ("Go Premium" style in screenshot) -->
+      <!-- 2. Matte Black Hero Banner -->
       <div class="matte-hero-banner" role="region" aria-label="Debt Free Target Overview">
         <div class="hero-left-content">
           <div class="hero-badge-pill">
@@ -93,36 +61,22 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
             <span>Debt-Free Target · Daily Interest</span>
           </div>
           <div class="hero-number-wrap">
-            @if (customSimResult()) {
+            @if (baselineSimResult()) {
               <div class="hero-balance-headline tabular-nums">
-                {{ customSimResult()!.closureDate }}
+                {{ baselineSimResult()!.closureDate }}
               </div>
               <span class="hero-balance-sub">
-                Takes {{ customSimResult()!.months }} months ·
-                {{ interestDifference().isSaved ? 'Saves ' : 'Costs ' }}
-                {{ formatCompactPaise(interestDifference().interestSaved) }} in interest
+                Takes {{ baselineSimResult()!.months }} months at current monthly target (₹{{ (toRupees(ledgerStore.loan().monthlyTarget) || 240000).toLocaleString('en-IN') }}/mo)
               </span>
             } @else {
-              <div class="hero-balance-headline">Increase Monthly Payment</div>
-              <span class="hero-balance-sub">Monthly payment is too small to cover bank interest</span>
+              <div class="hero-balance-headline">Active Loan</div>
+              <span class="hero-balance-sub">Based on current bank interest rate and monthly target</span>
             }
           </div>
         </div>
-
-        <button
-          type="button"
-          class="hero-circle-cta"
-          (click)="scrollToSimulator()"
-          aria-label="Change Monthly Payment"
-          title="Try Different Monthly Payment"
-        >
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#111216" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="9 18 15 12 9 6"></polyline>
-          </svg>
-        </button>
       </div>
 
-      <!-- 3. Section: Overview Dual Squircle Grid ("Wellness" style in screenshot) -->
+      <!-- 3. Section: Overview Dual Squircle Grid -->
       <section class="page-section">
         <h2 class="section-main-heading">Quick Summary</h2>
 
@@ -176,236 +130,20 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
         </div>
       </section>
 
-      <!-- 4. Section: Repayment Simulator v2 -->
-      <section class="page-section" id="simulator-section">
-        <div class="insight-squircle-card">
-          <div class="card-header-action-row">
-            <div>
-              <h2 class="card-main-title">What-If Calculator</h2>
-              <span class="card-sub-caption">See how paying extra or changing interest rates helps you finish faster</span>
-            </div>
-            <button type="button" class="action-pill-black" (click)="promptSaveScenario()">
-              💾 Save Plan
-            </button>
-          </div>
-
-          <!-- Saved Scenarios Chips -->
-          @if (savedScenarios().length > 0) {
-            <div class="saved-scenarios-bar">
-              <span class="saved-label">Saved Plans:</span>
-              <div class="saved-chips-scroll">
-                @for (sc of savedScenarios(); track sc.id) {
-                  <button type="button" class="saved-chip" (click)="loadSavedScenario(sc)">
-                    <span>{{ sc.name }}</span>
-                    <button
-                      type="button"
-                      class="del-scenario-icon"
-                      (click)="deleteSavedScenario(sc.id, $event)"
-                      aria-label="Delete saved plan"
-                    >
-                      ✕
-                    </button>
-                  </button>
-                }
-              </div>
-            </div>
-          }
-
-          <!-- Interactive Controls Grid -->
-          <div class="sim-controls-grid">
-            <div class="sim-field">
-              <label class="custom-label" for="custom-payment">Monthly Amount You Pay (₹)</label>
-              <input
-                id="custom-payment"
-                type="number"
-                class="sim-input tabular-nums"
-                [ngModel]="customPaymentInput()"
-                (ngModelChange)="onCustomPaymentChange($event)"
-                min="1000"
-                step="5000"
-              />
-            </div>
-
-            <div class="sim-field">
-              <label class="custom-label" for="pay-day">Day You Pay Each Month</label>
-              <select
-                id="pay-day"
-                class="sim-select"
-                [ngModel]="paymentDayOfMonth()"
-                (ngModelChange)="paymentDayOfMonth.set(+$event)"
-              >
-                <option [value]="1">1st of month</option>
-                <option [value]="5">5th of month (Standard Due Date)</option>
-                <option [value]="10">10th of month</option>
-                <option [value]="15">15th of month</option>
-                <option [value]="20">20th of month</option>
-                <option [value]="25">25th of month</option>
-                <option [value]="28">28th of month</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Rate Shift Selector -->
-          <div class="rate-shift-row">
-            <span class="custom-label">If Bank Changes Interest Rate:</span>
-            <div class="rate-shift-chips">
-              @for (shift of rateShiftOptions; track shift.value) {
-                <button
-                  type="button"
-                  class="shift-chip"
-                  [class.active]="rateShiftBps() === shift.value"
-                  (click)="rateShiftBps.set(shift.value)"
-                >
-                  {{ shift.label }}
-                </button>
-              }
-            </div>
-          </div>
-
-          <!-- Prepayments & Drawdowns Management -->
-          <div class="events-management-row">
-            <div class="event-col">
-              <div class="event-col-header">
-                <span class="custom-label">Extra Lump-Sum Payments</span>
-                <button type="button" class="add-event-mini-btn" (click)="addPrepaymentPrompt()">
-                  ＋ Add Extra Payment
-                </button>
-              </div>
-              @if (prepayments().length > 0) {
-                <div class="event-chips-list">
-                  @for (p of prepayments(); track $index) {
-                    <span class="event-pill prepay">
-                      {{ p.date }}: +{{ formatCompactPaise(p.amount) }}
-                      <button type="button" (click)="removePrepayment($index)" aria-label="Remove extra payment">✕</button>
-                    </span>
-                  }
-                </div>
-              } @else {
-                <span class="empty-subtext">No extra payments added</span>
-              }
-            </div>
-
-            <div class="event-col">
-              <div class="event-col-header">
-                <span class="custom-label">Extra Money Taken (Withdrawals)</span>
-                <button type="button" class="add-event-mini-btn" (click)="addDrawdownPrompt()">
-                  ＋ Add Withdrawal
-                </button>
-              </div>
-              @if (drawdowns().length > 0) {
-                <div class="event-chips-list">
-                  @for (d of drawdowns(); track $index) {
-                    <span class="event-pill draw">
-                      {{ d.date }}: −{{ formatCompactPaise(d.amount) }}
-                      <button type="button" (click)="removeDrawdown($index)" aria-label="Remove withdrawal">✕</button>
-                    </span>
-                  }
-                </div>
-              } @else {
-                <span class="empty-subtext">No extra money taken</span>
-              }
-            </div>
-          </div>
-
-          <!-- Overlay Trajectory Chart -->
-          @if (customSimResult() && baselineSimResult()) {
-            <div class="chart-embed-wrapper">
-              <app-overlay-projection-chart
-                [baselineSchedule]="baselineSimResult()!.schedule"
-                [scenarioSchedule]="customSimResult()!.schedule"
-              />
-            </div>
-          }
-
-          <!-- Side-by-Side Comparison Metrics Card -->
-          @if (customSimResult()) {
-            <div class="sim-summary-tile">
-              <div class="sim-stat-box">
-                <span class="sim-stat-label">Debt-Free Date</span>
-                <span class="sim-stat-val">{{ customSimResult()!.closureDate }}</span>
-                <span class="sim-stat-sub">{{ customSimResult()!.months }} months</span>
-              </div>
-              <div class="sim-stat-box">
-                <span class="sim-stat-label">Future Bank Interest</span>
-                <span class="sim-stat-val tabular-nums">{{ formatPaise(customSimResult()!.totalInterest) }}</span>
-                <span class="sim-stat-sub highlight">
-                  {{ interestDifference().isSaved ? 'Saves ' : 'Costs ' }}
-                  {{ formatCompactPaise(interestDifference().interestSaved) }} in interest
-                </span>
-              </div>
-              <div class="sim-stat-box">
-                <span class="sim-stat-label">Total Money You Will Pay</span>
-                <span class="sim-stat-val tabular-nums">{{ formatCompactPaise(customSimResult()!.totalPaid) }}</span>
-                <span class="sim-stat-sub">Loan Balance + Bank Interest</span>
-              </div>
-            </div>
-          } @else {
-            <div class="alert-fail-card">
-              ⚠️ The loan will never finish with this payment: the amount is too small to cover the bank's monthly interest.
-            </div>
-          }
-        </div>
-      </section>
-
-      <!-- 5. Section: Contribution Analytics & Trend -->
+      <!-- 4. Section: Contribution Analytics & Trend -->
       <section class="page-section">
         <div class="insight-squircle-card">
           <h2 class="card-main-title">Monthly Deposit Trend</h2>
           <span class="card-sub-caption">Total money the family deposited each month over past 6 months</span>
 
-          <div class="stats-3-grid">
-            <div class="stat-mini-card">
-              <span class="stat-mini-label">Average / Month</span>
-              <strong class="stat-mini-val tabular-nums">{{ formatPaise(monthlyAverage()) }}</strong>
-              <small class="stat-mini-sub">6 month average</small>
-            </div>
-            <div class="stat-mini-card">
-              <span class="stat-mini-label">Highest Contributor</span>
-              <strong class="stat-mini-val">{{ highestContributor().name || '—' }}</strong>
-              <small class="stat-mini-sub tabular-nums">{{ formatCompactPaise(highestContributor().lifetimeContribution) }} total</small>
-            </div>
-            <div class="stat-mini-card">
-              <span class="stat-mini-label">Lowest Contributor</span>
-              <strong class="stat-mini-val">{{ lowestContributor().name || '—' }}</strong>
-              <small class="stat-mini-sub tabular-nums">{{ formatCompactPaise(lowestContributor().lifetimeContribution) }} total</small>
-            </div>
-          </div>
-
-          <div class="chart-embed-wrapper" style="margin-top: 20px">
+          <div class="chart-embed-wrapper" style="margin-top: 14px">
             <span class="custom-label" style="margin-bottom: 8px; display: block">Total Deposited Each Month (₹)</span>
             <app-bar-chart [data]="monthlyBarData()" />
           </div>
         </div>
       </section>
 
-      <!-- 6. Section: Share of Contributions -->
-      <section class="page-section">
-        <div class="insight-squircle-card">
-          <h2 class="card-main-title">Who Contributed What (Total Ever)</h2>
-          <span class="card-sub-caption">Percentage of all money paid by each family member since start</span>
-
-          <div class="share-breakdown-list">
-            @for (m of ledgerStore.memberStats(); track m.memberId) {
-              <div class="share-row">
-                <div class="share-row-top">
-                  <div class="member-pill">
-                    <app-avatar [name]="m.name" [colorIndex]="$index" [size]="28" [avatarUrl]="m.avatarUrl" />
-                    <span class="m-name">{{ m.name }}</span>
-                  </div>
-                  <span class="m-percent tabular-nums">{{ m.sharePercentage.toFixed(1) }}%</span>
-                </div>
-                <app-progress-bar
-                  [progressPercent]="m.sharePercentage"
-                  [height]="6"
-                  [color]="getColor($index)"
-                />
-              </div>
-            }
-          </div>
-        </div>
-      </section>
-
-      <!-- 7. Section: Where Each Rupee Went -->
+      <!-- 5. Section: Where Each Rupee Went -->
       <section class="page-section">
         <div class="insight-squircle-card">
           <h2 class="card-main-title">Where Did All Your Money Go?</h2>
@@ -441,7 +179,7 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
         </div>
       </section>
 
-      <!-- 8. Section: Historical Amortization -->
+      <!-- 6. Section: Historical Amortization -->
       <section class="page-section">
         <div class="insight-squircle-card">
           <h2 class="card-main-title">Loan Reduction vs Interest Over Time</h2>
@@ -452,18 +190,7 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
         </div>
       </section>
 
-      <!-- 9. Section: 365-Day Contribution Activity -->
-      <section class="page-section">
-        <div class="insight-squircle-card">
-          <h2 class="card-main-title">Yearly Payment Calendar</h2>
-          <span class="card-sub-caption">Days when family members deposited money over the last year</span>
-          <div class="chart-embed-wrapper">
-            <app-contribution-heatmap [days]="contributionHeatmapDays()" />
-          </div>
-        </div>
-      </section>
-
-      <!-- 10. Section: Member Consistency & Streaks -->
+      <!-- 7. Section: Member Consistency & Streaks -->
       <section class="page-section">
         <div class="insight-squircle-card">
           <h2 class="card-main-title">On-Time Payment Streaks</h2>
@@ -554,28 +281,6 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
       margin: 0;
     }
 
-    .top-circle-action-btn {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: #ffffff;
-      border: 1px solid rgba(0, 0, 0, 0.04);
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
-      cursor: pointer;
-      display: grid;
-      place-items: center;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-
-      &:hover {
-        background: #f7f8fa;
-        transform: scale(1.05);
-      }
-
-      &:active {
-        transform: scale(0.95);
-      }
-    }
-
     /* 2. Matte Black Hero Card */
     .matte-hero-banner {
       background: #111216;
@@ -587,16 +292,6 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
       justify-content: space-between;
       align-items: center;
       box-shadow: 0 12px 32px -6px rgba(0, 0, 0, 0.22);
-      cursor: pointer;
-      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-
-      &:hover {
-        transform: translateY(-2px);
-      }
-
-      &:active {
-        transform: scale(0.99);
-      }
     }
 
     .hero-left-content {
@@ -638,28 +333,6 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
       font-size: 12px;
       font-weight: 500;
       color: rgba(255, 255, 255, 0.6);
-    }
-
-    .hero-circle-cta {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: #ffffff;
-      border: none;
-      display: grid;
-      place-items: center;
-      cursor: pointer;
-      flex-shrink: 0;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
-      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-
-      &:hover {
-        transform: scale(1.08);
-      }
-
-      &:active {
-        transform: scale(0.92);
-      }
     }
 
     /* 3. Section Containers */
@@ -747,7 +420,7 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
       color: #4b4c52;
     }
 
-    .metric-label-sub, .stat-mini-sub, .stat-percent, .empty-subtext, .c-streak {
+    .metric-label-sub, .stat-percent, .c-streak {
       font-size: 11px;
       font-weight: 500;
       color: #8e8e93;
@@ -773,7 +446,7 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
       &.interest { background: #111216; }
     }
 
-    /* 4. Luxury Squircle Card Component */
+    /* Luxury Squircle Card Component */
     .insight-squircle-card {
       background: #ffffff;
       border-radius: 26px;
@@ -800,110 +473,7 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
       margin-top: 2px;
     }
 
-    .card-header-action-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 12px;
-    }
-
-    .action-pill-black {
-      background: #111216;
-      color: #ffffff;
-      border-radius: 9999px;
-      padding: 8px 16px;
-      font-size: 12px;
-      font-weight: 700;
-      border: none;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      white-space: nowrap;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-
-      &:hover {
-        background: #2a2b32;
-        transform: translateY(-1px);
-      }
-
-      &:active {
-        transform: scale(0.96);
-      }
-    }
-
-    /* Saved Scenarios Bar */
-    .saved-scenarios-bar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 14px;
-      background: #f8f9fb;
-      border-radius: 18px;
-    }
-
-    .saved-label {
-      font-size: 11px;
-      font-weight: 700;
-      color: #8e8e93;
-      text-transform: uppercase;
-      white-space: nowrap;
-    }
-
-    .saved-chips-scroll {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      scrollbar-width: none;
-    }
-
-    .saved-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 5px 12px;
-      border-radius: 9999px;
-      background: #ffffff;
-      border: none;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-      font-size: 12px;
-      font-weight: 700;
-      color: #111216;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.2s ease;
-
-      &:hover {
-        transform: translateY(-1px);
-      }
-    }
-
-    .del-scenario-icon {
-      background: transparent;
-      border: none;
-      color: #8e8e93;
-      font-size: 11px;
-      cursor: pointer;
-      padding: 0 2px;
-      &:hover { color: #ee4d6b; }
-    }
-
-    /* Controls & Inputs */
-    .sim-controls-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-      margin-top: 4px;
-    }
-
-    .sim-field, .rate-shift-row {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .custom-label, .sim-stat-label, .stat-mini-label, .pill-label {
+    .custom-label, .pill-label {
       font-size: 10px;
       font-weight: 700;
       color: #8e8e93;
@@ -911,209 +481,8 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
       letter-spacing: 0.04em;
     }
 
-    .sim-input, .sim-select {
-      width: 100%;
-      height: 44px;
-      border-radius: 16px;
-      border: none;
-      background: #f8f9fb;
-      color: #111216;
-      padding: 0 14px;
-      font-size: 14px;
-      font-weight: 700;
-      font-family: inherit;
-      outline: none;
-      transition: box-shadow 0.2s ease;
-
-      &:focus {
-        box-shadow: 0 0 0 2px #111216;
-        background: #ffffff;
-      }
-    }
-
-    .rate-shift-chips {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .shift-chip {
-      padding: 6px 14px;
-      border-radius: 9999px;
-      border: none;
-      background: #f2f3f6;
-      color: #111216;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s ease;
-
-      &:hover { background: #e5e7eb; }
-      &.active {
-        background: #111216;
-        color: #ffffff;
-      }
-    }
-
-    /* Prepayments & Drawdowns */
-    .events-management-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    .event-col {
-      background: #f8f9fb;
-      border-radius: 18px;
-      padding: 12px 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .event-col-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .add-event-mini-btn {
-      background: transparent;
-      border: none;
-      color: #111216;
-      font-size: 11px;
-      font-weight: 800;
-      cursor: pointer;
-      padding: 2px 4px;
-      &:hover { text-decoration: underline; }
-    }
-
-    .event-chips-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-
-    .event-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 3px 8px;
-      border-radius: 9999px;
-      font-size: 11px;
-      font-weight: 700;
-
-      button {
-        background: transparent;
-        border: none;
-        font-size: 9px;
-        cursor: pointer;
-        color: inherit;
-      }
-
-      &.prepay {
-        background: rgba(15, 178, 124, 0.15);
-        color: #0fb27c;
-      }
-
-      &.draw {
-        background: rgba(238, 77, 107, 0.15);
-        color: #ee4d6b;
-      }
-    }
-
-    /* Summary & Stats Tiles */
-    .sim-summary-tile, .stats-3-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-    }
-
-    .sim-summary-tile {
-      background: #f8f9fb;
-      border-radius: 18px;
-      padding: 14px 16px;
-    }
-
-    .sim-stat-box, .stat-mini-card {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .stat-mini-card {
-      background: #f8f9fb;
-      border-radius: 18px;
-      padding: 12px 14px;
-    }
-
-    .sim-stat-val, .stat-mini-val {
-      font-size: 14px;
-      font-weight: 800;
-      color: #111216;
-      letter-spacing: -0.02em;
-    }
-
-    .sim-stat-sub {
-      font-size: 11px;
-      color: #8e8e93;
-      font-weight: 500;
-      &.highlight {
-        color: #0fb27c;
-        font-weight: 700;
-      }
-    }
-
-    .alert-fail-card {
-      padding: 12px 14px;
-      border-radius: 18px;
-      background: rgba(238, 77, 107, 0.12);
-      color: #ee4d6b;
-      font-size: 12px;
-      font-weight: 700;
-      text-align: center;
-    }
-
     .chart-embed-wrapper {
       margin-top: 4px;
-    }
-
-    /* Share Breakdown */
-    .share-breakdown-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-top: 4px;
-    }
-
-    .share-row {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .share-row-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .member-pill {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .m-name {
-      font-size: 14px;
-      font-weight: 800;
-      color: #111216;
-    }
-
-    .m-percent {
-      font-size: 13px;
-      font-weight: 800;
-      color: #8e8e93;
     }
 
     /* Rupee Split */
@@ -1233,7 +602,6 @@ const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
 })
 export class InsightsComponent {
   readonly ledgerStore = inject(LedgerStore);
-  readonly toast = inject(ToastService);
 
   readonly amortizationHistory = computed(() => {
     return computeAmortizationHistory(this.ledgerStore.ledgerState());
@@ -1243,40 +611,13 @@ export class InsightsComponent {
     return computeRupeeSplit(this.ledgerStore.ledgerState());
   });
 
-  readonly contributionHeatmapDays = computed(() => {
-    return computeContributionHeatmap(this.ledgerStore.ledgerState());
-  });
-
   readonly memberConsistency = computed(() => {
     return computeMemberConsistencyScores(this.ledgerStore.ledgerState());
   });
 
   readonly formatPaise = formatPaise;
   readonly formatCompactPaise = formatCompactPaise;
-
-  readonly customPaymentInput = signal<number>(240000);
-  readonly paymentDayOfMonth = signal<number>(5);
-  readonly rateShiftBps = signal<number>(0);
-  readonly prepayments = signal<PrepaymentEvent[]>([]);
-  readonly drawdowns = signal<DrawdownEvent[]>([]);
-
-  readonly rateShiftOptions = [
-    { label: '−0.50%', value: -50 },
-    { label: '−0.25%', value: -25 },
-    { label: 'Current Rate', value: 0 },
-    { label: '+0.25%', value: 25 },
-    { label: '+0.50%', value: 50 },
-  ];
-
-  readonly savedScenarios = computed<SavedScenario[]>(() => {
-    return this.ledgerStore.loan().savedScenarios || [];
-  });
-
-  readonly methodLabel = computed(() => {
-    return this.ledgerStore.loan().calculationMethod === 'daily'
-      ? 'Daily OD (Day-Accurate)'
-      : 'Monthly reducing balance';
-  });
+  readonly toRupees = toRupees;
 
   readonly monthlyBarData = computed(() => {
     const txs = this.ledgerStore
@@ -1318,19 +659,13 @@ export class InsightsComponent {
     return list[0] ?? { name: '—', lifetimeContribution: ZERO_PAISE };
   });
 
-  readonly lowestContributor = computed(() => {
-    const list = [...this.ledgerStore.memberStats()].sort(
-      (a, b) => a.lifetimeContribution - b.lifetimeContribution
-    );
-    return list[0] ?? { name: '—', lifetimeContribution: ZERO_PAISE };
-  });
-
   readonly baselineSimResult = computed(() => {
     const principal = this.ledgerStore.currentOutstanding();
     const rateBps = this.ledgerStore.loan().currentRateBps;
+    const monthlyTarget = this.ledgerStore.loan().monthlyTarget || toPaise(240000);
     return simulateV2({
       principal,
-      monthlyPayment: toPaise(240000),
+      monthlyPayment: monthlyTarget,
       rateBps,
       paymentDayOfMonth: 5,
       rateShiftBps: 0,
@@ -1339,120 +674,4 @@ export class InsightsComponent {
       dayCountBasis: this.ledgerStore.loan().bankRules?.dayCountBasis || 'actual/365',
     });
   });
-
-  readonly customSimResult = computed(() => {
-    const principal = this.ledgerStore.currentOutstanding();
-    const rateBps = this.ledgerStore.loan().currentRateBps;
-    const payment = toPaise(this.customPaymentInput() || 0);
-
-    return simulateV2({
-      principal,
-      monthlyPayment: payment,
-      rateBps,
-      paymentDayOfMonth: this.paymentDayOfMonth(),
-      rateShiftBps: this.rateShiftBps(),
-      prepayments: this.prepayments(),
-      drawdowns: this.drawdowns(),
-      dayCountBasis: this.ledgerStore.loan().bankRules?.dayCountBasis || 'actual/365',
-    });
-  });
-
-  readonly interestDifference = computed(() => {
-    const base = this.baselineSimResult();
-    const custom = this.customSimResult();
-    if (!base || !custom) {
-      return { interestSaved: paise(0), isSaved: false };
-    }
-    const diff = subPaise(base.totalInterest, custom.totalInterest);
-    return {
-      interestSaved: paise(Math.abs(diff)),
-      isSaved: diff >= 0,
-    };
-  });
-
-  onCustomPaymentChange(val: number): void {
-    this.customPaymentInput.set(val || 0);
-  }
-
-  getColor(index: number): string {
-    return MEMBER_COLORS[index % MEMBER_COLORS.length]!;
-  }
-
-  scrollToSimulator(): void {
-    const el = document.getElementById('simulator-section');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
-  }
-
-  addPrepaymentPrompt(): void {
-    const today = new Date().toISOString().slice(0, 10);
-    const dateStr = window.prompt('Enter prepayment date (YYYY-MM-DD):', today);
-    if (!dateStr) return;
-    const amountStr = window.prompt('Enter prepayment amount (₹):', '100000');
-    if (!amountStr) return;
-    const amt = parseFloat(amountStr);
-    if (isNaN(amt) || amt <= 0) return;
-
-    this.prepayments.update((prev) => [
-      ...prev,
-      { date: dateStr.trim(), amount: toPaise(amt) },
-    ]);
-    this.toast.show(`Prepayment of ₹${amt.toLocaleString('en-IN')} added`, 'success');
-  }
-
-  removePrepayment(index: number): void {
-    this.prepayments.update((prev) => prev.filter((_, i) => i !== index));
-  }
-
-  addDrawdownPrompt(): void {
-    const today = new Date().toISOString().slice(0, 10);
-    const dateStr = window.prompt('Enter drawdown date (YYYY-MM-DD):', today);
-    if (!dateStr) return;
-    const amountStr = window.prompt('Enter drawdown amount (₹):', '50000');
-    if (!amountStr) return;
-    const amt = parseFloat(amountStr);
-    if (isNaN(amt) || amt <= 0) return;
-
-    this.drawdowns.update((prev) => [
-      ...prev,
-      { date: dateStr.trim(), amount: toPaise(amt) },
-    ]);
-    this.toast.show(`Drawdown of ₹${amt.toLocaleString('en-IN')} added`, 'info');
-  }
-
-  removeDrawdown(index: number): void {
-    this.drawdowns.update((prev) => prev.filter((_, i) => i !== index));
-  }
-
-  async promptSaveScenario(): Promise<void> {
-    const name = window.prompt('Enter a name for this scenario:', 'Aggressive Payoff');
-    if (!name || !name.trim()) return;
-
-    await this.ledgerStore.saveScenario({
-      name: name.trim(),
-      monthlyPayment: toPaise(this.customPaymentInput()),
-      paymentDayOfMonth: this.paymentDayOfMonth(),
-      rateShiftBps: this.rateShiftBps(),
-      prepayments: this.prepayments(),
-      drawdowns: this.drawdowns(),
-    });
-
-    this.toast.show(`Scenario "${name.trim()}" saved`, 'success');
-  }
-
-  loadSavedScenario(sc: SavedScenario): void {
-    this.customPaymentInput.set(toRupees(sc.monthlyPayment));
-    this.paymentDayOfMonth.set(sc.paymentDayOfMonth);
-    this.rateShiftBps.set(sc.rateShiftBps);
-    this.prepayments.set([...sc.prepayments]);
-    this.drawdowns.set([...sc.drawdowns]);
-    this.toast.show(`Loaded scenario "${sc.name}"`, 'info');
-  }
-
-  async deleteSavedScenario(id: string, event: Event): Promise<void> {
-    event.stopPropagation();
-    await this.ledgerStore.deleteScenario(id);
-    this.toast.show('Scenario deleted', 'danger');
-  }
 }
