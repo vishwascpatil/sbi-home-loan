@@ -9,7 +9,6 @@ export * from './stat-tile/stat-tile.component';
 export * from './charts/sparkline-chart.component';
 export * from './charts/bar-chart.component';
 export * from './charts/share-bar.component';
-export * from './charts/amortization-area-chart.component';
 export * from './toast/toast.service';
 export * from './toast/toast.component';
 export * from './bottom-sheet/bottom-sheet.component';

@@ -5,36 +5,23 @@ import {
   inject,
 } from '@angular/core';
 import { LedgerStore } from '../../core/state';
-import {
-  AmortizationAreaChartComponent,
-  AvatarComponent,
-  BarChartComponent,
-  CountUpDirective,
-} from '../../shared/ui';
+import { BarChartComponent } from '../../shared/ui';
 import {
   computeAmortizationHistory,
-  computeMemberConsistencyScores,
   computeRupeeSplit,
   ContributionTransaction,
   formatCompactPaise,
   formatPaise,
-  Paise,
   simulateV2,
   toPaise,
   toRupees,
-  ZERO_PAISE,
 } from '../../core/engine';
 
 @Component({
   selector: 'app-insights',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    CountUpDirective,
-    BarChartComponent,
-    AvatarComponent,
-    AmortizationAreaChartComponent,
-  ],
+  imports: [BarChartComponent],
   template: `
     <div class="insights-page-container">
       <!-- 1. Top Bar -->
@@ -76,61 +63,7 @@ import {
         </div>
       </div>
 
-      <!-- 3. Section: Overview Dual Squircle Grid -->
-      <section class="page-section">
-        <h2 class="section-main-heading">Quick Summary</h2>
-
-        <div class="dual-squircle-grid">
-          <!-- Card 1: Monthly Deposit Average -->
-          <div class="squircle-metric-card">
-            <div class="card-top-header">
-              <span class="card-caption-title">Average Monthly Deposit</span>
-              <span class="card-chevron-icon">›</span>
-            </div>
-            <div class="card-metric-body">
-              <div class="metric-pair">
-                <span class="metric-big-num tabular-nums" [appCountUp]="monthlyAverage()">
-                  {{ formatPaise(monthlyAverage()) }}
-                </span>
-                <span class="metric-label-sub">Average collected per month</span>
-              </div>
-              <div class="metric-pair secondary">
-                <span class="metric-small-num">
-                  Top Contributor: {{ highestContributor().name }}
-                </span>
-                <span class="metric-label-sub">{{ formatCompactPaise(highestContributor().lifetimeContribution) }} total paid</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Card 2: Rupee Equity Ratio -->
-          <div class="squircle-metric-card">
-            <div class="card-top-header">
-              <span class="card-caption-title">Where Your Money Goes</span>
-              <span class="card-chevron-icon">›</span>
-            </div>
-            <div class="card-metric-body">
-              <div class="metric-stat-row">
-                <div>
-                  <span class="metric-big-num">{{ rupeeSplit().principalPercent.toFixed(0) }}%</span>
-                  <span class="metric-label-sub">Loan Reduced</span>
-                </div>
-                <div>
-                  <span class="metric-big-num">{{ rupeeSplit().interestPercent.toFixed(0) }}%</span>
-                  <span class="metric-label-sub">Bank Interest</span>
-                </div>
-              </div>
-              <!-- Mini Dual Split Track -->
-              <div class="mini-split-track">
-                <div class="split-fill principal" [style.width.%]="rupeeSplit().principalPercent"></div>
-                <div class="split-fill interest" [style.width.%]="rupeeSplit().interestPercent"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- 4. Section: Contribution Analytics & Trend -->
+      <!-- 3. Section: Monthly Deposit Trend -->
       <section class="page-section">
         <div class="insight-squircle-card">
           <h2 class="card-main-title">Monthly Deposit Trend</h2>
@@ -143,7 +76,7 @@ import {
         </div>
       </section>
 
-      <!-- 5. Section: Where Each Rupee Went -->
+      <!-- 4. Section: Where Did All Your Money Go? -->
       <section class="page-section">
         <div class="insight-squircle-card">
           <h2 class="card-main-title">Where Did All Your Money Go?</h2>
@@ -179,46 +112,61 @@ import {
         </div>
       </section>
 
-      <!-- 6. Section: Historical Amortization -->
+      <!-- 5. Section: Loan Reduction vs Interest Over Time (Numbers) -->
       <section class="page-section">
         <div class="insight-squircle-card">
-          <h2 class="card-main-title">Loan Reduction vs Interest Over Time</h2>
-          <span class="card-sub-caption">Track how the loan goes down as you keep paying interest</span>
-          <div class="chart-embed-wrapper">
-            <app-amortization-area-chart [points]="amortizationHistory()" />
+          <h2 class="card-main-title">Loan Reduction vs Bank Interest Over Time</h2>
+          <span class="card-sub-caption">Monthly progression showing how your loan balance decreases and bank interest paid</span>
+
+          <!-- High-level Metric Stat Tiles -->
+          <div class="amort-stats-grid">
+            <div class="amort-stat-tile green">
+              <span class="amort-stat-sub">Total Loan Reduced</span>
+              <strong class="amort-stat-num tabular-nums">{{ formatPaise(rupeeSplit().totalPrincipalReduced) }}</strong>
+              <small class="amort-stat-badge">Paid towards loan</small>
+            </div>
+            <div class="amort-stat-tile dark">
+              <span class="amort-stat-sub">Total Bank Interest</span>
+              <strong class="amort-stat-num tabular-nums">{{ formatPaise(rupeeSplit().totalInterestPaid) }}</strong>
+              <small class="amort-stat-badge">Bank charges</small>
+            </div>
+            <div class="amort-stat-tile muted">
+              <span class="amort-stat-sub">Current Balance</span>
+              <strong class="amort-stat-num tabular-nums">{{ formatPaise(ledgerStore.currentOutstanding()) }}</strong>
+              <small class="amort-stat-badge">Remaining to clear</small>
+            </div>
           </div>
-        </div>
-      </section>
 
-      <!-- 7. Section: Member Consistency & Streaks -->
-      <section class="page-section">
-        <div class="insight-squircle-card">
-          <h2 class="card-main-title">On-Time Payment Streaks</h2>
-          <span class="card-sub-caption">Who pays regularly on or before the 5th of each month</span>
-
-          <div class="consistency-list">
-            @for (c of memberConsistency(); track c.memberId) {
-              <div class="consistency-row">
-                <div class="member-info-col">
-                  <app-avatar [name]="c.name" [colorIndex]="$index" [size]="32" />
-                  <div>
-                    <strong class="c-name">{{ c.name }}</strong>
-                    <small class="c-streak">🔥 {{ c.currentStreakMonths }} month streak</small>
-                  </div>
-                </div>
-
-                <div class="metrics-col">
-                  <div class="metric-pill">
-                    <span class="pill-label">On-Time</span>
-                    <span class="pill-val" [class.high]="c.onTimePercent >= 80">{{ c.onTimePercent }}%</span>
-                  </div>
-                  <div class="metric-pill">
-                    <span class="pill-label">Target Met</span>
-                    <span class="pill-val" [class.high]="c.targetAdherencePercent >= 80">{{ c.targetAdherencePercent }}%</span>
-                  </div>
-                </div>
-              </div>
-            }
+          <!-- Monthly Progression Table -->
+          <div class="amort-table-wrapper">
+            <table class="amort-data-table">
+              <thead>
+                <tr>
+                  <th>Month</th>
+                  <th class="text-right">Loan Reduced</th>
+                  <th class="text-right">Bank Interest</th>
+                  <th class="text-right">Remaining Balance</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (pt of amortizationHistoryReversed(); track pt.period) {
+                  <tr>
+                    <td class="month-cell">
+                      <strong>{{ pt.label }}</strong>
+                    </td>
+                    <td class="text-right tabular-nums text-green font-semibold">
+                      +{{ formatPaise(pt.cumulativePrincipal) }}
+                    </td>
+                    <td class="text-right tabular-nums text-dark font-semibold">
+                      {{ formatPaise(pt.cumulativeInterest) }}
+                    </td>
+                    <td class="text-right tabular-nums text-muted">
+                      {{ formatPaise(pt.closingOutstanding) }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
@@ -335,115 +283,11 @@ import {
       color: rgba(255, 255, 255, 0.6);
     }
 
-    /* 3. Section Containers */
+    /* Section Containers */
     .page-section {
       display: flex;
       flex-direction: column;
       margin-bottom: 24px;
-    }
-
-    .section-main-heading {
-      font-size: 20px;
-      font-weight: 800;
-      letter-spacing: -0.025em;
-      color: #111216;
-      margin: 0 0 14px 4px;
-    }
-
-    /* Dual Squircle Grid */
-    .dual-squircle-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-    }
-
-    .squircle-metric-card {
-      background: #ffffff;
-      border-radius: 26px;
-      padding: 18px 20px;
-      box-shadow: var(--shadow-card);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      min-height: 140px;
-      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
-
-      &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.05);
-      }
-    }
-
-    .card-top-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .card-caption-title {
-      font-size: 14px;
-      font-weight: 700;
-      color: #111216;
-      letter-spacing: -0.01em;
-    }
-
-    .card-chevron-icon {
-      font-size: 16px;
-      color: #9ca3af;
-      font-weight: 700;
-    }
-
-    .card-metric-body {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .metric-pair {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      &.secondary { margin-top: 4px; }
-    }
-
-    .metric-big-num {
-      font-size: clamp(18px, 4.5vw, 22px);
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      color: #111216;
-      line-height: 1.15;
-    }
-
-    .metric-small-num {
-      font-size: 13px;
-      font-weight: 700;
-      color: #4b4c52;
-    }
-
-    .metric-label-sub, .stat-percent, .c-streak {
-      font-size: 11px;
-      font-weight: 500;
-      color: #8e8e93;
-    }
-
-    .metric-stat-row {
-      display: flex;
-      gap: 16px;
-    }
-
-    .mini-split-track {
-      height: 6px;
-      border-radius: 99px;
-      background: #f2f3f6;
-      display: flex;
-      overflow: hidden;
-      margin-top: 4px;
-    }
-
-    .split-fill {
-      height: 100%;
-      &.principal { background: #0fb27c; }
-      &.interest { background: #111216; }
     }
 
     /* Luxury Squircle Card Component */
@@ -473,7 +317,7 @@ import {
       margin-top: 2px;
     }
 
-    .custom-label, .pill-label {
+    .custom-label {
       font-size: 10px;
       font-weight: 700;
       color: #8e8e93;
@@ -548,55 +392,130 @@ import {
       letter-spacing: -0.02em;
     }
 
-    /* Consistency List */
-    .consistency-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+    .stat-percent {
+      font-size: 11px;
+      font-weight: 500;
+      color: #8e8e93;
     }
 
-    .consistency-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 14px;
+    /* Amortization Numbers Stats Grid */
+    .amort-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    @media (max-width: 500px) {
+      .amort-stats-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .amort-stat-tile {
       background: #f8f9fb;
       border-radius: 18px;
-    }
-
-    .member-info-col {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .c-name {
-      display: block;
-      font-size: 14px;
-      font-weight: 800;
-      color: #111216;
-    }
-
-    .metrics-col {
-      display: flex;
-      gap: 8px;
-    }
-
-    .metric-pill {
-      background: #ffffff;
-      padding: 4px 10px;
-      border-radius: 12px;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+      padding: 12px 14px;
       display: flex;
       flex-direction: column;
-      align-items: center;
+      gap: 4px;
+
+      &.green {
+        border-left: 3px solid #0fb27c;
+      }
+
+      &.dark {
+        border-left: 3px solid #111216;
+      }
+
+      &.muted {
+        border-left: 3px solid #8e8e93;
+      }
     }
 
-    .pill-val {
-      font-size: 12px;
+    .amort-stat-sub {
+      font-size: 11px;
+      font-weight: 700;
+      color: #8e8e93;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .amort-stat-num {
+      font-size: 15px;
       font-weight: 800;
       color: #111216;
-      &.high { color: #0fb27c; }
+      letter-spacing: -0.02em;
+    }
+
+    .amort-stat-badge {
+      font-size: 11px;
+      color: #8e8e93;
+      font-weight: 500;
+    }
+
+    /* Amortization Table */
+    .amort-table-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin-top: 10px;
+      border-radius: 18px;
+      border: 1px solid rgba(0, 0, 0, 0.04);
+      background: #f8f9fb;
+    }
+
+    .amort-data-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 380px;
+      font-size: 12px;
+
+      th {
+        padding: 10px 14px;
+        text-align: left;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #8e8e93;
+        background: #f1f3f7;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+      }
+
+      td {
+        padding: 10px 14px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+      }
+
+      tr:last-child td {
+        border-bottom: none;
+      }
+    }
+
+    .month-cell {
+      color: #111216;
+      font-weight: 700;
+    }
+
+    .text-right {
+      text-align: right;
+    }
+
+    .text-green {
+      color: #0fb27c;
+    }
+
+    .text-dark {
+      color: #111216;
+    }
+
+    .text-muted {
+      color: #8e8e93;
+    }
+
+    .font-semibold {
+      font-weight: 700;
     }
   `,
 })
@@ -607,12 +526,12 @@ export class InsightsComponent {
     return computeAmortizationHistory(this.ledgerStore.ledgerState());
   });
 
-  readonly rupeeSplit = computed(() => {
-    return computeRupeeSplit(this.ledgerStore.ledgerState());
+  readonly amortizationHistoryReversed = computed(() => {
+    return [...this.amortizationHistory()].reverse();
   });
 
-  readonly memberConsistency = computed(() => {
-    return computeMemberConsistencyScores(this.ledgerStore.ledgerState());
+  readonly rupeeSplit = computed(() => {
+    return computeRupeeSplit(this.ledgerStore.ledgerState());
   });
 
   readonly formatPaise = formatPaise;
@@ -643,20 +562,6 @@ export class InsightsComponent {
       const label = d.toLocaleDateString('en-IN', { month: 'short' });
       return { label, value: Math.round(val) };
     });
-  });
-
-  readonly monthlyAverage = computed<Paise>(() => {
-    const bars = this.monthlyBarData();
-    const sum = bars.reduce((s, b) => s + b.value, 0);
-    const avg = bars.length > 0 ? Math.round(sum / bars.length) : 0;
-    return toPaise(avg);
-  });
-
-  readonly highestContributor = computed(() => {
-    const list = [...this.ledgerStore.memberStats()].sort(
-      (a, b) => b.lifetimeContribution - a.lifetimeContribution
-    );
-    return list[0] ?? { name: '—', lifetimeContribution: ZERO_PAISE };
   });
 
   readonly baselineSimResult = computed(() => {
