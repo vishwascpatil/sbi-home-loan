@@ -543,6 +543,11 @@ import { RestorePreviewModalComponent } from './restore-preview-modal.component'
     .settings-page {
       display: flex;
       flex-direction: column;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      padding-bottom: 96px;
     }
 
     .settings-header {

@@ -175,12 +175,19 @@ import { BankImportSheetComponent } from '../bank-import/bank-import-sheet.compo
     .history-page {
       display: flex;
       flex-direction: column;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      padding-bottom: 96px;
     }
 
     .history-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
       margin: 8px 4px 18px;
     }
 
@@ -202,6 +209,7 @@ import { BankImportSheetComponent } from '../bank-import/bank-import-sheet.compo
     .header-actions {
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: 8px;
     }
 
@@ -315,15 +323,16 @@ import { BankImportSheetComponent } from '../bank-import/bank-import-sheet.compo
       display: flex;
       align-items: flex-start;
       gap: 12px;
-      padding: 12px 10px;
-      margin: 0 -10px;
+      padding: 12px 6px;
+      margin: 0;
       border: none;
       border-top: 1px solid var(--line);
       background: transparent;
       border-radius: 14px;
       text-align: left;
       cursor: pointer;
-      width: calc(100% + 20px);
+      width: 100%;
+      box-sizing: border-box;
       transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     }
 

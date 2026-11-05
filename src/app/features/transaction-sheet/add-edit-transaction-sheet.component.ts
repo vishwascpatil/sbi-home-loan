@@ -345,7 +345,7 @@ const PAYMENT_MODES: PaymentMode[] = [
       background: var(--bg-subtle, #f5f5f7);
       color: var(--ink, #111216);
       padding: 0 14px;
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 600;
       outline: none;
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);

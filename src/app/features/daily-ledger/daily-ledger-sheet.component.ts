@@ -165,6 +165,8 @@ import { DailyLedgerRecord, formatPaise, Paise, paise } from '../../core/engine'
     .ledger-table-wrap {
       max-height: 55vh;
       overflow-y: auto;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
       border-radius: 16px;
       border: 1px solid var(--line);
       background: var(--card);

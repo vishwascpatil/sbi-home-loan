@@ -87,16 +87,16 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   styles: `
     .floating-glass-dock {
       position: fixed;
-      bottom: max(20px, env(safe-area-inset-bottom, 20px));
+      bottom: max(16px, env(safe-area-inset-bottom, 16px));
       left: 50%;
       transform: translateX(-50%);
       z-index: 1000;
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 6px 8px;
+      gap: 4px;
+      padding: 5px 6px;
       border-radius: var(--radius-pill, 9999px);
-      background: rgba(255, 255, 255, 0.86);
+      background: rgba(255, 255, 255, 0.88);
       backdrop-filter: var(--blur-dock);
       -webkit-backdrop-filter: var(--blur-dock);
       border: 1px solid rgba(255, 255, 255, 0.95);
@@ -105,6 +105,11 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         0 2px 10px rgba(0, 0, 0, 0.04),
         inset 0 1px 1px rgba(255, 255, 255, 0.9);
       user-select: none;
+      -webkit-user-select: none;
+      max-width: calc(100vw - 20px);
+      width: auto;
+      box-sizing: border-box;
+      touch-action: manipulation;
       transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
@@ -121,9 +126,12 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
       justify-content: center;
       text-decoration: none;
       color: #9ca3af;
-      padding: 6px 14px;
+      padding: 6px clamp(8px, 2.5vw, 14px);
       border-radius: var(--radius-pill, 9999px);
       min-height: 42px;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
       transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
       -webkit-tap-highlight-color: transparent;
 

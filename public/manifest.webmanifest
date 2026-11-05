@@ -6,9 +6,34 @@
   "id": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "window-controls-overlay"],
   "orientation": "portrait",
-  "background_color": "#0a0c15",
-  "theme_color": "#6c4cff",
+  "background_color": "#f2f3f6",
+  "theme_color": "#f2f3f6",
+  "categories": ["finance", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Members",
+      "short_name": "Members",
+      "description": "View family members collection status",
+      "url": "/members",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Payment History",
+      "short_name": "History",
+      "description": "See who paid how much",
+      "url": "/members/history",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Insights",
+      "short_name": "Insights",
+      "description": "View loan projections and forecasts",
+      "url": "/insights",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
   "icons": [
     {
       "src": "/icons/icon-192.png",

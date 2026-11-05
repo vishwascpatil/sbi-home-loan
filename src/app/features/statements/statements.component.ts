@@ -373,9 +373,12 @@ import {
   `,
   styles: [`
     .statements-page {
+      width: 100%;
       max-width: 860px;
       margin: 0 auto;
-      padding: 16px 16px 80px;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      padding: 16px 16px calc(100px + env(safe-area-inset-bottom, 0px));
       display: flex;
       flex-direction: column;
       gap: 20px;

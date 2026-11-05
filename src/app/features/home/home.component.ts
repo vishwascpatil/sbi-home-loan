@@ -281,7 +281,11 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
     .home-page-container {
       display: flex;
       flex-direction: column;
-      padding: 0 0 88px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      padding: 0 0 96px;
     }
 
     /* 1. Top User Profile Bar */

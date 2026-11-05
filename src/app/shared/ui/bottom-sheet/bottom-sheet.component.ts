@@ -77,6 +77,8 @@ import {
       padding: 12px 22px calc(24px + env(safe-area-inset-bottom, 0px));
       animation: slideUp 0.38s cubic-bezier(0.16, 1, 0.3, 1);
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
     }
 
     .drag-handle {
