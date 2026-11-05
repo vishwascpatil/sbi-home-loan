@@ -81,7 +81,7 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
           <button
             type="button"
             class="squircle-metric-card"
-            (click)="router.navigate(['/history'])"
+            (click)="router.navigate(['/members/history'])"
             aria-label="View this month contributions history"
           >
             <div class="card-top-header">
@@ -140,7 +140,7 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
             <h2 class="section-main-heading">All 5 Members</h2>
             <span class="section-sub-caption">Monthly amount each person needs to pay by the 5th</span>
           </div>
-          <button type="button" class="section-see-all-btn" (click)="router.navigate(['/history'])">
+          <button type="button" class="section-see-all-btn" (click)="router.navigate(['/members/history'])">
             History ›
           </button>
         </div>
@@ -911,7 +911,7 @@ export class MembersComponent {
   }
 
   viewMemberHistory(memberId: string): void {
-    void this.router.navigate(['/history'], { queryParams: { member: memberId } });
+    void this.router.navigate(['/members/history'], { queryParams: { member: memberId } });
   }
 
   openAddContribution(memberId?: string): void {

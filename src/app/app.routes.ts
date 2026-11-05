@@ -17,6 +17,18 @@ export const routes: Routes = [
       import('./features/members/members.component').then((m) => m.MembersComponent),
   },
   {
+    path: 'members/history',
+    loadComponent: () =>
+      import('./features/members/member-history.component').then(
+        (m) => m.MemberHistoryComponent
+      ),
+  },
+  {
+    path: 'member-history',
+    redirectTo: 'members/history',
+    pathMatch: 'full',
+  },
+  {
     path: 'insights',
     loadComponent: () =>
       import('./features/insights/insights.component').then((m) => m.InsightsComponent),
