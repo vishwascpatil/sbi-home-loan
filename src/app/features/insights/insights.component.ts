@@ -12,10 +12,9 @@ import {
   AvatarComponent,
   BarChartComponent,
   ContributionHeatmapComponent,
-  GlassCardComponent,
+  CountUpDirective,
   OverlayProjectionChartComponent,
   ProgressBarComponent,
-  StatTileComponent,
   ToastService,
 } from '../../shared/ui';
 import {
@@ -35,17 +34,18 @@ import {
   subPaise,
   toPaise,
   toRupees,
+  ZERO_PAISE,
 } from '../../core/engine';
 
-const MEMBER_COLORS = ['#0071e3', '#4338ca', '#059669', '#d97706', '#e11d48'];
+const MEMBER_COLORS = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
 
 @Component({
   selector: 'app-insights',
+  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FormsModule,
-    GlassCardComponent,
-    StatTileComponent,
+    CountUpDirective,
     BarChartComponent,
     AvatarComponent,
     ProgressBarComponent,
@@ -54,360 +54,1032 @@ const MEMBER_COLORS = ['#0071e3', '#4338ca', '#059669', '#d97706', '#e11d48'];
     ContributionHeatmapComponent,
   ],
   template: `
-    <div class="insights-page">
-      <header class="insights-header">
-        <div>
-          <small class="header-sub">Contributions & Scenarios</small>
-          <h1 class="header-title">Insights</h1>
+    <div class="insights-page-container">
+      <!-- 1. Top Bar (Matching Screenshot, Home & Members) -->
+      <header class="app-top-bar">
+        <div class="user-profile-cluster">
+          <div class="profile-avatar-circle" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 3v18h18"></path>
+              <path d="m19 9-5 5-4-4-3 3"></path>
+            </svg>
+          </div>
+          <div class="profile-text-wrap">
+            <span class="profile-greeting">Analytics & Projections</span>
+            <h1 class="profile-user-name">Insights</h1>
+          </div>
         </div>
+
+        <button
+          type="button"
+          class="top-circle-action-btn"
+          (click)="promptSaveScenario()"
+          aria-label="Save current projection scenario"
+          title="Save Scenario"
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#111216" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+        </button>
       </header>
 
-      <!-- Contribution Analytics Card -->
-      <app-glass-card [staggerIndex]="0">
-        <h2 class="card-title">Contribution Analytics</h2>
-
-        <div class="stats-3-grid" style="margin-top: 12px">
-          <app-stat-tile label="Avg / Month" [value]="formatPaise(monthlyAverage())" />
-          <app-stat-tile
-            label="Highest"
-            [value]="highestContributor().name || '—'"
-            [subtext]="highestContributor() ? formatCompactPaise(highestContributor().lifetimeContribution) : undefined"
-          />
-          <app-stat-tile
-            label="Lowest"
-            [value]="lowestContributor().name || '—'"
-            [subtext]="lowestContributor() ? formatCompactPaise(lowestContributor().lifetimeContribution) : undefined"
-          />
-        </div>
-
-        <div style="margin-top: 20px">
-          <h3 class="chart-subtitle">Monthly Trend (Last 6 Months)</h3>
-          <app-bar-chart [data]="monthlyBarData()" />
-        </div>
-      </app-glass-card>
-
-      <!-- Share of Contributions Card -->
-      <app-glass-card [staggerIndex]="1">
-        <h2 class="card-title">Share of Contributions</h2>
-
-        <div class="share-breakdown-list" style="margin-top: 14px">
-          @for (m of ledgerStore.memberStats(); track m.memberId) {
-            <div class="share-row">
-              <div class="share-row-top">
-                <div class="member-pill">
-                  <app-avatar [name]="m.name" [colorIndex]="$index" [size]="24" />
-                  <span class="m-name">{{ m.name }}</span>
-                </div>
-                <span class="m-percent tabular-nums">{{ m.sharePercentage.toFixed(1) }}%</span>
+      <!-- 2. Matte Black Hero Banner ("Go Premium" style in screenshot) -->
+      <div class="matte-hero-banner" role="region" aria-label="Payoff Trajectory Overview">
+        <div class="hero-left-content">
+          <div class="hero-badge-pill">
+            <span class="lightning-bolt">⚡</span>
+            <span>Repayment Trajectory · Day-Accurate OD</span>
+          </div>
+          <div class="hero-number-wrap">
+            @if (customSimResult()) {
+              <div class="hero-balance-headline tabular-nums">
+                {{ customSimResult()!.closureDate }}
               </div>
-              <app-progress-bar
-                [progressPercent]="m.sharePercentage"
-                [height]="8"
-                [color]="getColor($index)"
-              />
+              <span class="hero-balance-sub">
+                {{ customSimResult()!.months }} months ·
+                {{ interestDifference().isSaved ? 'Saves ' : 'Costs ' }}
+                {{ formatCompactPaise(interestDifference().interestSaved) }} vs baseline
+              </span>
+            } @else {
+              <div class="hero-balance-headline">Adjust Parameters</div>
+              <span class="hero-balance-sub">Monthly payment insufficient to close debt</span>
+            }
+          </div>
+        </div>
+
+        <button
+          type="button"
+          class="hero-circle-cta"
+          (click)="scrollToSimulator()"
+          aria-label="Jump to Simulator Controls"
+          title="Configure Simulation"
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#111216" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
+
+      <!-- 3. Section: Overview Dual Squircle Grid ("Wellness" style in screenshot) -->
+      <section class="page-section">
+        <h2 class="section-main-heading">Analytics Overview</h2>
+
+        <div class="dual-squircle-grid">
+          <!-- Card 1: Monthly Deposit Average -->
+          <div class="squircle-metric-card">
+            <div class="card-top-header">
+              <span class="card-caption-title">Avg Monthly Pool</span>
+              <span class="card-chevron-icon">›</span>
+            </div>
+            <div class="card-metric-body">
+              <div class="metric-pair">
+                <span class="metric-big-num tabular-nums" [appCountUp]="monthlyAverage()">
+                  {{ formatPaise(monthlyAverage()) }}
+                </span>
+                <span class="metric-label-sub">Last 6 months pool average</span>
+              </div>
+              <div class="metric-pair secondary">
+                <span class="metric-small-num">
+                  Top: {{ highestContributor().name }}
+                </span>
+                <span class="metric-label-sub">{{ formatCompactPaise(highestContributor().lifetimeContribution) }} lifetime</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Rupee Equity Ratio -->
+          <div class="squircle-metric-card">
+            <div class="card-top-header">
+              <span class="card-caption-title">Rupee Breakdown</span>
+              <span class="card-chevron-icon">›</span>
+            </div>
+            <div class="card-metric-body">
+              <div class="metric-stat-row">
+                <div>
+                  <span class="metric-big-num">{{ rupeeSplit().principalPercent.toFixed(0) }}%</span>
+                  <span class="metric-label-sub">Principal</span>
+                </div>
+                <div>
+                  <span class="metric-big-num">{{ rupeeSplit().interestPercent.toFixed(0) }}%</span>
+                  <span class="metric-label-sub">Interest</span>
+                </div>
+              </div>
+              <!-- Mini Dual Split Track -->
+              <div class="mini-split-track">
+                <div class="split-fill principal" [style.width.%]="rupeeSplit().principalPercent"></div>
+                <div class="split-fill interest" [style.width.%]="rupeeSplit().interestPercent"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Section: Repayment Simulator v2 -->
+      <section class="page-section" id="simulator-section">
+        <div class="insight-squircle-card">
+          <div class="card-header-action-row">
+            <div>
+              <h2 class="card-main-title">Repayment Simulator v2</h2>
+              <span class="card-sub-caption">Day-accurate projection with prepayments & rate shifts</span>
+            </div>
+            <button type="button" class="action-pill-black" (click)="promptSaveScenario()">
+              💾 Save Scenario
+            </button>
+          </div>
+
+          <!-- Saved Scenarios Chips -->
+          @if (savedScenarios().length > 0) {
+            <div class="saved-scenarios-bar">
+              <span class="saved-label">Saved:</span>
+              <div class="saved-chips-scroll">
+                @for (sc of savedScenarios(); track sc.id) {
+                  <button type="button" class="saved-chip" (click)="loadSavedScenario(sc)">
+                    <span>{{ sc.name }}</span>
+                    <button
+                      type="button"
+                      class="del-scenario-icon"
+                      (click)="deleteSavedScenario(sc.id, $event)"
+                      aria-label="Delete scenario"
+                    >
+                      ✕
+                    </button>
+                  </button>
+                }
+              </div>
             </div>
           }
-        </div>
-      </app-glass-card>
 
-      <!-- Repayment Simulator v2 Card -->
-      <app-glass-card [staggerIndex]="2">
-        <div class="card-title-row">
-          <h2 class="card-title">Repayment Simulator v2 (Day-Accurate)</h2>
-          <button type="button" class="save-scenario-btn" (click)="promptSaveScenario()">
-            💾 Save Scenario
-          </button>
-        </div>
-        <p class="sim-disclaimer">
-          Day-accurate projection with prepayments, drawdowns, payment days, and rate shifts (all figures est.).
-        </p>
+          <!-- Interactive Controls Grid -->
+          <div class="sim-controls-grid">
+            <div class="sim-field">
+              <label class="custom-label" for="custom-payment">Monthly Pool Payment (₹)</label>
+              <input
+                id="custom-payment"
+                type="number"
+                class="sim-input tabular-nums"
+                [ngModel]="customPaymentInput()"
+                (ngModelChange)="onCustomPaymentChange($event)"
+                min="1000"
+                step="5000"
+              />
+            </div>
 
-        <!-- Saved Scenarios Chips -->
-        @if (savedScenarios().length > 0) {
-          <div class="saved-scenarios-bar">
-            <span class="saved-label">Saved Scenarios:</span>
-            <div class="saved-chips-scroll">
-              @for (sc of savedScenarios(); track sc.id) {
-                <button type="button" class="saved-chip" (click)="loadSavedScenario(sc)">
-                  <span>{{ sc.name }}</span>
-                  <button
-                    type="button"
-                    class="del-scenario-icon"
-                    (click)="deleteSavedScenario(sc.id, $event)"
-                    aria-label="Delete scenario"
-                  >
-                    ✕
-                  </button>
+            <div class="sim-field">
+              <label class="custom-label" for="pay-day">Payment Day of Month</label>
+              <select
+                id="pay-day"
+                class="sim-select"
+                [ngModel]="paymentDayOfMonth()"
+                (ngModelChange)="paymentDayOfMonth.set(+$event)"
+              >
+                <option [value]="1">1st of month</option>
+                <option [value]="5">5th of month (Pool Due)</option>
+                <option [value]="10">10th of month</option>
+                <option [value]="15">15th of month</option>
+                <option [value]="20">20th of month</option>
+                <option [value]="25">25th of month</option>
+                <option [value]="28">28th of month</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Rate Shift Selector -->
+          <div class="rate-shift-row">
+            <span class="custom-label">Interest Rate Shift</span>
+            <div class="rate-shift-chips">
+              @for (shift of rateShiftOptions; track shift.value) {
+                <button
+                  type="button"
+                  class="shift-chip"
+                  [class.active]="rateShiftBps() === shift.value"
+                  (click)="rateShiftBps.set(shift.value)"
+                >
+                  {{ shift.label }}
                 </button>
               }
             </div>
           </div>
-        }
 
-        <!-- Interactive Controls -->
-        <div class="sim-controls-grid">
-          <div class="sim-field">
-            <label class="custom-label" for="custom-payment">Monthly Payment (₹)</label>
-            <input
-              id="custom-payment"
-              type="number"
-              class="sim-input tabular-nums"
-              [ngModel]="customPaymentInput()"
-              (ngModelChange)="onCustomPaymentChange($event)"
-              min="1000"
-              step="5000"
-            />
-          </div>
-
-          <div class="sim-field">
-            <label class="custom-label" for="pay-day">Payment Day of Month</label>
-            <select
-              id="pay-day"
-              class="sim-select"
-              [ngModel]="paymentDayOfMonth()"
-              (ngModelChange)="paymentDayOfMonth.set(+$event)"
-            >
-              <option [value]="1">1st of month</option>
-              <option [value]="5">5th of month</option>
-              <option [value]="10">10th of month</option>
-              <option [value]="15">15th of month</option>
-              <option [value]="20">20th of month</option>
-              <option [value]="25">25th of month</option>
-              <option [value]="28">28th of month</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Rate Shift Selector -->
-        <div class="rate-shift-row">
-          <span class="custom-label">Interest Rate Shift</span>
-          <div class="rate-shift-chips">
-            @for (shift of rateShiftOptions; track shift.value) {
-              <button
-                type="button"
-                class="shift-chip"
-                [class.active]="rateShiftBps() === shift.value"
-                (click)="rateShiftBps.set(shift.value)"
-              >
-                {{ shift.label }}
-              </button>
-            }
-          </div>
-        </div>
-
-        <!-- Prepayments & Drawdowns Management -->
-        <div class="events-management-row">
-          <div class="event-col">
-            <div class="event-col-header">
-              <span class="custom-label">Scheduled Prepayments</span>
-              <button type="button" class="add-event-mini-btn" (click)="addPrepaymentPrompt()">
-                ＋ Prepay
-              </button>
-            </div>
-            @if (prepayments().length > 0) {
-              <div class="event-chips-list">
-                @for (p of prepayments(); track $index) {
-                  <span class="event-pill prepay">
-                    {{ p.date }}: +{{ formatCompactPaise(p.amount) }}
-                    <button type="button" (click)="removePrepayment($index)">✕</button>
-                  </span>
-                }
+          <!-- Prepayments & Drawdowns Management -->
+          <div class="events-management-row">
+            <div class="event-col">
+              <div class="event-col-header">
+                <span class="custom-label">Scheduled Prepayments</span>
+                <button type="button" class="add-event-mini-btn" (click)="addPrepaymentPrompt()">
+                  ＋ Prepay
+                </button>
               </div>
-            } @else {
-              <span class="empty-subtext">No prepayments added</span>
-            }
-          </div>
-
-          <div class="event-col">
-            <div class="event-col-header">
-              <span class="custom-label">Extra Drawdowns</span>
-              <button type="button" class="add-event-mini-btn" (click)="addDrawdownPrompt()">
-                ＋ Drawdown
-              </button>
-            </div>
-            @if (drawdowns().length > 0) {
-              <div class="event-chips-list">
-                @for (d of drawdowns(); track $index) {
-                  <span class="event-pill draw">
-                    {{ d.date }}: −{{ formatCompactPaise(d.amount) }}
-                    <button type="button" (click)="removeDrawdown($index)">✕</button>
-                  </span>
-                }
-              </div>
-            } @else {
-              <span class="empty-subtext">No drawdowns added</span>
-            }
-          </div>
-        </div>
-
-        <!-- Overlay Trajectory Chart -->
-        @if (customSimResult() && baselineSimResult()) {
-          <app-overlay-projection-chart
-            [baselineSchedule]="baselineSimResult()!.schedule"
-            [scenarioSchedule]="customSimResult()!.schedule"
-          />
-        }
-
-        <!-- Side-by-Side Comparison Metrics Card -->
-        @if (customSimResult()) {
-          <div class="v2-summary-card">
-            <div class="v2-stat">
-              <span class="v2-stat-label">Estimated Payoff</span>
-              <span class="v2-stat-val">{{ customSimResult()!.closureDate }}</span>
-              <span class="v2-stat-sub">{{ customSimResult()!.months }} months</span>
-            </div>
-            <div class="v2-stat">
-              <span class="v2-stat-label">Future Interest (est.)</span>
-              <span class="v2-stat-val tabular-nums">{{ formatPaise(customSimResult()!.totalInterest) }}</span>
-              <span class="v2-stat-sub highlight">
-                {{ interestDifference().isSaved ? 'Saves ' : 'Costs ' }}
-                {{ formatCompactPaise(interestDifference().interestSaved) }} vs baseline
-              </span>
-            </div>
-            <div class="v2-stat">
-              <span class="v2-stat-label">Total Outflow</span>
-              <span class="v2-stat-val tabular-nums">{{ formatCompactPaise(customSimResult()!.totalPaid) }}</span>
-              <span class="v2-stat-sub">Principal + Interest</span>
-            </div>
-          </div>
-        } @else {
-          <div class="alert-fail-card">
-            ⚠️ Never closes with current parameters: monthly payment is insufficient to cover accrued interest.
-          </div>
-        }
-      </app-glass-card>
-
-      <!-- Historical Amortization Chart -->
-      <app-glass-card [staggerIndex]="3">
-        <h2 class="card-title">Historical Amortization (Principal vs Interest)</h2>
-        <p class="section-sub">Cumulative progression of principal reduction vs interest costs over time.</p>
-        <app-amortization-area-chart [points]="amortizationHistory()" />
-      </app-glass-card>
-
-      <!-- Where Each Rupee Went Breakdown -->
-      <app-glass-card [staggerIndex]="4">
-        <h2 class="card-title">Where Each Rupee Went</h2>
-        <p class="section-sub">Lifetime breakdown of total bank payments into equity built vs interest charges.</p>
-
-        <div class="rupee-split-container">
-          <div class="split-bar-track">
-            <div
-              class="split-segment principal"
-              [style.width.%]="rupeeSplit().principalPercent"
-              [title]="'Principal Repaid: ' + rupeeSplit().principalPercent.toFixed(1) + '%'"
-            ></div>
-            <div
-              class="split-segment interest"
-              [style.width.%]="rupeeSplit().interestPercent"
-              [title]="'Interest Cost: ' + rupeeSplit().interestPercent.toFixed(1) + '%'"
-            ></div>
-          </div>
-
-          <div class="split-stats-grid">
-            <div class="split-stat-card principal">
-              <span class="stat-badge green">Principal Equity</span>
-              <strong class="stat-amount tabular-nums">{{ formatPaise(rupeeSplit().totalPrincipalReduced) }}</strong>
-              <small class="stat-percent">{{ rupeeSplit().principalPercent.toFixed(1) }}% of total paid</small>
-            </div>
-            <div class="split-stat-card interest">
-              <span class="stat-badge red">Interest Cost</span>
-              <strong class="stat-amount tabular-nums">{{ formatPaise(rupeeSplit().totalInterestPaid) }}</strong>
-              <small class="stat-percent">{{ rupeeSplit().interestPercent.toFixed(1) }}% of total paid</small>
-            </div>
-          </div>
-        </div>
-      </app-glass-card>
-
-      <!-- 365-Day Contribution Heatmap -->
-      <app-glass-card [staggerIndex]="5">
-        <h2 class="card-title">365-Day Contribution Activity</h2>
-        <p class="section-sub">Daily member deposit intensity over the past 12 months.</p>
-        <app-contribution-heatmap [days]="contributionHeatmapDays()" />
-      </app-glass-card>
-
-      <!-- Member Consistency & Streaks -->
-      <app-glass-card [staggerIndex]="6">
-        <h2 class="card-title">Member Consistency & Streaks</h2>
-        <p class="section-sub">On-time adherence and active payment streaks over past 6 months.</p>
-
-        <div class="consistency-list">
-          @for (c of memberConsistency(); track c.memberId) {
-            <div class="consistency-row">
-              <div class="member-info-col">
-                <app-avatar [name]="c.name" [colorIndex]="$index" [size]="28" />
-                <div>
-                  <strong class="c-name">{{ c.name }}</strong>
-                  <small class="c-streak">🔥 {{ c.currentStreakMonths }} month streak</small>
+              @if (prepayments().length > 0) {
+                <div class="event-chips-list">
+                  @for (p of prepayments(); track $index) {
+                    <span class="event-pill prepay">
+                      {{ p.date }}: +{{ formatCompactPaise(p.amount) }}
+                      <button type="button" (click)="removePrepayment($index)" aria-label="Remove prepayment">✕</button>
+                    </span>
+                  }
                 </div>
-              </div>
+              } @else {
+                <span class="empty-subtext">No prepayments added</span>
+              }
+            </div>
 
-              <div class="metrics-col">
-                <div class="metric-pill">
-                  <span class="pill-label">On-Time</span>
-                  <span class="pill-val" [class.high]="c.onTimePercent >= 80">{{ c.onTimePercent }}%</span>
-                </div>
-                <div class="metric-pill">
-                  <span class="pill-label">Target Met</span>
-                  <span class="pill-val" [class.high]="c.targetAdherencePercent >= 80">{{ c.targetAdherencePercent }}%</span>
-                </div>
+            <div class="event-col">
+              <div class="event-col-header">
+                <span class="custom-label">Extra Drawdowns</span>
+                <button type="button" class="add-event-mini-btn" (click)="addDrawdownPrompt()">
+                  ＋ Drawdown
+                </button>
               </div>
+              @if (drawdowns().length > 0) {
+                <div class="event-chips-list">
+                  @for (d of drawdowns(); track $index) {
+                    <span class="event-pill draw">
+                      {{ d.date }}: −{{ formatCompactPaise(d.amount) }}
+                      <button type="button" (click)="removeDrawdown($index)" aria-label="Remove drawdown">✕</button>
+                    </span>
+                  }
+                </div>
+              } @else {
+                <span class="empty-subtext">No drawdowns added</span>
+              }
+            </div>
+          </div>
+
+          <!-- Overlay Trajectory Chart -->
+          @if (customSimResult() && baselineSimResult()) {
+            <div class="chart-embed-wrapper">
+              <app-overlay-projection-chart
+                [baselineSchedule]="baselineSimResult()!.schedule"
+                [scenarioSchedule]="customSimResult()!.schedule"
+              />
+            </div>
+          }
+
+          <!-- Side-by-Side Comparison Metrics Card -->
+          @if (customSimResult()) {
+            <div class="sim-summary-tile">
+              <div class="sim-stat-box">
+                <span class="sim-stat-label">Estimated Payoff</span>
+                <span class="sim-stat-val">{{ customSimResult()!.closureDate }}</span>
+                <span class="sim-stat-sub">{{ customSimResult()!.months }} months</span>
+              </div>
+              <div class="sim-stat-box">
+                <span class="sim-stat-label">Future Interest (est.)</span>
+                <span class="sim-stat-val tabular-nums">{{ formatPaise(customSimResult()!.totalInterest) }}</span>
+                <span class="sim-stat-sub highlight">
+                  {{ interestDifference().isSaved ? 'Saves ' : 'Costs ' }}
+                  {{ formatCompactPaise(interestDifference().interestSaved) }} vs base
+                </span>
+              </div>
+              <div class="sim-stat-box">
+                <span class="sim-stat-label">Total Outflow</span>
+                <span class="sim-stat-val tabular-nums">{{ formatCompactPaise(customSimResult()!.totalPaid) }}</span>
+                <span class="sim-stat-sub">Principal + Interest</span>
+              </div>
+            </div>
+          } @else {
+            <div class="alert-fail-card">
+              ⚠️ Never closes with current parameters: monthly payment is insufficient to cover accrued interest.
             </div>
           }
         </div>
-      </app-glass-card>
+      </section>
+
+      <!-- 5. Section: Contribution Analytics & Trend -->
+      <section class="page-section">
+        <div class="insight-squircle-card">
+          <h2 class="card-main-title">Contribution Analytics</h2>
+          <span class="card-sub-caption">Monthly trend & member contributions over past 6 months</span>
+
+          <div class="stats-3-grid">
+            <div class="stat-mini-card">
+              <span class="stat-mini-label">Avg / Month</span>
+              <strong class="stat-mini-val tabular-nums">{{ formatPaise(monthlyAverage()) }}</strong>
+              <small class="stat-mini-sub">6 month rolling avg</small>
+            </div>
+            <div class="stat-mini-card">
+              <span class="stat-mini-label">Highest Contributor</span>
+              <strong class="stat-mini-val">{{ highestContributor().name || '—' }}</strong>
+              <small class="stat-mini-sub tabular-nums">{{ formatCompactPaise(highestContributor().lifetimeContribution) }}</small>
+            </div>
+            <div class="stat-mini-card">
+              <span class="stat-mini-label">Lowest Contributor</span>
+              <strong class="stat-mini-val">{{ lowestContributor().name || '—' }}</strong>
+              <small class="stat-mini-sub tabular-nums">{{ formatCompactPaise(lowestContributor().lifetimeContribution) }}</small>
+            </div>
+          </div>
+
+          <div class="chart-embed-wrapper" style="margin-top: 20px">
+            <span class="custom-label" style="margin-bottom: 8px; display: block">Monthly Volume (₹)</span>
+            <app-bar-chart [data]="monthlyBarData()" />
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. Section: Share of Contributions -->
+      <section class="page-section">
+        <div class="insight-squircle-card">
+          <h2 class="card-main-title">Share of Contributions</h2>
+          <span class="card-sub-caption">Distribution of lifetime member payments across the 5 members</span>
+
+          <div class="share-breakdown-list">
+            @for (m of ledgerStore.memberStats(); track m.memberId) {
+              <div class="share-row">
+                <div class="share-row-top">
+                  <div class="member-pill">
+                    <app-avatar [name]="m.name" [colorIndex]="$index" [size]="28" />
+                    <span class="m-name">{{ m.name }}</span>
+                  </div>
+                  <span class="m-percent tabular-nums">{{ m.sharePercentage.toFixed(1) }}%</span>
+                </div>
+                <app-progress-bar
+                  [progressPercent]="m.sharePercentage"
+                  [height]="6"
+                  [color]="getColor($index)"
+                />
+              </div>
+            }
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. Section: Where Each Rupee Went -->
+      <section class="page-section">
+        <div class="insight-squircle-card">
+          <h2 class="card-main-title">Where Each Rupee Went</h2>
+          <span class="card-sub-caption">Lifetime breakdown into equity built vs bank interest cost</span>
+
+          <div class="rupee-split-container">
+            <div class="split-bar-track">
+              <div
+                class="split-segment principal"
+                [style.width.%]="rupeeSplit().principalPercent"
+                [title]="'Principal Repaid: ' + rupeeSplit().principalPercent.toFixed(1) + '%'"
+              ></div>
+              <div
+                class="split-segment interest"
+                [style.width.%]="rupeeSplit().interestPercent"
+                [title]="'Interest Cost: ' + rupeeSplit().interestPercent.toFixed(1) + '%'"
+              ></div>
+            </div>
+
+            <div class="split-stats-grid">
+              <div class="split-stat-card principal">
+                <span class="stat-badge green">Principal Equity</span>
+                <strong class="stat-amount tabular-nums">{{ formatPaise(rupeeSplit().totalPrincipalReduced) }}</strong>
+                <small class="stat-percent">{{ rupeeSplit().principalPercent.toFixed(1) }}% of total paid</small>
+              </div>
+              <div class="split-stat-card interest">
+                <span class="stat-badge dark">Interest Cost</span>
+                <strong class="stat-amount tabular-nums">{{ formatPaise(rupeeSplit().totalInterestPaid) }}</strong>
+                <small class="stat-percent">{{ rupeeSplit().interestPercent.toFixed(1) }}% of total paid</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8. Section: Historical Amortization -->
+      <section class="page-section">
+        <div class="insight-squircle-card">
+          <h2 class="card-main-title">Historical Amortization</h2>
+          <span class="card-sub-caption">Cumulative progression of principal reduction vs interest costs</span>
+          <div class="chart-embed-wrapper">
+            <app-amortization-area-chart [points]="amortizationHistory()" />
+          </div>
+        </div>
+      </section>
+
+      <!-- 9. Section: 365-Day Contribution Activity -->
+      <section class="page-section">
+        <div class="insight-squircle-card">
+          <h2 class="card-main-title">365-Day Contribution Activity</h2>
+          <span class="card-sub-caption">Daily member deposit intensity over the past 12 months</span>
+          <div class="chart-embed-wrapper">
+            <app-contribution-heatmap [days]="contributionHeatmapDays()" />
+          </div>
+        </div>
+      </section>
+
+      <!-- 10. Section: Member Consistency & Streaks -->
+      <section class="page-section">
+        <div class="insight-squircle-card">
+          <h2 class="card-main-title">Member Consistency & Streaks</h2>
+          <span class="card-sub-caption">On-time adherence and active payment streaks over past 6 months</span>
+
+          <div class="consistency-list">
+            @for (c of memberConsistency(); track c.memberId) {
+              <div class="consistency-row">
+                <div class="member-info-col">
+                  <app-avatar [name]="c.name" [colorIndex]="$index" [size]="32" />
+                  <div>
+                    <strong class="c-name">{{ c.name }}</strong>
+                    <small class="c-streak">🔥 {{ c.currentStreakMonths }} month streak</small>
+                  </div>
+                </div>
+
+                <div class="metrics-col">
+                  <div class="metric-pill">
+                    <span class="pill-label">On-Time</span>
+                    <span class="pill-val" [class.high]="c.onTimePercent >= 80">{{ c.onTimePercent }}%</span>
+                  </div>
+                  <div class="metric-pill">
+                    <span class="pill-label">Target Met</span>
+                    <span class="pill-val" [class.high]="c.targetAdherencePercent >= 80">{{ c.targetAdherencePercent }}%</span>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </section>
     </div>
   `,
   styles: `
-    .insights-page {
+    .insights-page-container {
+      display: flex;
+      flex-direction: column;
+      padding: 0 0 96px;
+    }
+
+    /* 1. Top Bar */
+    .app-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 8px 0 20px;
+      padding: 0 4px;
+    }
+
+    .user-profile-cluster {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .profile-avatar-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #111216;
+      color: #ffffff;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    }
+
+    .profile-text-wrap {
       display: flex;
       flex-direction: column;
     }
 
-    .insights-header {
-      margin: 8px 4px 20px;
+    .profile-greeting {
+      font-size: 11px;
+      font-weight: 500;
+      color: #8e8e93;
+      letter-spacing: -0.01em;
     }
 
-    .header-sub {
+    .profile-user-name {
+      font-size: 18px;
+      font-weight: 800;
+      color: #111216;
+      letter-spacing: -0.02em;
+      margin: 0;
+    }
+
+    .top-circle-action-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.04);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &:hover {
+        background: #f7f8fa;
+        transform: scale(1.05);
+      }
+
+      &:active {
+        transform: scale(0.95);
+      }
+    }
+
+    /* 2. Matte Black Hero Card */
+    .matte-hero-banner {
+      background: #111216;
+      color: #ffffff;
+      border-radius: 28px;
+      padding: 22px 24px;
+      margin-bottom: 26px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 12px 32px -6px rgba(0, 0, 0, 0.22);
+      cursor: pointer;
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &:hover {
+        transform: translateY(-2px);
+      }
+
+      &:active {
+        transform: scale(0.99);
+      }
+    }
+
+    .hero-left-content {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .hero-badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       font-size: 12px;
-      font-weight: 700;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.9);
+      letter-spacing: -0.01em;
     }
 
-    .header-title {
-      font-size: 26px;
+    .lightning-bolt {
+      color: #f59e0b;
+      font-size: 14px;
+    }
+
+    .hero-number-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .hero-balance-headline {
+      font-size: clamp(24px, 6vw, 32px);
+      font-weight: 800;
+      letter-spacing: -0.035em;
+      line-height: 1.1;
+      color: #ffffff;
+    }
+
+    .hero-balance-sub {
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .hero-circle-cta {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: none;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &:hover {
+        transform: scale(1.08);
+      }
+
+      &:active {
+        transform: scale(0.92);
+      }
+    }
+
+    /* 3. Section Containers */
+    .page-section {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 24px;
+    }
+
+    .section-main-heading {
+      font-size: 20px;
       font-weight: 800;
       letter-spacing: -0.025em;
-      margin: 2px 0 0;
+      color: #111216;
+      margin: 0 0 14px 4px;
     }
 
-    .card-title {
-      font-size: 16px;
-      font-weight: 800;
-      margin: 0;
-      letter-spacing: -0.015em;
-    }
-
-    .chart-subtitle {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      margin-bottom: 8px;
-    }
-
-    .stats-3-grid {
+    /* Dual Squircle Grid */
+    .dual-squircle-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
     }
 
-    .share-breakdown-list {
+    .squircle-metric-card {
+      background: #ffffff;
+      border-radius: 26px;
+      padding: 18px 20px;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 140px;
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.05);
+      }
+    }
+
+    .card-top-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-caption-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #111216;
+      letter-spacing: -0.01em;
+    }
+
+    .card-chevron-icon {
+      font-size: 16px;
+      color: #9ca3af;
+      font-weight: 700;
+    }
+
+    .card-metric-body {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .metric-pair {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      &.secondary { margin-top: 4px; }
+    }
+
+    .metric-big-num {
+      font-size: clamp(18px, 4.5vw, 22px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #111216;
+      line-height: 1.15;
+    }
+
+    .metric-small-num {
+      font-size: 13px;
+      font-weight: 700;
+      color: #4b4c52;
+    }
+
+    .metric-label-sub, .stat-mini-sub, .stat-percent, .empty-subtext, .c-streak {
+      font-size: 11px;
+      font-weight: 500;
+      color: #8e8e93;
+    }
+
+    .metric-stat-row {
+      display: flex;
+      gap: 16px;
+    }
+
+    .mini-split-track {
+      height: 6px;
+      border-radius: 99px;
+      background: #f2f3f6;
+      display: flex;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .split-fill {
+      height: 100%;
+      &.principal { background: #0fb27c; }
+      &.interest { background: #111216; }
+    }
+
+    /* 4. Luxury Squircle Card Component */
+    .insight-squircle-card {
+      background: #ffffff;
+      border-radius: 26px;
+      padding: 22px 24px;
+      box-shadow: var(--shadow-card);
       display: flex;
       flex-direction: column;
       gap: 14px;
+    }
+
+    .card-main-title {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #111216;
+      margin: 0;
+    }
+
+    .card-sub-caption {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: #8e8e93;
+      margin-top: 2px;
+    }
+
+    .card-header-action-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .action-pill-black {
+      background: #111216;
+      color: #ffffff;
+      border-radius: 9999px;
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &:hover {
+        background: #2a2b32;
+        transform: translateY(-1px);
+      }
+
+      &:active {
+        transform: scale(0.96);
+      }
+    }
+
+    /* Saved Scenarios Bar */
+    .saved-scenarios-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: #f8f9fb;
+      border-radius: 18px;
+    }
+
+    .saved-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #8e8e93;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .saved-chips-scroll {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .saved-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 9999px;
+      background: #ffffff;
+      border: none;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+      font-size: 12px;
+      font-weight: 700;
+      color: #111216;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+
+      &:hover {
+        transform: translateY(-1px);
+      }
+    }
+
+    .del-scenario-icon {
+      background: transparent;
+      border: none;
+      color: #8e8e93;
+      font-size: 11px;
+      cursor: pointer;
+      padding: 0 2px;
+      &:hover { color: #ee4d6b; }
+    }
+
+    /* Controls & Inputs */
+    .sim-controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 4px;
+    }
+
+    .sim-field, .rate-shift-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .custom-label, .sim-stat-label, .stat-mini-label, .pill-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #8e8e93;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .sim-input, .sim-select {
+      width: 100%;
+      height: 44px;
+      border-radius: 16px;
+      border: none;
+      background: #f8f9fb;
+      color: #111216;
+      padding: 0 14px;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: inherit;
+      outline: none;
+      transition: box-shadow 0.2s ease;
+
+      &:focus {
+        box-shadow: 0 0 0 2px #111216;
+        background: #ffffff;
+      }
+    }
+
+    .rate-shift-chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .shift-chip {
+      padding: 6px 14px;
+      border-radius: 9999px;
+      border: none;
+      background: #f2f3f6;
+      color: #111216;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover { background: #e5e7eb; }
+      &.active {
+        background: #111216;
+        color: #ffffff;
+      }
+    }
+
+    /* Prepayments & Drawdowns */
+    .events-management-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .event-col {
+      background: #f8f9fb;
+      border-radius: 18px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .event-col-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .add-event-mini-btn {
+      background: transparent;
+      border: none;
+      color: #111216;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+      padding: 2px 4px;
+      &:hover { text-decoration: underline; }
+    }
+
+    .event-chips-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .event-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+
+      button {
+        background: transparent;
+        border: none;
+        font-size: 9px;
+        cursor: pointer;
+        color: inherit;
+      }
+
+      &.prepay {
+        background: rgba(15, 178, 124, 0.15);
+        color: #0fb27c;
+      }
+
+      &.draw {
+        background: rgba(238, 77, 107, 0.15);
+        color: #ee4d6b;
+      }
+    }
+
+    /* Summary & Stats Tiles */
+    .sim-summary-tile, .stats-3-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .sim-summary-tile {
+      background: #f8f9fb;
+      border-radius: 18px;
+      padding: 14px 16px;
+    }
+
+    .sim-stat-box, .stat-mini-card {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .stat-mini-card {
+      background: #f8f9fb;
+      border-radius: 18px;
+      padding: 12px 14px;
+    }
+
+    .sim-stat-val, .stat-mini-val {
+      font-size: 14px;
+      font-weight: 800;
+      color: #111216;
+      letter-spacing: -0.02em;
+    }
+
+    .sim-stat-sub {
+      font-size: 11px;
+      color: #8e8e93;
+      font-weight: 500;
+      &.highlight {
+        color: #0fb27c;
+        font-weight: 700;
+      }
+    }
+
+    .alert-fail-card {
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: rgba(238, 77, 107, 0.12);
+      color: #ee4d6b;
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .chart-embed-wrapper {
+      margin-top: 4px;
+    }
+
+    /* Share Breakdown */
+    .share-breakdown-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 4px;
     }
 
     .share-row {
@@ -425,301 +1097,22 @@ const MEMBER_COLORS = ['#0071e3', '#4338ca', '#059669', '#d97706', '#e11d48'];
     .member-pill {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
     .m-name {
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 800;
+      color: #111216;
     }
 
     .m-percent {
       font-size: 13px;
       font-weight: 800;
-      color: var(--muted);
+      color: #8e8e93;
     }
 
-    .sim-disclaimer {
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.45;
-      margin: 6px 0 16px;
-    }
-
-    .card-title-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .save-scenario-btn {
-      padding: 6px 14px;
-      border-radius: var(--radius-pill, 9999px);
-      border: 1px solid rgba(0, 113, 227, 0.2);
-      background: rgba(0, 113, 227, 0.08);
-      color: var(--brand-a);
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .save-scenario-btn:hover {
-      background: rgba(0, 113, 227, 0.16);
-      transform: translateY(-1px);
-    }
-
-    .save-scenario-btn:active {
-      transform: scale(0.96);
-    }
-
-    .saved-scenarios-bar {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin: 12px 0 14px;
-    }
-
-    .saved-label {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--muted);
-      text-transform: uppercase;
-      white-space: nowrap;
-    }
-
-    .saved-chips-scroll {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      scrollbar-width: none;
-    }
-
-    .saved-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 14px;
-      border-radius: var(--radius-pill, 9999px);
-      background: var(--card);
-      border: 1px solid var(--line);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--ink);
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .saved-chip:hover {
-      transform: translateY(-1.5px);
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
-    }
-
-    .saved-chip:active {
-      transform: scale(0.96);
-    }
-
-    .del-scenario-icon {
-      background: transparent;
-      border: none;
-      color: var(--muted);
-      font-size: 10px;
-      cursor: pointer;
-      padding: 0 2px;
-    }
-
-    .del-scenario-icon:hover {
-      color: var(--danger);
-    }
-
-    .sim-controls-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-top: 12px;
-    }
-
-    .sim-field {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .sim-input, .sim-select {
-      width: 100%;
-      height: 44px;
-      border-radius: var(--radius-tile, 16px);
-      border: 1px solid var(--line);
-      background: var(--bg);
-      color: var(--ink);
-      padding: 0 12px;
-      font-size: 14px;
-      font-weight: 700;
-      outline: none;
-    }
-
-    .rate-shift-row {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-top: 14px;
-    }
-
-    .rate-shift-chips {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .shift-chip {
-      padding: 6px 12px;
-      border-radius: var(--radius-pill, 99px);
-      border: 1px solid var(--line);
-      background: var(--bg);
-      color: var(--ink);
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .shift-chip.active {
-      background: var(--brand-gradient);
-      color: #ffffff;
-      border-color: transparent;
-    }
-
-    .events-management-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-top: 14px;
-    }
-
-    .event-col {
-      background: var(--bg);
-      border: 1px solid var(--line);
-      border-radius: var(--radius-tile, 16px);
-      padding: 10px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .event-col-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .add-event-mini-btn {
-      background: transparent;
-      border: none;
-      color: var(--brand-a);
-      font-size: 11px;
-      font-weight: 800;
-      cursor: pointer;
-      padding: 2px 4px;
-    }
-
-    .event-chips-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-
-    .event-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 3px 8px;
-      border-radius: var(--radius-pill, 99px);
-      font-size: 11px;
-      font-weight: 700;
-    }
-
-    .event-pill button {
-      background: transparent;
-      border: none;
-      font-size: 9px;
-      cursor: pointer;
-      color: inherit;
-    }
-
-    .event-pill.prepay {
-      background: rgba(15, 178, 124, 0.15);
-      color: var(--success);
-      border: 1px solid rgba(15, 178, 124, 0.3);
-    }
-
-    .event-pill.draw {
-      background: rgba(238, 77, 107, 0.15);
-      color: var(--danger);
-      border: 1px solid rgba(238, 77, 107, 0.3);
-    }
-
-    .empty-subtext {
-      font-size: 11px;
-      color: var(--muted);
-      font-style: italic;
-    }
-
-    .v2-summary-card {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      background: var(--bg);
-      border: 1px solid var(--line);
-      border-radius: var(--radius-tile, 16px);
-      padding: 12px;
-      margin-top: 14px;
-    }
-
-    .v2-stat {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-
-    .v2-stat-label {
-      font-size: 10px;
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-    }
-
-    .v2-stat-val {
-      font-size: 13px;
-      font-weight: 800;
-      color: var(--ink);
-    }
-
-    .v2-stat-sub {
-      font-size: 10px;
-      color: var(--muted);
-      font-weight: 600;
-    }
-
-    .v2-stat-sub.highlight {
-      color: var(--success);
-      font-weight: 700;
-    }
-
-    .alert-fail-card {
-      margin-top: 14px;
-      padding: 12px;
-      border-radius: var(--radius-tile, 16px);
-      background: rgba(238, 77, 107, 0.12);
-      border: 1px solid rgba(238, 77, 107, 0.3);
-      color: var(--danger);
-      font-size: 12px;
-      font-weight: 700;
-      text-align: center;
-    }
-
-    /* Rupee Split Styles */
+    /* Rupee Split */
     .rupee-split-container {
       display: flex;
       flex-direction: column;
@@ -729,17 +1122,16 @@ const MEMBER_COLORS = ['#0071e3', '#4338ca', '#059669', '#d97706', '#e11d48'];
     .split-bar-track {
       height: 18px;
       border-radius: 99px;
-      background: #f1f2f8;
+      background: #f2f3f6;
       display: flex;
       overflow: hidden;
-      border: 1px solid rgba(0, 0, 0, 0.08);
     }
 
     .split-segment {
       height: 100%;
       transition: width 0.3s ease;
-      &.principal { background: linear-gradient(135deg, #0fb27c, #48bb78); }
-      &.interest { background: linear-gradient(135deg, #ee4d6b, #f56565); }
+      &.principal { background: #0fb27c; }
+      &.interest { background: #111216; }
     }
 
     .split-stats-grid {
@@ -749,9 +1141,8 @@ const MEMBER_COLORS = ['#0071e3', '#4338ca', '#059669', '#d97706', '#e11d48'];
     }
 
     .split-stat-card {
-      background: var(--bg);
-      border: 1px solid var(--line);
-      border-radius: var(--radius-tile, 16px);
+      background: #f8f9fb;
+      border-radius: 18px;
       padding: 12px 14px;
       display: flex;
       flex-direction: column;
@@ -762,22 +1153,26 @@ const MEMBER_COLORS = ['#0071e3', '#4338ca', '#059669', '#d97706', '#e11d48'];
       font-size: 10px;
       font-weight: 800;
       text-transform: uppercase;
-      padding: 2px 6px;
-      border-radius: 4px;
+      padding: 3px 8px;
+      border-radius: 9999px;
       width: fit-content;
-      &.green { background: rgba(15, 178, 124, 0.15); color: #0fb27c; }
-      &.red { background: rgba(238, 77, 107, 0.15); color: #ee4d6b; }
+
+      &.green {
+        background: rgba(15, 178, 124, 0.15);
+        color: #0fb27c;
+      }
+
+      &.dark {
+        background: #111216;
+        color: #ffffff;
+      }
     }
 
     .stat-amount {
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 800;
-      color: var(--ink);
-    }
-
-    .stat-percent {
-      font-size: 11px;
-      color: var(--muted);
+      color: #111216;
+      letter-spacing: -0.02em;
     }
 
     /* Consistency List */
@@ -791,28 +1186,22 @@ const MEMBER_COLORS = ['#0071e3', '#4338ca', '#059669', '#d97706', '#e11d48'];
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 12px;
-      background: var(--bg);
-      border: 1px solid var(--line);
-      border-radius: var(--radius-tile, 16px);
+      padding: 12px 14px;
+      background: #f8f9fb;
+      border-radius: 18px;
     }
 
     .member-info-col {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
     }
 
     .c-name {
       display: block;
-      font-size: 13px;
-      color: var(--ink);
-    }
-
-    .c-streak {
-      font-size: 11px;
-      color: #6c4cff;
-      font-weight: 700;
+      font-size: 14px;
+      font-weight: 800;
+      color: #111216;
     }
 
     .metrics-col {
@@ -821,26 +1210,19 @@ const MEMBER_COLORS = ['#0071e3', '#4338ca', '#059669', '#d97706', '#e11d48'];
     }
 
     .metric-pill {
-      background: var(--card);
-      border: 1px solid var(--line);
-      padding: 4px 8px;
-      border-radius: 8px;
+      background: #ffffff;
+      padding: 4px 10px;
+      border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
       display: flex;
       flex-direction: column;
       align-items: center;
     }
 
-    .pill-label {
-      font-size: 9px;
-      color: var(--muted);
-      font-weight: 600;
-      text-transform: uppercase;
-    }
-
     .pill-val {
       font-size: 12px;
       font-weight: 800;
-      color: var(--ink);
+      color: #111216;
       &.high { color: #0fb27c; }
     }
   `,
@@ -929,14 +1311,14 @@ export class InsightsComponent {
     const list = [...this.ledgerStore.memberStats()].sort(
       (a, b) => b.lifetimeContribution - a.lifetimeContribution
     );
-    return list[0];
+    return list[0] ?? { name: '—', lifetimeContribution: ZERO_PAISE };
   });
 
   readonly lowestContributor = computed(() => {
     const list = [...this.ledgerStore.memberStats()].sort(
       (a, b) => a.lifetimeContribution - b.lifetimeContribution
     );
-    return list[0];
+    return list[0] ?? { name: '—', lifetimeContribution: ZERO_PAISE };
   });
 
   readonly baselineSimResult = computed(() => {
@@ -944,10 +1326,13 @@ export class InsightsComponent {
     const rateBps = this.ledgerStore.loan().currentRateBps;
     return simulateV2({
       principal,
-      monthlyPayment: toPaise(190000),
+      monthlyPayment: toPaise(240000),
       rateBps,
-      paymentDayOfMonth: 1,
+      paymentDayOfMonth: 5,
       rateShiftBps: 0,
+      prepayments: [],
+      drawdowns: [],
+      dayCountBasis: this.ledgerStore.loan().bankRules?.dayCountBasis || 'actual/365',
     });
   });
 
@@ -987,6 +1372,13 @@ export class InsightsComponent {
 
   getColor(index: number): string {
     return MEMBER_COLORS[index % MEMBER_COLORS.length]!;
+  }
+
+  scrollToSimulator(): void {
+    const el = document.getElementById('simulator-section');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
   }
 
   addPrepaymentPrompt(): void {
