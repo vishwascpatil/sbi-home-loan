@@ -306,6 +306,23 @@ export class LedgerStore {
     };
 
     this.loan.set(updated);
+
+    if (updates.openingOutstanding !== undefined) {
+      this.snapshots.update((snaps) =>
+        snaps.map((s) =>
+          s.notes?.toLowerCase().includes('baseline')
+            ? {
+                ...s,
+                bankActualOutstanding: updates.openingOutstanding!,
+                ledgerCalculatedOutstanding: updates.openingOutstanding!,
+                variance: paise(0),
+                updatedAt: new Date().toISOString(),
+              }
+            : s
+        )
+      );
+    }
+
     await this.logAuditAndSave('update', 'loan', updated.id, prev, updated);
   }
 

@@ -69,14 +69,6 @@ export class LocalStorageLedgerRepository implements LedgerRepository {
         }
       }
 
-      // Upgrade if stale mock data with generic "Member 1" or outdated opening balance is found
-      if (state.members.some((m) => m.name.startsWith('Member ')) || state.loan.openingOutstanding !== getInitialSeedData().loan.openingOutstanding) {
-        const freshSeed = getInitialSeedData();
-        await this.save(freshSeed);
-        this.inMemoryCache = freshSeed;
-        return freshSeed;
-      }
-
       this.inMemoryCache = state;
       return state;
     } catch {

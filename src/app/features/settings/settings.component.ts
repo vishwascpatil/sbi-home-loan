@@ -43,7 +43,7 @@ import {
       <!-- Loan Parameters Editor -->
       <app-glass-card [staggerIndex]="0">
         <h2 class="card-title">Loan Details</h2>
-        <p class="section-sub">Your loan account number, total approved limit, and monthly target.</p>
+        <p class="section-sub">Your loan account number, approved limit, outstanding balance, and monthly target.</p>
 
         <div class="settings-form-grid">
           <div class="setting-item">
@@ -84,7 +84,20 @@ import {
               type="number"
               class="setting-input tabular-nums"
               [ngModel]="toRupees(loan().sanctionedLimit)"
-              (ngModelChange)="updateLoanParam('sanctionedLimit', toPaise($event))"
+              (ngModelChange)="updateLoanMoneyParam('sanctionedLimit', $event)"
+              (change)="commitLoanMoneyParam('sanctionedLimit', $event)"
+            />
+          </div>
+
+          <div class="setting-item">
+            <label class="setting-label" for="loan-outstanding">Outstanding Amount (₹)</label>
+            <input
+              id="loan-outstanding"
+              type="number"
+              class="setting-input tabular-nums"
+              [ngModel]="toRupees(loan().openingOutstanding)"
+              (ngModelChange)="updateLoanMoneyParam('openingOutstanding', $event)"
+              (change)="commitLoanMoneyParam('openingOutstanding', $event)"
             />
           </div>
 
@@ -95,7 +108,8 @@ import {
               type="number"
               class="setting-input tabular-nums"
               [ngModel]="toRupees(loan().monthlyTarget)"
-              (ngModelChange)="updateLoanParam('monthlyTarget', toPaise($event))"
+              (ngModelChange)="updateLoanMoneyParam('monthlyTarget', $event)"
+              (change)="commitLoanMoneyParam('monthlyTarget', $event)"
             />
           </div>
         </div>
@@ -403,10 +417,50 @@ export class SettingsComponent {
 
   newRateInput: number | null = null;
   rateEffectiveDate = new Date().toISOString().slice(0, 10);
+  private saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
   async updateLoanParam(key: string, value: unknown): Promise<void> {
     await this.ledgerStore.updateLoanDetails({ [key]: value });
     this.toast.show('Loan details saved', 'success');
+  }
+
+  updateLoanMoneyParam(
+    key: 'sanctionedLimit' | 'openingOutstanding' | 'monthlyTarget',
+    value: number | string | null | undefined
+  ): void {
+    if (value === null || value === undefined || value === '') return;
+    const num = typeof value === 'number' ? value : parseFloat(String(value));
+    if (isNaN(num) || num < 0) return;
+
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+    }
+
+    this.saveTimeout = setTimeout(async () => {
+      await this.ledgerStore.updateLoanDetails({ [key]: toPaise(num) });
+      const label = key === 'openingOutstanding' ? 'Outstanding amount' : 'Loan details';
+      this.toast.show(`${label} updated & recalculated`, 'success');
+    }, 450);
+  }
+
+  commitLoanMoneyParam(
+    key: 'sanctionedLimit' | 'openingOutstanding' | 'monthlyTarget',
+    event: Event
+  ): void {
+    const input = event.target as HTMLInputElement;
+    if (!input || input.value === '') return;
+    const num = parseFloat(input.value);
+    if (isNaN(num) || num < 0) return;
+
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+      this.saveTimeout = null;
+    }
+
+    void this.ledgerStore.updateLoanDetails({ [key]: toPaise(num) }).then(() => {
+      const label = key === 'openingOutstanding' ? 'Outstanding amount' : 'Loan details';
+      this.toast.show(`${label} updated & recalculated`, 'success');
+    });
   }
 
   async applyRateChange(): Promise<void> {
