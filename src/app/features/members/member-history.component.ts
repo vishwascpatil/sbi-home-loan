@@ -627,3 +627,4 @@ export class MemberHistoryComponent implements OnInit {
     return `${parseInt(d, 10)} ${monthName} ${y}`;
   }
 }
+

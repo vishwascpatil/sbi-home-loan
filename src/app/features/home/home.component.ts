@@ -148,13 +148,6 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
             <p class="progress-desc">
               You have cleared {{ repaidPercent().toFixed(1) }}% of the total {{ formatCompactPaise(ledgerStore.loan().sanctionedLimit) }} loan amount so far.
             </p>
-            <button
-              type="button"
-              class="action-pill-black"
-              (click)="openAddWith('contribution')"
-            >
-              ＋ Add Member Deposit
-            </button>
           </div>
 
           <!-- Circular SVG Radial Gauge -->
@@ -629,7 +622,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       font-weight: 500;
       color: #8e8e93;
       line-height: 1.4;
-      margin: 0 0 14px;
+      margin: 0;
     }
 
     .action-pill-black {
