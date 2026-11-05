@@ -79,7 +79,13 @@ import {
       <section class="page-section">
         <div class="insight-squircle-card">
           <h2 class="card-main-title">Where Did All Your Money Go?</h2>
-          <span class="card-sub-caption">How much of your money actually reduced the loan vs went to bank interest</span>
+          <span class="card-sub-caption">
+            @if (hasRecordedPayments()) {
+              How much of your deposited money actually reduced the loan vs went to bank interest
+            } @else {
+              Estimated breakdown of your ₹{{ (toRupees(ledgerStore.loan().monthlyTarget) || 240000).toLocaleString('en-IN') }} monthly target between loan reduction and bank interest
+            }
+          </span>
 
           <div class="rupee-split-container">
             <div class="split-bar-track">
@@ -344,6 +350,12 @@ export class InsightsComponent {
 
   readonly rupeeSplit = computed(() => {
     return computeRupeeSplit(this.ledgerStore.ledgerState());
+  });
+
+  readonly hasRecordedPayments = computed<boolean>(() => {
+    return this.ledgerStore
+      .transactions()
+      .some((t) => !t.deletedAt && (t.type === 'contribution' || t.type === 'bankPayment'));
   });
 
   readonly formatPaise = formatPaise;

@@ -1,4 +1,4 @@
-import { LedgerState } from './models';
+import { ContributionTransaction, LedgerState } from './models';
 import { Paise, paise } from './money';
 import { monthlySummary } from './ledger';
 
@@ -40,18 +40,60 @@ export interface HeatmapMonthGroup {
 }
 
 /**
- * Computes Where Each Rupee Went breakdown of bank payments.
+ * Computes Where Each Rupee Went breakdown of loan payments (bank payments or member contributions).
  */
 export function computeRupeeSplit(ledger: LedgerState): RupeeSplit {
   let totalPaidToBank = paise(0);
   let totalInterestPaid = paise(0);
   let totalPrincipalReduced = paise(0);
 
+  // 1. Check explicit bank payments if any
   for (const tx of ledger.transactions) {
     if (!tx.deletedAt && tx.type === 'bankPayment') {
       totalPaidToBank = paise(totalPaidToBank + tx.amount);
       totalInterestPaid = paise(totalInterestPaid + tx.interestPortion);
       totalPrincipalReduced = paise(totalPrincipalReduced + tx.principalPortion);
+    }
+  }
+
+  // 2. If no bank payments were recorded, compute split from member contributions & interest
+  if (totalPaidToBank === 0) {
+    const activeContributions = ledger.transactions.filter(
+      (tx): tx is ContributionTransaction => !tx.deletedAt && tx.type === 'contribution'
+    );
+
+    let totalContributions = paise(0);
+    for (const tx of activeContributions) {
+      totalContributions = paise(totalContributions + tx.amount);
+    }
+
+    if (totalContributions > 0) {
+      // Find all unique periods where contributions occurred
+      const monthsSet = new Set<string>();
+      for (const tx of activeContributions) {
+        const m = tx.forMonth || tx.date.slice(0, 7);
+        if (m) monthsSet.add(m);
+      }
+
+      let totalEstInterest = paise(0);
+      for (const m of monthsSet) {
+        const summary = monthlySummary(m, ledger);
+        totalEstInterest = paise(totalEstInterest + summary.interestIncurredEst);
+      }
+
+      totalPaidToBank = totalContributions;
+      totalInterestPaid = paise(Math.min(totalContributions, totalEstInterest));
+      totalPrincipalReduced = paise(Math.max(0, totalContributions - totalInterestPaid));
+    } else if (ledger.loan.monthlyTarget > 0) {
+      // If no payments recorded yet, show target projection for current month
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      const curSummary = monthlySummary(currentMonth, ledger);
+      const estInterest = curSummary.interestIncurredEst;
+      const target = ledger.loan.monthlyTarget;
+
+      totalPaidToBank = target;
+      totalInterestPaid = paise(Math.min(target, estInterest));
+      totalPrincipalReduced = paise(Math.max(0, target - totalInterestPaid));
     }
   }
 
