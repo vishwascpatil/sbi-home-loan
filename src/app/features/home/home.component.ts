@@ -41,17 +41,6 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
           <span class="header-eyebrow">{{ currentMonthFormatted() }}</span>
           <h1 class="header-title">Loan Overview</h1>
         </div>
-        <div class="header-right">
-          <button
-            type="button"
-            class="calm-icon-btn"
-            (click)="router.navigate(['/settings'])"
-            aria-label="Settings"
-            title="Settings"
-          >
-            ⚙️
-          </button>
-        </div>
       </header>
 
       <!-- Ambient Generative Motion Hero with High-End Animated Numbers -->
@@ -331,28 +320,6 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       letter-spacing: -0.03em;
       color: #1d1d1f;
       margin: 0;
-    }
-
-    .calm-icon-btn {
-      width: 36px;
-      height: 36px;
-      border-radius: 9999px;
-      border: none;
-      background: rgba(0, 0, 0, 0.03);
-      cursor: pointer;
-      display: grid;
-      place-items: center;
-      font-size: 16px;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-
-      &:hover {
-        background: rgba(0, 0, 0, 0.06);
-        transform: scale(1.05);
-      }
-
-      &:active {
-        transform: scale(0.95);
-      }
     }
 
     /* Calm Section Container - Borderless, Content-First, Generous Whitespace */
