@@ -13,8 +13,6 @@ import {
   AvatarComponent,
   CountUpDirective,
   ProgressBarComponent,
-  ShareBarComponent,
-  ShareSegment,
 } from '../../shared/ui';
 import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-transaction-sheet.component';
 
@@ -26,7 +24,6 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
     CountUpDirective,
     AvatarComponent,
     ProgressBarComponent,
-    ShareBarComponent,
     AddEditTransactionSheetComponent,
   ],
   template: `
@@ -72,68 +69,7 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
         </button>
       </div>
 
-      <!-- 3. Section: Overview ("Wellness" style in screenshot) -->
-      <section class="page-section">
-        <h2 class="section-main-heading">Collection Status</h2>
-
-        <div class="dual-squircle-grid">
-          <!-- Card 1: This Month Collection -->
-          <button
-            type="button"
-            class="squircle-metric-card"
-            (click)="router.navigate(['/members/history'])"
-            aria-label="View this month contributions history"
-          >
-            <div class="card-top-header">
-              <span class="card-caption-title">This Month</span>
-              <span class="card-chevron-icon">›</span>
-            </div>
-            <div class="card-metric-body">
-              <div class="metric-pair">
-                <span class="metric-big-num tabular-nums" [appCountUp]="totalThisMonth()">
-                  {{ formatPaise(totalThisMonth()) }}
-                </span>
-                <span class="metric-label-sub">
-                  Collected of {{ formatCompactPaise(totalMonthlyTarget()) }}
-                </span>
-              </div>
-              <div class="mini-progress-wrap">
-                <app-progress-bar [progressPercent]="monthCollectionPercent()" [height]="5" />
-              </div>
-            </div>
-          </button>
-
-          <!-- Card 2: Quota Allocation -->
-          <button
-            type="button"
-            class="squircle-metric-card"
-            (click)="router.navigate(['/home'])"
-            aria-label="View member share breakdown on home"
-          >
-            <div class="card-top-header">
-              <span class="card-caption-title">Who Pays What</span>
-              <span class="card-chevron-icon">›</span>
-            </div>
-            <div class="card-metric-body">
-              <div class="metric-stat-row">
-                <div class="stat-col">
-                  <span class="metric-big-num">87.5%</span>
-                  <span class="metric-label-sub">Main (2)</span>
-                </div>
-                <div class="stat-col">
-                  <span class="metric-big-num">12.5%</span>
-                  <span class="metric-label-sub">Others (3)</span>
-                </div>
-              </div>
-              <div class="share-bar-wrap">
-                <app-share-bar [segments]="shareSegments()" />
-              </div>
-            </div>
-          </button>
-        </div>
-      </section>
-
-      <!-- 4. Section: Member Cards List ("Past Activities" style in screenshot) -->
+      <!-- 3. Section: Member Cards List ("Past Activities" style in screenshot) -->
       <section class="page-section">
         <div class="section-title-bar">
           <div>
@@ -461,126 +397,7 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       }
     }
 
-    /* Dual Squircle Grid */
-    .dual-squircle-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      width: 100%;
-      box-sizing: border-box;
-    }
-
-    .squircle-metric-card {
-      background: #ffffff;
-      border: none;
-      width: 100%;
-      min-width: 0;
-      box-sizing: border-box;
-      overflow: hidden;
-      text-align: left;
-      font-family: inherit;
-      border-radius: 26px;
-      padding: 16px 16px;
-      box-shadow: var(--shadow-card);
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      min-height: 140px;
-      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
-
-      &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.05);
-      }
-
-      &:active {
-        transform: scale(0.98);
-      }
-    }
-
-    .card-top-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .card-caption-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: #111216;
-      letter-spacing: -0.01em;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .card-chevron-icon {
-      font-size: 16px;
-      color: #9ca3af;
-      font-weight: 700;
-      flex-shrink: 0;
-    }
-
-    .card-metric-body {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      min-width: 0;
-    }
-
-    .metric-pair {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      min-width: 0;
-    }
-
-    .metric-big-num {
-      font-size: clamp(16px, 4.2vw, 21px);
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      color: #111216;
-      line-height: 1.15;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .metric-label-sub {
-      font-size: 11px;
-      font-weight: 500;
-      color: #8e8e93;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .mini-progress-wrap {
-      margin-top: 4px;
-      width: 100%;
-    }
-
-    .metric-stat-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-      width: 100%;
-      min-width: 0;
-    }
-
-    .stat-col {
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-    }
-
-    .share-bar-wrap {
-      margin-top: 4px;
-      width: 100%;
-    }
-
-    /* 4. Squircle Cards List for Members */
+    /* Squircle Cards List for Members */
     .squircle-cards-list {
       display: flex;
       flex-direction: column;
@@ -881,28 +698,6 @@ export class MembersComponent {
   readonly totalMonthlyTarget = computed<Paise>(() => {
     const members = this.ledgerStore.members().filter((m) => !m.deletedAt);
     return members.reduce((sum, m) => addPaise(sum, m.target || ZERO_PAISE), ZERO_PAISE);
-  });
-
-  readonly totalThisMonth = computed<Paise>(() => {
-    return this.ledgerStore.memberStats().reduce(
-      (sum, m) => addPaise(sum, m.thisMonthContribution),
-      ZERO_PAISE
-    );
-  });
-
-  readonly monthCollectionPercent = computed<number>(() => {
-    const target = this.totalMonthlyTarget();
-    if (target <= 0) return 0;
-    return Math.min(100, (this.totalThisMonth() / target) * 100);
-  });
-
-  readonly shareSegments = computed<ShareSegment[]>(() => {
-    const palette = ['#111216', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
-    return this.ledgerStore.memberStats().map((m, idx) => ({
-      name: m.name,
-      percentage: m.targetSharePercentage || m.sharePercentage || 0,
-      color: palette[idx % palette.length]!,
-    }));
   });
 
   getMemberProgress(m: MemberStatistics): number {
