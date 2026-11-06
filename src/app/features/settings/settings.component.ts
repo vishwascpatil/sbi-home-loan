@@ -190,9 +190,6 @@ import {
                         <span class="timeline-active-tag">Active</span>
                       }
                     </div>
-                    <span class="timeline-meta">
-                      {{ formatEffectiveDate(r.effectiveFrom) }}
-                    </span>
                   </div>
                 </div>
               }
@@ -489,7 +486,7 @@ import {
     .timeline-entry {
       display: flex;
       gap: 12px;
-      min-height: 42px;
+      min-height: 28px;
     }
 
     .timeline-indicator {
@@ -504,7 +501,7 @@ import {
       height: 8px;
       border-radius: 50%;
       background: var(--muted);
-      margin-top: 4px;
+      margin-top: 5px;
     }
 
     .timeline-entry.current .timeline-bullet {
@@ -521,7 +518,7 @@ import {
 
     .timeline-details {
       flex: 1;
-      padding-bottom: 10px;
+      padding-bottom: 8px;
     }
 
     .timeline-top {
@@ -543,13 +540,6 @@ import {
       border-radius: var(--radius-pill, 99px);
       background: rgba(16, 185, 129, 0.15);
       color: #10b981;
-    }
-
-    .timeline-meta {
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 2px;
-      display: block;
     }
 
     /* ----------------------------------------------------
@@ -682,18 +672,6 @@ export class SettingsComponent {
     return [...this.ledgerStore.rateChanges()]
       .sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom) || b.createdAt.localeCompare(a.createdAt));
   });
-
-  formatEffectiveDate(dateStr?: string): string {
-    if (!dateStr) return 'Active Baseline';
-    const parts = dateStr.split('-');
-    if (parts.length === 3) {
-      const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-      if (!isNaN(d.getTime())) {
-        return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-      }
-    }
-    return dateStr;
-  }
 
   async updateLoanParam(key: string, value: unknown): Promise<void> {
     await this.ledgerStore.updateLoanDetails({ [key]: value });
