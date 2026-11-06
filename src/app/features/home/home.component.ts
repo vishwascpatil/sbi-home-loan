@@ -10,6 +10,7 @@ import { CountUpDirective } from '../../shared/ui/count-up/count-up.directive';
 import {
   computeRupeeSplit,
   ContributionTransaction,
+  divideHalfUp,
   formatCompactPaise,
   formatPaise,
   getTransactionAmount,
@@ -153,6 +154,44 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
               }
             </div>
           </div>
+
+          <!-- Card 3: Daily Bank Interest & Monthly Estimate -->
+          <button
+            type="button"
+            class="squircle-metric-card full-span-card"
+            (click)="isDailyLedgerOpen.set(true)"
+            aria-label="View Daily Bank Interest Breakdown"
+          >
+            <div class="card-top-header">
+              <div class="header-left-cluster">
+                <span class="card-caption-title">Daily Bank Interest</span>
+                <span class="card-badge-chip rate-pill">{{ (ledgerStore.loan().currentRateBps / 100).toFixed(2) }}% p.a.</span>
+              </div>
+              <span class="card-chevron-icon">›</span>
+            </div>
+            <div class="card-metric-body">
+              <div class="metric-pair">
+                <span class="metric-big-num tabular-nums" [appCountUp]="dailyInterestCalculation().dailyInterest" [showDecimals]="true">
+                  {{ formatPaise(dailyInterestCalculation().dailyInterest, { showPaise: true }) }}
+                </span>
+                <span class="metric-label-sub">Interest added to loan per day</span>
+              </div>
+              <div class="metric-split-row">
+                <div class="metric-split-item">
+                  <span class="metric-split-val tabular-nums">
+                    {{ formatPaise(dailyInterestCalculation().monthlyEstimate) }}
+                  </span>
+                  <span class="metric-split-lbl">Per Month Estimate</span>
+                </div>
+                <div class="metric-split-item text-right">
+                  <span class="metric-split-val tabular-nums">
+                    {{ formatCompactPaise(ledgerStore.currentOutstanding()) }}
+                  </span>
+                  <span class="metric-split-lbl">Current Balance</span>
+                </div>
+              </div>
+            </div>
+          </button>
         </div>
       </section>
 
@@ -556,12 +595,31 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       &:active {
         transform: scale(0.98);
       }
+
+      &.full-span-card {
+        grid-column: 1 / -1;
+      }
     }
 
     .card-top-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+    }
+
+    .header-left-cluster {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .rate-pill {
+      font-size: 11px;
+      font-weight: 700;
+      color: #6c4cff;
+      background: rgba(108, 76, 255, 0.08);
+      padding: 3px 8px;
+      border-radius: var(--radius-pill, 99px);
     }
 
     .card-caption-title {
@@ -607,6 +665,11 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       display: flex;
       flex-direction: column;
       gap: 1px;
+
+      &.text-right {
+        text-align: right;
+        align-items: flex-end;
+      }
     }
 
     .metric-split-val {
@@ -1050,6 +1113,35 @@ export class HomeComponent {
       totalCut,
       principalCut,
       interestCut,
+    };
+  });
+
+  readonly dailyInterestCalculation = computed(() => {
+    const loan = this.ledgerStore.loan();
+    const principal = this.ledgerStore.currentOutstanding();
+    const rateBps = loan.currentRateBps;
+    const basisDays = loan.bankRules?.dayCountBasis === '360' ? 360 : 365;
+
+    let dailyInterest = paise(0);
+    if (principal > 0 && rateBps > 0) {
+      const numerator = BigInt(principal) * BigInt(rateBps) * 1_000_000n;
+      const denominator = BigInt(basisDays) * 10_000n;
+      const scaled = numerator / denominator;
+      dailyInterest = paise(Number(divideHalfUp(scaled, 1_000_000n)));
+    }
+
+    const sum = this.summary();
+    let monthlyEstimate = sum.interestIncurredEst;
+    if (monthlyEstimate <= 0 && principal > 0 && rateBps > 0) {
+      const numMonth = BigInt(principal) * BigInt(rateBps) * 1_000_000n;
+      const denMonth = 12n * 10_000n * 1_000_000n;
+      monthlyEstimate = paise(Number(divideHalfUp(numMonth, denMonth)));
+    }
+
+    return {
+      dailyInterest,
+      monthlyEstimate,
+      rateBps,
     };
   });
 
