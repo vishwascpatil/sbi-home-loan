@@ -24,23 +24,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         <span class="dock-label">Home</span>
       </a>
 
-      <!-- 2. Members Tab -->
-      <a
-        routerLink="/members"
-        routerLinkActive="active"
-        class="dock-item"
-        aria-label="Members"
-      >
-        <svg class="dock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-          <circle cx="9" cy="7" r="4"/>
-          <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-        </svg>
-        <span class="dock-label">Members</span>
-      </a>
-
-      <!-- 3. Center Action Button (Matte Black Pill) -->
+      <!-- 2. Center Action Button (Matte Black Pill) -->
       <button
         type="button"
         class="dock-action-btn"
@@ -54,18 +38,20 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         </svg>
       </button>
 
-      <!-- 4. Settings Tab -->
+      <!-- 3. Members Tab -->
       <a
-        routerLink="/settings"
+        routerLink="/members"
         routerLinkActive="active"
         class="dock-item"
-        aria-label="Settings"
+        aria-label="Members"
       >
         <svg class="dock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="3"/>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
         </svg>
-        <span class="dock-label">Settings</span>
+        <span class="dock-label">Members</span>
       </a>
     </nav>
   `,
@@ -111,9 +97,9 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
       justify-content: center;
       text-decoration: none;
       color: #9ca3af;
-      padding: 6px clamp(8px, 2.5vw, 14px);
+      padding: 6px clamp(12px, 3.5vw, 18px);
       border-radius: var(--radius-pill, 9999px);
-      min-height: 42px;
+      min-height: 44px;
       touch-action: manipulation;
       user-select: none;
       -webkit-user-select: none;
