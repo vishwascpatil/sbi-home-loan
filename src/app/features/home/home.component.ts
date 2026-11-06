@@ -52,38 +52,50 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
 
       <!-- 2. Matte Black Hero Card (Current Loan Balance) -->
       <div class="matte-hero-banner" role="region" aria-label="Current Loan Balance">
-        <div class="hero-left-content">
-          <div class="hero-badge-pill">
+        <div class="hero-top-row">
+          <div class="hero-rate-pill">
             <span class="lightning-bolt">⚡</span>
-            <span>Total Loan Left to Pay · {{ (ledgerStore.loan().currentRateBps / 100).toFixed(2) }}% Interest</span>
+            <span>{{ (ledgerStore.loan().currentRateBps / 100).toFixed(2) }}% p.a. · Overdraft</span>
           </div>
-          <div class="hero-number-wrap">
-            <div class="hero-balance-headline tabular-nums" [appCountUp]="ledgerStore.currentOutstanding()">
-              {{ formatPaise(ledgerStore.currentOutstanding()) }}
-            </div>
-            <span class="hero-balance-sub">
-              Adds {{ formatPaise(dailyInterestCalculation().dailyInterest) }} interest every day · Debited on 30th
-            </span>
+
+          <button
+            type="button"
+            class="hero-circle-cta"
+            (click)="openAddWith('bankPayment')"
+            aria-label="Pay Bank EMI"
+            title="Record Bank Payment"
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#111216" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+        </div>
+
+        <div class="hero-main-stat">
+          <span class="hero-stat-label">Loan Left to Pay</span>
+          <div class="hero-balance-headline tabular-nums" [appCountUp]="ledgerStore.currentOutstanding()">
+            {{ formatPaise(ledgerStore.currentOutstanding()) }}
           </div>
         </div>
 
-        <button
-          type="button"
-          class="hero-circle-cta"
-          (click)="openAddWith('bankPayment')"
-          aria-label="Pay Bank EMI"
-          title="Record Bank Payment"
-        >
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#111216" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="9 18 15 12 9 6"></polyline>
-          </svg>
-        </button>
+        <!-- Hero Highlights Row: Today's Interest + Loan Cleared -->
+        <div class="hero-pulse-strip">
+          <div class="hero-glass-pill" (click)="isDailyLedgerOpen.set(true)" role="button" tabindex="0">
+            <span class="pill-dot glow-amber"></span>
+            <span class="pill-main tabular-nums">+{{ formatPaise(dailyInterestCalculation().dailyInterest) }}</span>
+            <span class="pill-sub">Today</span>
+          </div>
+
+          <div class="hero-glass-pill">
+            <span class="pill-dot glow-green"></span>
+            <span class="pill-main tabular-nums">{{ repaidPercent().toFixed(1) }}%</span>
+            <span class="pill-sub">Cleared ({{ formatCompactPaise(repaidAmount()) }})</span>
+          </div>
+        </div>
       </div>
 
-      <!-- 3. Section: This Month & Future -->
+      <!-- 3. Section: This Month & Payoff -->
       <section class="home-section">
-        <h2 class="section-main-heading">This Month & Future</h2>
-
         <div class="dual-squircle-grid">
           <!-- Card 1: This Month -->
           <button
@@ -96,27 +108,29 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
               <span class="card-caption-title">This Month</span>
               <span class="card-chevron-icon">›</span>
             </div>
+
             <div class="card-metric-body">
-              <div class="metric-pair">
-                <span class="metric-big-num tabular-nums" [appCountUp]="monthlyCutCalculation().totalCut">
+              <div>
+                <div class="metric-big-num tabular-nums text-green" [appCountUp]="monthlyCutCalculation().totalCut">
                   {{ formatPaise(monthlyCutCalculation().totalCut) }}
-                </span>
+                </div>
                 <span class="metric-label-sub">
-                  {{ monthlyCutCalculation().isRecorded ? 'Money Cut (Paid)' : 'Per Month Cut (Est.)' }}
+                  {{ (thisMonthPacingPercent()).toFixed(0) }}% of {{ formatCompactPaise(monthlyTargetPaise()) }} target
                 </span>
               </div>
+
               <div class="metric-split-row">
                 <div class="metric-split-item">
                   <span class="metric-split-val tabular-nums text-green">
-                    {{ formatPaise(monthlyCutCalculation().principalCut) }}
+                    {{ formatCompactPaise(monthlyCutCalculation().principalCut) }}
                   </span>
-                  <span class="metric-split-lbl">Loan Reduced</span>
+                  <span class="metric-split-lbl">Principal</span>
                 </div>
-                <div class="metric-split-item">
+                <div class="metric-split-item text-right">
                   <span class="metric-split-val tabular-nums">
-                    {{ formatPaise(monthlyCutCalculation().interestCut) }}
+                    {{ formatCompactPaise(monthlyCutCalculation().interestCut) }}
                   </span>
-                  <span class="metric-split-lbl">Interest Cut</span>
+                  <span class="metric-split-lbl">Interest</span>
                 </div>
               </div>
             </div>
@@ -128,134 +142,50 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
             aria-label="Loan Payoff Target"
           >
             <div class="card-top-header">
-              <span class="card-caption-title">Payoff</span>
+              <span class="card-caption-title">Debt Free</span>
               <span class="card-badge-chip">{{ baselineSimResult()?.closureDate || 'Active' }}</span>
             </div>
+
             <div class="card-metric-body">
-              <div class="metric-stat-row">
-                <div>
-                  <span class="metric-big-num tabular-nums">
-                    {{ ((baselineSimResult()?.months || 62) / 12).toFixed(1) }}
-                  </span>
-                  <span class="metric-label-sub">Years Left</span>
+              <div>
+                <div class="metric-big-num tabular-nums">
+                  {{ ((baselineSimResult()?.months || 62) / 12).toFixed(1) }} yrs
                 </div>
-                <div>
-                  <span class="metric-big-num tabular-nums">
-                    {{ baselineSimResult()?.months || 62 }}
-                  </span>
-                  <span class="metric-label-sub">Months Target</span>
-                </div>
+                <span class="metric-label-sub">
+                  {{ baselineSimResult()?.months || 62 }} months left
+                </span>
               </div>
+
               <div class="metric-split-row">
                 <div class="metric-split-item">
                   <span class="metric-split-val tabular-nums">
                     {{ baselineSimResult() ? formatCompactPaise(baselineSimResult()!.totalInterest) : '—' }}
                   </span>
-                  <span class="metric-split-lbl">Future Interest</span>
+                  <span class="metric-split-lbl">Est. Interest</span>
                 </div>
                 <div class="metric-split-item text-right">
                   <span class="metric-split-val tabular-nums">
                     {{ baselineSimResult() ? formatCompactPaise(baselineSimResult()!.totalPaid) : '—' }}
                   </span>
-                  <span class="metric-split-lbl">Total Outflow</span>
+                  <span class="metric-split-lbl">Outflow</span>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <!-- Card 3: Daily Bank Interest & Monthly Estimate -->
-          <button
-            type="button"
-            class="squircle-metric-card full-span-card"
-            (click)="isDailyLedgerOpen.set(true)"
-            aria-label="View Daily Bank Interest Breakdown"
-          >
-            <div class="card-top-header">
-              <div class="header-left-cluster">
-                <span class="card-caption-title">Daily Bank Interest</span>
-                <span class="card-badge-chip rate-pill">{{ (ledgerStore.loan().currentRateBps / 100).toFixed(2) }}% p.a.</span>
-              </div>
-              <span class="card-chevron-icon">›</span>
-            </div>
-            <div class="card-metric-body">
-              <div class="metric-pair">
-                <span class="metric-big-num tabular-nums" [appCountUp]="dailyInterestCalculation().dailyInterest" [showDecimals]="true">
-                  {{ formatPaise(dailyInterestCalculation().dailyInterest, { showPaise: true }) }}
-                </span>
-                <span class="metric-label-sub">
-                  <span class="today-highlight-pill">Today</span> Interest added to loan
-                </span>
-              </div>
-              <div class="metric-split-row">
-                <div class="metric-split-item">
-                  <span class="metric-split-val tabular-nums">
-                    {{ formatPaise(dailyInterestCalculation().monthlyEstimate) }}
-                  </span>
-                  <span class="metric-split-lbl">Per Month Estimate</span>
-                </div>
-                <div class="metric-split-item text-right">
-                  <span class="metric-split-val tabular-nums">
-                    {{ formatCompactPaise(ledgerStore.currentOutstanding()) }}
-                  </span>
-                  <span class="metric-split-lbl">Current Balance</span>
-                </div>
-              </div>
-            </div>
-          </button>
-        </div>
-      </section>
-
-      <!-- 4. Section: Feature Progress Card -->
-      <section class="home-section">
-        <div class="progress-feature-card">
-          <div class="progress-card-info">
-            <span class="progress-eyebrow">Overall Progress</span>
-            <h3 class="progress-main-title">
-              {{ formatPaise(repaidAmount()) }} Cleared
-            </h3>
-            <p class="progress-desc">
-              You have cleared {{ repaidPercent().toFixed(1) }}% of the total {{ formatCompactPaise(ledgerStore.loan().sanctionedLimit) }} loan amount so far.
-            </p>
-          </div>
-
-          <!-- Circular SVG Radial Gauge -->
-          <div class="progress-arc-visual">
-            <svg class="progress-radial-svg" viewBox="0 0 100 100">
-              <circle class="arc-bg-ring" cx="50" cy="50" r="40" fill="none" stroke-width="7" />
-              <circle
-                class="arc-progress-ring"
-                cx="50"
-                cy="50"
-                r="40"
-                fill="none"
-                stroke-width="7"
-                stroke-linecap="round"
-                [style.strokeDasharray]="arcCircumference"
-                [style.strokeDashoffset]="arcStrokeDashoffset()"
-              />
-            </svg>
-            <div class="arc-inner-label">
-              <span class="arc-pct-text">{{ repaidPercent().toFixed(1) }}%</span>
-              <span class="arc-pct-sub">PAID OFF</span>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- 5. Section: Monthly Deposit Trend -->
+      <!-- 4. Section: Monthly Deposit Trend -->
       <section class="home-section">
         <div class="trend-feature-card">
           <div class="trend-card-header">
             <div>
-              <div class="trend-eyebrow-row">
-                <span class="trend-eyebrow-pill">Past 6 Months</span>
-                <span class="trend-eyebrow-target">Target: {{ formatCompactPaise(monthlyTargetPaise()) }}/mo</span>
-              </div>
-              <h2 class="trend-main-heading">Deposit Activity</h2>
+              <span class="trend-eyebrow-pill">Deposit Trend</span>
+              <h2 class="trend-main-heading" style="margin-top: 4px">Past 6 Months</h2>
             </div>
             <div class="trend-header-stats">
               <span class="trend-stat-val tabular-nums">{{ formatCompactPaise(totalDepositedPast6Months()) }}</span>
-              <span class="trend-stat-lbl">6-Mo Collected</span>
+              <span class="trend-stat-lbl">Total Deposited</span>
             </div>
           </div>
 
@@ -265,32 +195,13 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
               [targetValue]="targetValueRupees()"
             />
           </div>
-
-          <!-- 3 Micro Stats Tiles at Bottom -->
-          <div class="trend-micro-tiles-grid">
-            <div class="trend-micro-tile">
-              <span class="micro-tile-lbl">Monthly Target</span>
-              <span class="micro-tile-val tabular-nums">{{ formatPaise(monthlyTargetPaise()) }}</span>
-            </div>
-            <div class="trend-micro-tile">
-              <span class="micro-tile-lbl">This Month</span>
-              <span class="micro-tile-val tabular-nums text-green">{{ formatPaise(summary().memberContributions) }}</span>
-            </div>
-            <div class="trend-micro-tile">
-              <span class="micro-tile-lbl">Target Pacing</span>
-              <span class="micro-tile-val tabular-nums">{{ thisMonthPacingPercent().toFixed(0) }}%</span>
-            </div>
-          </div>
         </div>
       </section>
 
       <!-- 5. Section: Recent Payments -->
       <section class="home-section">
         <div class="section-title-bar">
-          <div>
-            <h2 class="section-main-heading">Recent Payments</h2>
-            <span class="section-sub-caption">Latest bank payments & member deposits</span>
-          </div>
+          <h2 class="section-main-heading">Recent Payments</h2>
           <button type="button" class="section-see-all-btn" (click)="router.navigate(['/history'])">
             View all ›
           </button>
@@ -345,7 +256,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
             </div>
           } @empty {
             <div class="squircle-empty-card">
-              <p class="empty-hint">No payments recorded yet. Tap ＋ below to add a payment or deposit.</p>
+              <p class="empty-hint">No payments recorded yet.</p>
             </div>
           }
         </div>
@@ -458,73 +369,50 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       }
     }
 
-    /* 2. Matte Black Hero Card */
+    /* 2. Matte Black Hero Card (Bold, Minimal, High Contrast) */
     .matte-hero-banner {
       background: #111216;
       color: #ffffff;
       border-radius: 28px;
-      padding: 22px 24px;
-      margin-bottom: 26px;
+      padding: 22px 22px 20px;
+      margin-bottom: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.28);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-top-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 12px 32px -6px rgba(0, 0, 0, 0.22);
-      cursor: pointer;
-      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-
-      &:hover {
-        transform: translateY(-2px);
-      }
-
-      &:active {
-        transform: scale(0.99);
-      }
+      width: 100%;
     }
 
-    .hero-left-content {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .hero-badge-pill {
+    .hero-rate-pill {
       display: inline-flex;
       align-items: center;
       gap: 6px;
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 700;
       color: rgba(255, 255, 255, 0.9);
+      background: rgba(255, 255, 255, 0.08);
+      padding: 5px 12px;
+      border-radius: 99px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
       letter-spacing: -0.01em;
     }
 
     .lightning-bolt {
       color: #f59e0b;
-      font-size: 14px;
-    }
-
-    .hero-number-wrap {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-
-    .hero-balance-headline {
-      font-size: clamp(26px, 6.5vw, 34px);
-      font-weight: 800;
-      letter-spacing: -0.035em;
-      line-height: 1.1;
-      color: #ffffff;
-    }
-
-    .hero-balance-sub {
-      font-size: 12px;
-      font-weight: 500;
-      color: rgba(255, 255, 255, 0.6);
+      font-size: 13px;
     }
 
     .hero-circle-cta {
-      width: 44px;
-      height: 44px;
+      width: 42px;
+      height: 42px;
       border-radius: 50%;
       background: #ffffff;
       border: none;
@@ -532,7 +420,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       place-items: center;
       cursor: pointer;
       flex-shrink: 0;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
       transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
       &:hover {
@@ -544,11 +432,98 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       }
     }
 
+    .hero-main-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .hero-stat-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.55);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .hero-balance-headline {
+      font-size: clamp(30px, 7.5vw, 42px);
+      font-weight: 800;
+      letter-spacing: -0.035em;
+      line-height: 1.05;
+      color: #ffffff;
+    }
+
+    .hero-pulse-strip {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .hero-glass-pill {
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 18px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      position: relative;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.12);
+        transform: translateY(-1.5px);
+      }
+
+      &:active {
+        transform: scale(0.98);
+      }
+    }
+
+    .pill-dot {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+
+      &.glow-amber {
+        background: #f59e0b;
+        box-shadow: 0 0 10px rgba(245, 158, 11, 0.8);
+      }
+
+      &.glow-green {
+        background: #10b981;
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
+      }
+    }
+
+    .pill-main {
+      font-size: 15px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.015em;
+      line-height: 1.2;
+    }
+
+    .pill-sub {
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.6);
+      letter-spacing: -0.01em;
+    }
+
     /* 3. Section Containers */
     .home-section {
       display: flex;
       flex-direction: column;
-      margin-bottom: 26px;
+      margin-bottom: 22px;
     }
 
     .section-main-heading {
@@ -556,22 +531,14 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       font-weight: 800;
       letter-spacing: -0.025em;
       color: #111216;
-      margin: 0 0 14px 4px;
+      margin: 0;
     }
 
     .section-title-bar {
       display: flex;
       justify-content: space-between;
-      align-items: flex-end;
-      margin: 0 4px 14px;
-    }
-
-    .section-sub-caption {
-      display: block;
-      font-size: 12px;
-      font-weight: 500;
-      color: #8e8e93;
-      margin-top: 2px;
+      align-items: center;
+      margin: 0 4px 12px;
     }
 
     .section-see-all-btn {
@@ -593,7 +560,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
     .dual-squircle-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 14px;
+      gap: 12px;
     }
 
     .squircle-metric-card {
@@ -602,8 +569,8 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       width: 100%;
       text-align: left;
       font-family: inherit;
-      border-radius: 26px;
-      padding: 18px 20px;
+      border-radius: 24px;
+      padding: 18px;
       box-shadow: var(--shadow-card);
       cursor: pointer;
       display: flex;
@@ -614,15 +581,11 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
 
       &:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.06);
       }
 
       &:active {
         transform: scale(0.98);
-      }
-
-      &.full-span-card {
-        grid-column: 1 / -1;
       }
     }
 
@@ -632,26 +595,12 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       align-items: center;
     }
 
-    .header-left-cluster {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .rate-pill {
-      font-size: 11px;
-      font-weight: 700;
-      color: #6c4cff;
-      background: rgba(108, 76, 255, 0.08);
-      padding: 3px 8px;
-      border-radius: var(--radius-pill, 99px);
-    }
-
     .card-caption-title {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
-      color: #111216;
-      letter-spacing: -0.01em;
+      color: #8e8e93;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
 
     .card-chevron-icon {
@@ -664,16 +613,28 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       display: flex;
       flex-direction: column;
       gap: 10px;
+      margin-top: 6px;
     }
 
-    .metric-pair {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
+    .metric-big-num {
+      font-size: clamp(20px, 4.8vw, 24px);
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      color: #111216;
+      line-height: 1.1;
 
-      &.secondary {
-        margin-top: 4px;
+      &.text-green {
+        color: #0fb27c;
       }
+    }
+
+    .metric-label-sub {
+      font-size: 11px;
+      font-weight: 600;
+      color: #8e8e93;
+      display: block;
+      margin-top: 3px;
+      letter-spacing: -0.01em;
     }
 
     .metric-split-row {
@@ -681,7 +642,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       justify-content: space-between;
       align-items: flex-start;
       gap: 8px;
-      margin-top: 4px;
+      margin-top: 2px;
       padding-top: 8px;
       border-top: 1px solid var(--line, rgba(0, 0, 0, 0.06));
     }
@@ -699,7 +660,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
 
     .metric-split-val {
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 800;
       color: #111216;
       line-height: 1.2;
 
@@ -710,165 +671,10 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
 
     .metric-split-lbl {
       font-size: 10px;
-      font-weight: 500;
-      color: #8e8e93;
-    }
-
-    .metric-big-num {
-      font-size: clamp(18px, 4.5vw, 22px);
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      color: #111216;
-      line-height: 1.15;
-    }
-
-    .metric-small-num {
-      font-size: 13px;
-      font-weight: 700;
-      color: #4b4c52;
-    }
-
-    .metric-label-sub {
-      font-size: 11px;
-      font-weight: 500;
-      color: #8e8e93;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .today-highlight-pill {
-      display: inline-flex;
-      align-items: center;
-      font-size: 10px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      background: #111216;
-      color: #ffffff;
-      padding: 1px 7px;
-      border-radius: var(--radius-pill, 99px);
-      line-height: 1.4;
-    }
-
-    .metric-stat-row {
-      display: flex;
-      gap: 16px;
-    }
-
-    /* 4. Progress Feature Card (Screenshot Matched) */
-    .progress-feature-card {
-      background: #ffffff;
-      border-radius: 28px;
-      padding: 24px;
-      box-shadow: var(--shadow-card);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .progress-card-info {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .progress-eyebrow {
-      font-size: 11px;
       font-weight: 600;
       color: #8e8e93;
       text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .progress-main-title {
-      font-size: 20px;
-      font-weight: 800;
-      letter-spacing: -0.025em;
-      color: #111216;
-      margin: 2px 0;
-    }
-
-    .progress-desc {
-      font-size: 12px;
-      font-weight: 500;
-      color: #8e8e93;
-      line-height: 1.4;
-      margin: 0;
-    }
-
-    .action-pill-black {
-      background: #111216;
-      color: #fff;
-      border-radius: 99px;
-      padding: 10px 20px;
-      font-size: 13px;
-      font-weight: 700;
-      border: none;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      align-self: flex-start;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
-      transition: all 0.2s ease;
-
-      &:hover {
-        background: #2a2b32;
-        transform: translateY(-1px);
-      }
-
-      &:active {
-        transform: scale(0.96);
-      }
-    }
-
-    /* Circular SVG Gauge */
-    .progress-arc-visual {
-      position: relative;
-      width: 90px;
-      height: 90px;
-      flex-shrink: 0;
-    }
-
-    .progress-radial-svg {
-      width: 100%;
-      height: 100%;
-      transform: rotate(-90deg);
-    }
-
-    .arc-bg-ring {
-      stroke: #f0f1f4;
-    }
-
-    .arc-progress-ring {
-      stroke: #111216;
-      transition: stroke-dashoffset 1s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .arc-inner-label {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .arc-pct-text {
-      font-size: 14px;
-      font-weight: 800;
-      color: #111216;
-      letter-spacing: -0.02em;
-    }
-
-    .arc-pct-sub {
-      font-size: 8px;
-      font-weight: 800;
-      letter-spacing: 0.05em;
-      color: #8e8e93;
+      letter-spacing: 0.03em;
     }
 
     /* 5. Squircle Items List (Members & Activity) */
@@ -1120,49 +926,6 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       margin: 2px 0;
     }
 
-    .trend-micro-tiles-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      padding-top: 6px;
-      border-top: 1px solid rgba(0, 0, 0, 0.05);
-    }
-
-    .trend-micro-tile {
-      background: #f7f7fa;
-      border-radius: 16px;
-      padding: 10px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-      min-width: 0;
-    }
-
-    .micro-tile-lbl {
-      font-size: 10px;
-      font-weight: 700;
-      color: #8e8e93;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .micro-tile-val {
-      font-size: 13px;
-      font-weight: 800;
-      color: #111216;
-      letter-spacing: -0.01em;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-
-      &.text-green {
-        color: #10b981;
-      }
-    }
-
     .card-badge-chip {
       font-size: 11px;
       font-weight: 800;
@@ -1170,18 +933,6 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       background: rgba(16, 185, 129, 0.12);
       padding: 3px 8px;
       border-radius: var(--radius-pill, 99px);
-    }
-
-    .custom-chart-label {
-      font-size: 10px;
-      font-weight: 700;
-      color: #8e8e93;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .chart-embed-wrapper {
-      margin-top: 4px;
     }
   `,
 })
@@ -1212,10 +963,6 @@ export class HomeComponent {
   });
 
   readonly summary = this.ledgerStore.thisMonthSummary;
-  readonly funds = this.ledgerStore.groupFunds;
-
-  readonly arcRadius = 40;
-  readonly arcCircumference = 2 * Math.PI * this.arcRadius;
 
   readonly monthlyTargetPaise = computed<Paise>(() => this.ledgerStore.loan().monthlyTarget || toPaise(240000));
 
@@ -1292,28 +1039,6 @@ export class HomeComponent {
     const lim = this.ledgerStore.loan().sanctionedLimit;
     if (lim <= 0) return 0;
     return (this.repaidAmount() / lim) * 100;
-  });
-
-  readonly arcStrokeDashoffset = computed(() => {
-    const pct = Math.min(100, Math.max(0, this.repaidPercent()));
-    return this.arcCircumference - (pct / 100) * this.arcCircumference;
-  });
-
-  readonly currentMonthFormatted = computed(() => {
-    return new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
-  });
-
-  readonly isThisMonthReconciled = computed<boolean>(() => {
-    const curMonth = new Date().toISOString().slice(0, 7);
-    return this.ledgerStore.snapshots().some(
-      (s) => !s.deletedAt && s.date.slice(0, 7) === curMonth && s.variance === 0
-    );
-  });
-
-  readonly hasRecordedPayments = computed<boolean>(() => {
-    return this.ledgerStore
-      .transactions()
-      .some((t) => !t.deletedAt && (t.type === 'contribution' || t.type === 'bankPayment'));
   });
 
   readonly targetValueRupees = computed(() => {
