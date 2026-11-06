@@ -244,13 +244,42 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
 
       <!-- 5. Section: Monthly Deposit Trend -->
       <section class="home-section">
-        <div class="insight-squircle-card">
-          <h2 class="section-main-heading">Monthly Deposit Trend</h2>
-          <span class="section-sub-caption">Total money deposited each month over past 6 months</span>
+        <div class="trend-feature-card">
+          <div class="trend-card-header">
+            <div>
+              <div class="trend-eyebrow-row">
+                <span class="trend-eyebrow-pill">Past 6 Months</span>
+                <span class="trend-eyebrow-target">Target: {{ formatCompactPaise(monthlyTargetPaise()) }}/mo</span>
+              </div>
+              <h2 class="trend-main-heading">Deposit Activity</h2>
+            </div>
+            <div class="trend-header-stats">
+              <span class="trend-stat-val tabular-nums">{{ formatCompactPaise(totalDepositedPast6Months()) }}</span>
+              <span class="trend-stat-lbl">6-Mo Collected</span>
+            </div>
+          </div>
 
-          <div class="chart-embed-wrapper" style="margin-top: 14px">
-            <span class="custom-chart-label" style="margin-bottom: 8px; display: block">Total Deposited Each Month (₹)</span>
-            <app-bar-chart [data]="monthlyBarData()" />
+          <div class="trend-chart-embed">
+            <app-bar-chart
+              [data]="monthlyBarData()"
+              [targetValue]="targetValueRupees()"
+            />
+          </div>
+
+          <!-- 3 Micro Stats Tiles at Bottom -->
+          <div class="trend-micro-tiles-grid">
+            <div class="trend-micro-tile">
+              <span class="micro-tile-lbl">Monthly Target</span>
+              <span class="micro-tile-val tabular-nums">{{ formatPaise(monthlyTargetPaise()) }}</span>
+            </div>
+            <div class="trend-micro-tile">
+              <span class="micro-tile-lbl">This Month</span>
+              <span class="micro-tile-val tabular-nums text-green">{{ formatPaise(summary().memberContributions) }}</span>
+            </div>
+            <div class="trend-micro-tile">
+              <span class="micro-tile-lbl">Target Pacing</span>
+              <span class="micro-tile-val tabular-nums">{{ thisMonthPacingPercent().toFixed(0) }}%</span>
+            </div>
           </div>
         </div>
       </section>
@@ -1012,15 +1041,126 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       margin: 0;
     }
 
-    /* Luxury Squircle Card for Insights on Home */
-    .insight-squircle-card {
+    /* Luxury Trend Feature Card on Home */
+    .trend-feature-card {
       background: #ffffff;
       border-radius: 26px;
-      padding: 22px 24px;
+      padding: 22px 20px 18px;
       box-shadow: var(--shadow-card);
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 16px;
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+
+      &:hover {
+        box-shadow: 0 10px 28px -4px rgba(0, 0, 0, 0.06);
+      }
+    }
+
+    .trend-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .trend-eyebrow-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .trend-eyebrow-pill {
+      font-size: 11px;
+      font-weight: 800;
+      color: #6366f1;
+      background: rgba(99, 102, 241, 0.1);
+      padding: 3px 9px;
+      border-radius: 99px;
+      letter-spacing: 0.02em;
+    }
+
+    .trend-eyebrow-target {
+      font-size: 11px;
+      font-weight: 600;
+      color: #8e8e93;
+    }
+
+    .trend-main-heading {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      color: #111216;
+      margin: 0;
+    }
+
+    .trend-header-stats {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      text-align: right;
+    }
+
+    .trend-stat-val {
+      font-size: 18px;
+      font-weight: 800;
+      color: #111216;
+      letter-spacing: -0.02em;
+    }
+
+    .trend-stat-lbl {
+      font-size: 11px;
+      font-weight: 600;
+      color: #8e8e93;
+      margin-top: 1px;
+    }
+
+    .trend-chart-embed {
+      margin: 2px 0;
+    }
+
+    .trend-micro-tiles-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .trend-micro-tile {
+      background: #f7f7fa;
+      border-radius: 16px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .micro-tile-lbl {
+      font-size: 10px;
+      font-weight: 700;
+      color: #8e8e93;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .micro-tile-val {
+      font-size: 13px;
+      font-weight: 800;
+      color: #111216;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      &.text-green {
+        color: #10b981;
+      }
     }
 
     .card-badge-chip {
@@ -1176,29 +1316,63 @@ export class HomeComponent {
       .some((t) => !t.deletedAt && (t.type === 'contribution' || t.type === 'bankPayment'));
   });
 
+  readonly targetValueRupees = computed(() => {
+    return this.monthlyTargetPaise() / 100;
+  });
+
+  readonly totalDepositedPast6Months = computed<Paise>(() => {
+    const data = this.monthlyBarData();
+    const sumRupees = data.reduce((acc, item) => acc + item.value, 0);
+    return toPaise(sumRupees);
+  });
+
+  readonly thisMonthPacingPercent = computed(() => {
+    const target = this.monthlyTargetPaise();
+    if (target <= 0) return 0;
+    const paid = this.summary().memberContributions;
+    return Math.min(100, (paid / target) * 100);
+  });
+
   readonly monthlyBarData = computed(() => {
     const txs = this.ledgerStore
       .transactions()
       .filter((t): t is ContributionTransaction => t.type === 'contribution' && !t.deletedAt);
-    const monthsMap = new Map<string, number>();
+    const monthsMap = new Map<string, { value: number; count: number }>();
 
     const now = new Date();
     for (let k = 5; k >= 0; k--) {
       const d = new Date(now.getFullYear(), now.getMonth() - k, 1);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      monthsMap.set(key, 0);
+      monthsMap.set(key, { value: 0, count: 0 });
     }
 
     for (const t of txs) {
       if (monthsMap.has(t.forMonth)) {
-        monthsMap.set(t.forMonth, (monthsMap.get(t.forMonth) || 0) + t.amount / 100);
+        const entry = monthsMap.get(t.forMonth)!;
+        entry.value += t.amount / 100;
+        entry.count += 1;
       }
     }
 
-    return Array.from(monthsMap.entries()).map(([monthKey, val]) => {
-      const d = new Date(`${monthKey}-01T12:00:00`);
+    const curMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const targetRupees = this.targetValueRupees();
+
+    return Array.from(monthsMap.entries()).map(([monthKey, entry]) => {
+      const parts = monthKey.split('-');
+      const y = parseInt(parts[0]!, 10);
+      const m = parseInt(parts[1]!, 10);
+      const d = new Date(y, m - 1, 1);
       const label = d.toLocaleDateString('en-IN', { month: 'short' });
-      return { label, value: Math.round(val) };
+      const fullLabel = d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+      return {
+        label,
+        value: Math.round(entry.value),
+        monthKey,
+        fullLabel,
+        isCurrent: monthKey === curMonthKey,
+        target: targetRupees,
+        depositCount: entry.count,
+      };
     });
   });
 
