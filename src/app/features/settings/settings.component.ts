@@ -239,43 +239,25 @@ import {
 
         <div class="members-luxury-list">
           @for (m of nonDeletedMembers(); track m.id) {
-            <div class="member-card" [class.inactive]="!m.active">
+            <div class="member-row" [class.inactive]="!m.active">
               <div class="member-avatar-wrap">
                 <app-avatar
                   [name]="m.name"
                   [colorIndex]="m.colorIndex"
-                  [size]="38"
+                  [size]="36"
                   [circular]="true"
                   [avatarUrl]="m.avatarUrl"
                 />
               </div>
 
-              <div class="member-details">
-                <input
-                  type="text"
-                  class="member-name-input"
-                  [ngModel]="m.name"
-                  (ngModelChange)="renameMember(m.id, $event)"
-                  placeholder="Member name"
-                  aria-label="Member name"
-                />
-
-                <div class="member-target-row">
-                  <span class="target-label">Target</span>
-                  <div class="target-input-wrap">
-                    <span class="target-currency">₹</span>
-                    <input
-                      type="number"
-                      class="target-input tabular-nums"
-                      [ngModel]="toRupees(m.target ?? ZERO_PAISE)"
-                      (ngModelChange)="updateMemberTarget(m.id, $event)"
-                      placeholder="0"
-                      aria-label="Monthly target in rupees"
-                    />
-                  </div>
-                  <span class="target-period">/ mo</span>
-                </div>
-              </div>
+              <input
+                type="text"
+                class="member-name-input"
+                [ngModel]="m.name"
+                (ngModelChange)="renameMember(m.id, $event)"
+                placeholder="Member name"
+                aria-label="Member name"
+              />
 
               <div class="member-controls">
                 <button
@@ -297,7 +279,7 @@ import {
                   aria-label="Remove member"
                   title="Remove member"
                 >
-                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                   </svg>
                 </button>
@@ -747,22 +729,28 @@ import {
     .members-luxury-list {
       display: flex;
       flex-direction: column;
-      gap: 8px;
     }
 
-    .member-card {
+    .member-row {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 10px 14px;
-      border-radius: var(--radius-tile, 16px);
-      border: 1px solid var(--line);
-      background: var(--bg-subtle, #f5f5f7);
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+      transition: opacity 0.2s ease;
     }
 
-    .member-card.inactive {
-      opacity: 0.55;
+    .member-row:last-child {
+      border-bottom: none;
+      padding-bottom: 2px;
+    }
+
+    .member-row:first-child {
+      padding-top: 4px;
+    }
+
+    .member-row.inactive {
+      opacity: 0.45;
     }
 
     .member-avatar-wrap {
@@ -771,98 +759,28 @@ import {
       align-items: center;
     }
 
-    .member-details {
+    .member-name-input {
       flex: 1;
       min-width: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    @media (min-width: 520px) {
-      .member-details {
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-between;
-        gap: 14px;
-      }
-    }
-
-    .member-name-input {
       font-size: 15px;
-      font-weight: 700;
+      font-weight: 600;
       color: var(--ink);
       border: none;
       background: transparent;
       outline: none;
-      padding: 0;
-      width: 100%;
+      padding: 4px 0;
       letter-spacing: -0.01em;
       transition: border-color 0.2s ease;
     }
 
     .member-name-input:focus {
-      border-bottom: 1.5px solid var(--brand-a);
-    }
-
-    .member-target-row {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      flex-shrink: 0;
-    }
-
-    .target-label {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .target-input-wrap {
-      display: inline-flex;
-      align-items: center;
-      gap: 2px;
-      background: var(--card);
-      padding: 2px 8px;
-      border-radius: 8px;
-      border: 1px solid var(--line);
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .target-input-wrap:focus-within {
-      border-color: var(--ink);
-      box-shadow: 0 0 0 1px var(--ink);
-    }
-
-    .target-currency {
-      color: var(--muted);
-      font-weight: 700;
-      font-size: 11px;
-    }
-
-    .target-input {
-      border: none;
-      background: transparent;
-      color: var(--ink);
-      font-weight: 700;
-      font-size: 12px;
-      width: 65px;
-      outline: none;
-      padding: 0;
-    }
-
-    .target-period {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--muted);
+      border-bottom: 1.5px solid var(--ink);
     }
 
     .member-controls {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       flex-shrink: 0;
     }
 
@@ -946,7 +864,6 @@ export class SettingsComponent {
   newRateInput: number | null = null;
   rateEffectiveDate = new Date().toISOString().slice(0, 10);
   private saveTimeout: ReturnType<typeof setTimeout> | null = null;
-  private memberTargetTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
   private memberNameTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
   readonly memberToDelete = signal<Member | null>(null);
@@ -1052,22 +969,6 @@ export class SettingsComponent {
       this.memberNameTimeouts.delete(id);
     }, 450);
     this.memberNameTimeouts.set(id, t);
-  }
-
-  updateMemberTarget(memberId: string, value: number | string | null | undefined): void {
-    if (value === null || value === undefined || value === '') return;
-    const num = typeof value === 'number' ? value : parseFloat(String(value));
-    if (isNaN(num) || num < 0) return;
-
-    const existing = this.memberTargetTimeouts.get(memberId);
-    if (existing) clearTimeout(existing);
-
-    const t = setTimeout(async () => {
-      await this.ledgerStore.updateMember(memberId, { target: toPaise(num) });
-      this.toast.show('Monthly commitment updated', 'success');
-      this.memberTargetTimeouts.delete(memberId);
-    }, 450);
-    this.memberTargetTimeouts.set(memberId, t);
   }
 
   async toggleMemberActive(member: Member): Promise<void> {
