@@ -130,33 +130,6 @@ import {
         <h2 class="card-title">Change Interest Rate</h2>
         <p class="section-sub">Bank revisions update current and future interest without altering historical records.</p>
 
-        <!-- Active Rate Spotlight Tile -->
-        <div class="active-rate-spotlight">
-          <div class="spotlight-top">
-            <span class="spotlight-badge-title">CURRENT BANK RATE</span>
-            <span class="spotlight-live-pill">
-              <span class="live-dot"></span> Active
-            </span>
-          </div>
-
-          <div class="spotlight-main">
-            <span class="spotlight-rate tabular-nums">{{ (loan().currentRateBps / 100).toFixed(2) }}%</span>
-            <div class="spotlight-meta">
-              <span class="spotlight-unit">p.a.</span>
-              <span class="spotlight-type">Daily Reducing Balance</span>
-            </div>
-          </div>
-
-          <div class="spotlight-footer">
-            <span class="spotlight-date-text">
-              In effect from {{ formatEffectiveDate(loan().openingDate) }}
-            </span>
-            @if (previousRateFormatted()) {
-              <span class="prev-rate-chip">Prior: {{ previousRateFormatted() }}</span>
-            }
-          </div>
-        </div>
-
         <!-- Rate Revision Form (Clean - No Suggestions, No Reason) -->
         <form class="rate-change-form" (ngSubmit)="applyRateChange()">
           <div class="rate-form-grid">
@@ -410,118 +383,6 @@ import {
     .setting-input:focus {
       border-color: var(--brand-a);
       background: var(--card);
-    }
-
-    /* ----------------------------------------------------
-       Active Rate Spotlight Tile (Classic Luxury)
-       ---------------------------------------------------- */
-    .active-rate-spotlight {
-      background: #111216;
-      border-radius: var(--radius-card, 22px);
-      padding: 18px 20px;
-      margin-bottom: 18px;
-      color: #ffffff;
-      box-shadow: 0 8px 24px rgba(17, 18, 22, 0.16);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .spotlight-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-
-    .spotlight-badge-title {
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.06em;
-      color: #8e8e93;
-      text-transform: uppercase;
-    }
-
-    .spotlight-live-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 3px 10px;
-      border-radius: var(--radius-pill, 99px);
-      background: rgba(16, 185, 129, 0.16);
-      border: 1px solid rgba(16, 185, 129, 0.35);
-      color: #10b981;
-      font-size: 11px;
-      font-weight: 700;
-    }
-
-    .live-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #10b981;
-      box-shadow: 0 0 6px #10b981;
-      animation: pulseLive 2s infinite ease-in-out;
-    }
-
-    @keyframes pulseLive {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.45; transform: scale(0.85); }
-    }
-
-    .spotlight-main {
-      display: flex;
-      align-items: baseline;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-
-    .spotlight-rate {
-      font-size: 38px;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      line-height: 1;
-      color: #ffffff;
-    }
-
-    .spotlight-meta {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .spotlight-unit {
-      font-size: 14px;
-      font-weight: 700;
-      color: #8e8e93;
-    }
-
-    .spotlight-type {
-      font-size: 12px;
-      font-weight: 600;
-      color: rgba(255, 255, 255, 0.7);
-    }
-
-    .spotlight-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-top: 12px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .spotlight-date-text {
-      font-size: 12px;
-      color: #8e8e93;
-      font-weight: 500;
-    }
-
-    .prev-rate-chip {
-      font-size: 11px;
-      font-weight: 600;
-      color: #d1d1d6;
-      background: rgba(255, 255, 255, 0.1);
-      padding: 3px 9px;
-      border-radius: var(--radius-pill, 99px);
     }
 
     /* ----------------------------------------------------
@@ -812,14 +673,6 @@ export class SettingsComponent {
   readonly rateHistory = computed(() => {
     return [...this.ledgerStore.rateChanges()]
       .sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom) || b.createdAt.localeCompare(a.createdAt));
-  });
-
-  readonly previousRateFormatted = computed(() => {
-    const changes = this.rateHistory();
-    if (changes.length > 1) {
-      return `${(changes[1].rateBps / 100).toFixed(2)}% p.a.`;
-    }
-    return null;
   });
 
   formatEffectiveDate(dateStr?: string): string {
