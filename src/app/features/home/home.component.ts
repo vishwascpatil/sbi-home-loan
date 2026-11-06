@@ -237,45 +237,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
         </div>
       </section>
 
-      <!-- 5. Section: Family Members & Targets -->
-      <section class="home-section">
-        <div class="section-title-bar">
-          <div>
-            <h2 class="section-main-heading">Family Members & Targets</h2>
-            <span class="section-sub-caption">5 members pooling ₹2,40,000 · Due 5th of every month</span>
-          </div>
-          <button type="button" class="section-see-all-btn" (click)="router.navigate(['/members'])">
-            View all ›
-          </button>
-        </div>
-
-        <div class="squircle-items-list">
-          @for (m of ledgerStore.memberStats(); track m.memberId) {
-            <button
-              type="button"
-              class="squircle-item-row"
-              (click)="router.navigate(['/members'])"
-              [attr.aria-label]="m.name + ' target details'"
-            >
-              <div class="item-left-cluster">
-                <app-avatar [name]="m.name" [colorIndex]="$index" [size]="42" [avatarUrl]="m.avatarUrl" />
-                <div class="item-text-info">
-                  <span class="item-primary-name">{{ m.name }}</span>
-                  <span class="item-secondary-sub">
-                    Pays {{ m.target ? formatPaise(m.target) : '₹0' }} / month · Due on 5th
-                  </span>
-                </div>
-              </div>
-              <div class="item-right-cluster">
-                <span class="item-share-pill">{{ (m.targetSharePercentage || m.sharePercentage).toFixed(1) }}% share</span>
-                <span class="item-chevron">›</span>
-              </div>
-            </button>
-          }
-        </div>
-      </section>
-
-      <!-- 6. Section: Recent Payments -->
+      <!-- 5. Section: Recent Payments -->
       <section class="home-section">
         <div class="section-title-bar">
           <div>
