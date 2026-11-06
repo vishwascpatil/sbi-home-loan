@@ -205,8 +205,17 @@ import {
       <app-glass-card [staggerIndex]="2">
         <div class="card-title-row">
           <h2 class="card-title">Family Members</h2>
-          <button type="button" class="add-m-btn" (click)="addNewMemberPrompt()">
-            ＋ Add Person
+          <button
+            type="button"
+            class="add-m-btn"
+            (click)="addNewMemberPrompt()"
+            aria-label="Add family member"
+            title="Add person"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
           </button>
         </div>
 
@@ -547,30 +556,29 @@ import {
        Family Members Section (Minimal & Clean)
        ---------------------------------------------------- */
     .add-m-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 14px;
-      border-radius: var(--radius-pill, 99px);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
       background: var(--ink);
       color: var(--card);
       border: none;
-      font-size: 12px;
-      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .add-m-btn:hover {
       opacity: 0.9;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+      transform: scale(1.06);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 
     .add-m-btn:active {
-      transform: scale(0.96);
+      transform: scale(0.92);
     }
 
     .members-luxury-list {
