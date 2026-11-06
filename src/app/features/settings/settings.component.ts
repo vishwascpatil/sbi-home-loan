@@ -14,8 +14,10 @@ import {
   ToastService,
 } from '../../shared/ui';
 import {
+  formatCompactPaise,
   formatPaise,
   Member,
+  Paise,
   toPaise,
   toRupees,
   ZERO_PAISE,
@@ -88,38 +90,53 @@ import {
           </div>
 
           <div class="setting-item">
-            <label class="setting-label" for="loan-limit">Total Loan Approved by Bank (₹)</label>
+            <label class="setting-label" for="loan-limit">
+              <span>Total Loan Approved by Bank (₹)</span>
+              <span class="compact-hint">{{ formatCompactPaise(loan().sanctionedLimit) }}</span>
+            </label>
             <input
               id="loan-limit"
-              type="number"
+              type="text"
+              inputmode="decimal"
               class="setting-input tabular-nums"
-              [ngModel]="toRupees(loan().sanctionedLimit)"
-              (ngModelChange)="updateLoanMoneyParam('sanctionedLimit', $event)"
-              (change)="commitLoanMoneyParam('sanctionedLimit', $event)"
+              [value]="getMoneyParamDisplay('sanctionedLimit')"
+              (focus)="onMoneyParamFocus('sanctionedLimit')"
+              (input)="onMoneyParamInput('sanctionedLimit', $event)"
+              (blur)="onMoneyParamBlur('sanctionedLimit', $event)"
             />
           </div>
 
           <div class="setting-item">
-            <label class="setting-label" for="loan-outstanding">Outstanding Amount (₹)</label>
+            <label class="setting-label" for="loan-outstanding">
+              <span>Outstanding Amount (₹)</span>
+              <span class="compact-hint">{{ formatCompactPaise(loan().openingOutstanding) }}</span>
+            </label>
             <input
               id="loan-outstanding"
-              type="number"
+              type="text"
+              inputmode="decimal"
               class="setting-input tabular-nums"
-              [ngModel]="toRupees(loan().openingOutstanding)"
-              (ngModelChange)="updateLoanMoneyParam('openingOutstanding', $event)"
-              (change)="commitLoanMoneyParam('openingOutstanding', $event)"
+              [value]="getMoneyParamDisplay('openingOutstanding')"
+              (focus)="onMoneyParamFocus('openingOutstanding')"
+              (input)="onMoneyParamInput('openingOutstanding', $event)"
+              (blur)="onMoneyParamBlur('openingOutstanding', $event)"
             />
           </div>
 
           <div class="setting-item">
-            <label class="setting-label" for="loan-target">Total Monthly Target to Collect (₹)</label>
+            <label class="setting-label" for="loan-target">
+              <span>Total Monthly Target to Collect (₹)</span>
+              <span class="compact-hint">{{ formatCompactPaise(loan().monthlyTarget) }}</span>
+            </label>
             <input
               id="loan-target"
-              type="number"
+              type="text"
+              inputmode="decimal"
               class="setting-input tabular-nums"
-              [ngModel]="toRupees(loan().monthlyTarget)"
-              (ngModelChange)="updateLoanMoneyParam('monthlyTarget', $event)"
-              (change)="commitLoanMoneyParam('monthlyTarget', $event)"
+              [value]="getMoneyParamDisplay('monthlyTarget')"
+              (focus)="onMoneyParamFocus('monthlyTarget')"
+              (input)="onMoneyParamInput('monthlyTarget', $event)"
+              (blur)="onMoneyParamBlur('monthlyTarget', $event)"
             />
           </div>
         </div>
@@ -369,6 +386,17 @@ import {
       font-size: 11px;
       font-weight: 700;
       cursor: pointer;
+    }
+
+    .compact-hint {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--brand-a);
+      background: rgba(108, 76, 255, 0.08);
+      padding: 1px 8px;
+      border-radius: var(--radius-pill, 99px);
+      text-transform: none;
+      letter-spacing: normal;
     }
 
     .setting-input {
@@ -650,6 +678,7 @@ export class SettingsComponent {
   readonly toast = inject(ToastService);
 
   readonly formatPaise = formatPaise;
+  readonly formatCompactPaise = formatCompactPaise;
   readonly toRupees = toRupees;
   readonly toPaise = toPaise;
   readonly ZERO_PAISE = ZERO_PAISE;
@@ -660,6 +689,8 @@ export class SettingsComponent {
   rateEffectiveDate = new Date().toISOString().slice(0, 10);
   private saveTimeout: ReturnType<typeof setTimeout> | null = null;
   private memberNameTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+  private focusedMoneyField = signal<'sanctionedLimit' | 'openingOutstanding' | 'monthlyTarget' | null>(null);
+  private moneyFieldRaw = new Map<'sanctionedLimit' | 'openingOutstanding' | 'monthlyTarget', string>();
 
   readonly memberToDelete = signal<Member | null>(null);
   readonly isDeleteConfirmOpen = signal(false);
@@ -673,17 +704,42 @@ export class SettingsComponent {
       .sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom) || b.createdAt.localeCompare(a.createdAt));
   });
 
-  async updateLoanParam(key: string, value: unknown): Promise<void> {
-    await this.ledgerStore.updateLoanDetails({ [key]: value });
-    this.toast.show('Loan details saved', 'success');
+  formatRupeesWithCommas(p: Paise | null | undefined): string {
+    if (p === undefined || p === null) return '0';
+    const isNegative = p < 0;
+    const absPaise = Math.abs(p);
+    const rupees = Math.floor(absPaise / 100);
+    const paiseRem = absPaise % 100;
+    let formatted = rupees.toLocaleString('en-IN');
+    if (paiseRem > 0) {
+      formatted += '.' + paiseRem.toString().padStart(2, '0');
+    }
+    return isNegative ? `-${formatted}` : formatted;
   }
 
-  updateLoanMoneyParam(
+  getMoneyParamDisplay(key: 'sanctionedLimit' | 'openingOutstanding' | 'monthlyTarget'): string {
+    if (this.focusedMoneyField() === key && this.moneyFieldRaw.has(key)) {
+      return this.moneyFieldRaw.get(key)!;
+    }
+    return this.formatRupeesWithCommas(this.loan()[key]);
+  }
+
+  onMoneyParamFocus(key: 'sanctionedLimit' | 'openingOutstanding' | 'monthlyTarget'): void {
+    this.focusedMoneyField.set(key);
+  }
+
+  onMoneyParamInput(
     key: 'sanctionedLimit' | 'openingOutstanding' | 'monthlyTarget',
-    value: number | string | null | undefined
+    event: Event
   ): void {
-    if (value === null || value === undefined || value === '') return;
-    const num = typeof value === 'number' ? value : parseFloat(String(value));
+    this.focusedMoneyField.set(key);
+    const input = event.target as HTMLInputElement;
+    const raw = input.value;
+    this.moneyFieldRaw.set(key, raw);
+
+    const clean = raw.replace(/,/g, '').trim();
+    if (!clean) return;
+    const num = parseFloat(clean);
     if (isNaN(num) || num < 0) return;
 
     if (this.saveTimeout) {
@@ -691,30 +747,42 @@ export class SettingsComponent {
     }
 
     this.saveTimeout = setTimeout(async () => {
-      await this.ledgerStore.updateLoanDetails({ [key]: toPaise(num) });
+      await this.ledgerStore.updateLoanDetails({ [key]: toPaise(clean) });
       const label = key === 'openingOutstanding' ? 'Outstanding amount' : 'Loan details';
       this.toast.show(`${label} updated & recalculated`, 'success');
     }, 450);
   }
 
-  commitLoanMoneyParam(
+  onMoneyParamBlur(
     key: 'sanctionedLimit' | 'openingOutstanding' | 'monthlyTarget',
     event: Event
   ): void {
+    this.focusedMoneyField.set(null);
     const input = event.target as HTMLInputElement;
-    if (!input || input.value === '') return;
-    const num = parseFloat(input.value);
-    if (isNaN(num) || num < 0) return;
+    const clean = input.value.replace(/,/g, '').trim();
+    this.moneyFieldRaw.delete(key);
 
-    if (this.saveTimeout) {
-      clearTimeout(this.saveTimeout);
-      this.saveTimeout = null;
+    if (clean) {
+      const num = parseFloat(clean);
+      if (!isNaN(num) && num >= 0) {
+        if (this.saveTimeout) {
+          clearTimeout(this.saveTimeout);
+          this.saveTimeout = null;
+        }
+        void this.ledgerStore.updateLoanDetails({ [key]: toPaise(clean) }).then(() => {
+          const label = key === 'openingOutstanding' ? 'Outstanding amount' : 'Loan details';
+          this.toast.show(`${label} updated & recalculated`, 'success');
+          input.value = this.formatRupeesWithCommas(this.loan()[key]);
+        });
+        return;
+      }
     }
+    input.value = this.formatRupeesWithCommas(this.loan()[key]);
+  }
 
-    void this.ledgerStore.updateLoanDetails({ [key]: toPaise(num) }).then(() => {
-      const label = key === 'openingOutstanding' ? 'Outstanding amount' : 'Loan details';
-      this.toast.show(`${label} updated & recalculated`, 'success');
-    });
+  async updateLoanParam(key: string, value: unknown): Promise<void> {
+    await this.ledgerStore.updateLoanDetails({ [key]: value });
+    this.toast.show('Loan details saved', 'success');
   }
 
   async applyRateChange(): Promise<void> {
