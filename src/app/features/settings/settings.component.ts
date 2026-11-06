@@ -166,7 +166,7 @@ import {
           </div>
 
           <button type="submit" class="apply-rate-btn">
-            Save & Apply New Rate
+            Apply
           </button>
         </form>
 
@@ -440,16 +440,16 @@ import {
 
     .apply-rate-btn {
       width: 100%;
-      height: 46px;
+      height: 44px;
       border-radius: var(--radius-pill, 99px);
-      background: #111216;
-      color: #ffffff;
+      background: var(--ink);
+      color: var(--card);
       border: none;
       font-size: 13px;
-      font-weight: 800;
+      font-weight: 700;
       cursor: pointer;
       margin-top: 4px;
-      box-shadow: 0 4px 14px rgba(17, 18, 22, 0.18);
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
