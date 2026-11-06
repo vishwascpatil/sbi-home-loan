@@ -244,44 +244,50 @@ import {
                 <app-avatar
                   [name]="m.name"
                   [colorIndex]="m.colorIndex"
-                  [size]="42"
+                  [size]="38"
                   [circular]="true"
                   [avatarUrl]="m.avatarUrl"
                 />
               </div>
 
-              <div class="member-body">
+              <div class="member-details">
                 <input
                   type="text"
                   class="member-name-input"
                   [ngModel]="m.name"
                   (ngModelChange)="renameMember(m.id, $event)"
-                  placeholder="Name"
+                  placeholder="Member name"
                   aria-label="Member name"
                 />
-                <div class="member-target-wrap">
-                  <span class="rupee-sign">₹</span>
-                  <input
-                    type="number"
-                    class="member-target-input tabular-nums"
-                    [ngModel]="toRupees(m.target ?? ZERO_PAISE)"
-                    (ngModelChange)="updateMemberTarget(m.id, $event)"
-                    placeholder="0"
-                    aria-label="Monthly target"
-                  />
+
+                <div class="member-target-row">
+                  <span class="target-label">Target</span>
+                  <div class="target-input-wrap">
+                    <span class="target-currency">₹</span>
+                    <input
+                      type="number"
+                      class="target-input tabular-nums"
+                      [ngModel]="toRupees(m.target ?? ZERO_PAISE)"
+                      (ngModelChange)="updateMemberTarget(m.id, $event)"
+                      placeholder="0"
+                      aria-label="Monthly target in rupees"
+                    />
+                  </div>
+                  <span class="target-period">/ mo</span>
                 </div>
               </div>
 
-              <div class="member-actions">
+              <div class="member-controls">
                 <button
                   type="button"
-                  class="member-status-pill"
-                  [class.active]="m.active"
+                  class="ios-switch"
+                  role="switch"
+                  [attr.aria-checked]="m.active"
                   (click)="toggleMemberActive(m)"
-                  [attr.aria-label]="m.active ? 'Active' : 'Inactive'"
+                  [title]="m.active ? 'Active (tap to pause)' : 'Paused (tap to activate)'"
+                  [attr.aria-label]="m.name + (m.active ? ' is active' : ' is paused')"
                 >
-                  <span class="status-indicator"></span>
-                  {{ m.active ? 'Active' : 'Inactive' }}
+                  <span class="ios-switch-thumb"></span>
                 </button>
 
                 <button
@@ -289,9 +295,11 @@ import {
                   class="member-del-btn"
                   (click)="confirmDeleteMember(m)"
                   aria-label="Remove member"
-                  title="Remove"
+                  title="Remove member"
                 >
-                  ✕
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
                 </button>
               </div>
             </div>
@@ -710,22 +718,26 @@ import {
        Family Members Section (Minimal & Clean)
        ---------------------------------------------------- */
     .add-m-btn {
-      padding: 7px 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
       border-radius: var(--radius-pill, 99px);
-      background: #111216;
-      color: #ffffff;
+      background: var(--ink);
+      color: var(--card);
       border: none;
       font-size: 12px;
-      font-weight: 800;
+      font-weight: 700;
       cursor: pointer;
-      box-shadow: 0 3px 10px rgba(17, 18, 22, 0.12);
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       white-space: nowrap;
     }
 
     .add-m-btn:hover {
+      opacity: 0.9;
       transform: translateY(-1px);
-      box-shadow: 0 5px 14px rgba(17, 18, 22, 0.18);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     }
 
     .add-m-btn:active {
@@ -742,34 +754,43 @@ import {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 10px 12px;
+      padding: 10px 14px;
       border-radius: var(--radius-tile, 16px);
       border: 1px solid var(--line);
       background: var(--bg-subtle, #f5f5f7);
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .member-card.inactive {
       opacity: 0.55;
-      background: transparent;
-      border-style: dashed;
     }
 
     .member-avatar-wrap {
       flex-shrink: 0;
+      display: flex;
+      align-items: center;
     }
 
-    .member-body {
+    .member-details {
       flex: 1;
       min-width: 0;
       display: flex;
       flex-direction: column;
-      gap: 3px;
+      gap: 4px;
+    }
+
+    @media (min-width: 520px) {
+      .member-details {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+      }
     }
 
     .member-name-input {
       font-size: 15px;
-      font-weight: 800;
+      font-weight: 700;
       color: var(--ink);
       border: none;
       background: transparent;
@@ -777,98 +798,136 @@ import {
       padding: 0;
       width: 100%;
       letter-spacing: -0.01em;
+      transition: border-color 0.2s ease;
     }
 
     .member-name-input:focus {
       border-bottom: 1.5px solid var(--brand-a);
     }
 
-    .member-target-wrap {
+    .member-target-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+
+    .target-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .target-input-wrap {
       display: inline-flex;
       align-items: center;
       gap: 2px;
       background: var(--card);
       padding: 2px 8px;
-      border-radius: var(--radius-pill, 99px);
+      border-radius: 8px;
       border: 1px solid var(--line);
-      width: fit-content;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
-    .rupee-sign {
+    .target-input-wrap:focus-within {
+      border-color: var(--ink);
+      box-shadow: 0 0 0 1px var(--ink);
+    }
+
+    .target-currency {
       color: var(--muted);
       font-weight: 700;
       font-size: 11px;
     }
 
-    .member-target-input {
+    .target-input {
       border: none;
       background: transparent;
       color: var(--ink);
-      font-weight: 800;
+      font-weight: 700;
       font-size: 12px;
-      width: 68px;
+      width: 65px;
       outline: none;
       padding: 0;
     }
 
-    .member-actions {
+    .target-period {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .member-controls {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       flex-shrink: 0;
     }
 
-    .member-status-pill {
+    /* iOS-Style Toggle Switch */
+    .ios-switch {
+      position: relative;
+      width: 40px;
+      height: 24px;
+      border-radius: 9999px;
+      background: var(--line, #e2e4ea);
+      border: none;
+      cursor: pointer;
+      padding: 2px;
+      transition: background-color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      flex-shrink: 0;
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      padding: 5px 10px;
-      border-radius: var(--radius-pill, 99px);
-      border: 1px solid var(--line);
-      background: var(--card);
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      outline: none;
     }
 
-    .status-indicator {
-      width: 5px;
-      height: 5px;
+    .ios-switch:focus-visible {
+      box-shadow: 0 0 0 2px var(--card), 0 0 0 4px #34c759;
+    }
+
+    .ios-switch[aria-checked="true"] {
+      background: #34c759;
+    }
+
+    .ios-switch-thumb {
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
-      background: #8e8e93;
+      background: #ffffff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 0 1px rgba(0, 0, 0, 0.1);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      transform: translateX(0);
     }
 
-    .member-status-pill.active {
-      background: rgba(16, 185, 129, 0.12);
-      color: #0fb27c;
-      border-color: rgba(16, 185, 129, 0.3);
+    .ios-switch[aria-checked="true"] .ios-switch-thumb {
+      transform: translateX(16px);
     }
 
-    .member-status-pill.active .status-indicator {
-      background: #0fb27c;
-    }
-
+    /* Modern SVG Trash Button */
     .member-del-btn {
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
       border: none;
       background: transparent;
       color: var(--muted);
-      display: grid;
-      place-items: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
-      font-size: 11px;
-      font-weight: 700;
       transition: all 0.2s ease;
+      flex-shrink: 0;
     }
 
     .member-del-btn:hover {
       background: rgba(238, 77, 107, 0.12);
       color: #ee4d6b;
-      transform: scale(1.05);
+    }
+
+    .member-del-btn:active {
+      transform: scale(0.92);
     }
   `,
 })
