@@ -70,35 +70,37 @@ const PAYMENT_MODES: PaymentMode[] = [
           </div>
         }
 
-        <!-- 1. Who Paid? -->
-        <div class="form-group member-picker-group">
-          <span class="field-label" id="member-select-label">Who Paid?</span>
-          <div class="members-grid-row" role="group" aria-labelledby="member-select-label">
-            @for (m of ledgerStore.activeMembers(); track m.id) {
-              <button
-                type="button"
-                class="member-select-card"
-                [class.selected]="selectedMemberId() === m.id"
-                (click)="selectMember(m)"
-                [attr.aria-label]="m.name"
-              >
-                <div class="avatar-ring-container">
-                  <app-avatar
-                    [name]="m.name"
-                    [colorIndex]="m.colorIndex"
-                    [size]="50"
-                    [avatarUrl]="m.avatarUrl"
-                    [circular]="true"
-                  />
-                  @if (selectedMemberId() === m.id) {
-                    <span class="selected-check-badge" aria-hidden="true">✓</span>
-                  }
-                </div>
-                <span class="member-name-label">{{ m.name }}</span>
-              </button>
-            }
+        <!-- 1. Who Paid? (Only for member contributions) -->
+        @if (selectedType() === 'contribution') {
+          <div class="form-group member-picker-group">
+            <span class="field-label" id="member-select-label">Who Paid?</span>
+            <div class="members-grid-row" role="group" aria-labelledby="member-select-label">
+              @for (m of ledgerStore.activeMembers(); track m.id) {
+                <button
+                  type="button"
+                  class="member-select-card"
+                  [class.selected]="selectedMemberId() === m.id"
+                  (click)="selectMember(m)"
+                  [attr.aria-label]="m.name"
+                >
+                  <div class="avatar-ring-container">
+                    <app-avatar
+                      [name]="m.name"
+                      [colorIndex]="m.colorIndex"
+                      [size]="50"
+                      [avatarUrl]="m.avatarUrl"
+                      [circular]="true"
+                    />
+                    @if (selectedMemberId() === m.id) {
+                      <span class="selected-check-badge" aria-hidden="true">✓</span>
+                    }
+                  </div>
+                  <span class="member-name-label">{{ m.name }}</span>
+                </button>
+              }
+            </div>
           </div>
-        </div>
+        }
 
         <!-- 2. Amount -->
         <div class="form-group">
@@ -559,13 +561,17 @@ export class AddEditTransactionSheetComponent implements OnChanges {
       return;
     }
 
-    const memberId =
-      this.selectedMemberId() || this.ledgerStore.activeMembers()[0]?.id;
-    if (!memberId) {
-      this.toast.show('Please select who paid', 'danger');
-      return;
+    if (this.selectedType() === 'contribution') {
+      const memberId =
+        this.selectedMemberId() || this.ledgerStore.activeMembers()[0]?.id;
+      if (!memberId) {
+        this.toast.show('Please select who paid', 'danger');
+        return;
+      }
     }
 
+    const memberId =
+      this.selectedMemberId() || this.ledgerStore.activeMembers()[0]?.id;
     const date = this.dateInput;
     const forMonth = this.dateInput.slice(0, 7);
     const mode = this.modeInput || 'UPI';
@@ -573,13 +579,27 @@ export class AddEditTransactionSheetComponent implements OnChanges {
     try {
       if (this.isEdit()) {
         const txId = this.editTransaction()!.id;
-        await this.ledgerStore.updateTransaction(txId, {
-          memberId,
-          amount: amt,
-          date,
-          forMonth,
-          mode,
-        });
+        const currentTx = this.editTransaction()!;
+        if (currentTx.type === 'bankPayment') {
+          await this.ledgerStore.updateTransaction(txId, {
+            amount: amt,
+            principalPortion: amt,
+            interestPortion: toPaise(0),
+            date,
+            forMonth,
+            mode,
+            notes: this.notesInput,
+          });
+        } else {
+          await this.ledgerStore.updateTransaction(txId, {
+            memberId,
+            amount: amt,
+            date,
+            forMonth,
+            mode,
+            notes: this.notesInput,
+          });
+        }
         this.toast.show('Payment updated successfully', 'success');
       } else if (this.selectedType() === 'bankPayment') {
         const actualInterest = this.customInterestInput() ? toPaise(this.customInterestInput()) : undefined;

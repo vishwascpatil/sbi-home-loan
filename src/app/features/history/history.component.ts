@@ -12,7 +12,9 @@ import { LedgerStore } from '../../core/state';
 import {
   AvatarComponent,
   ChipComponent,
+  ConfirmSheetComponent,
   GlassCardComponent,
+  ToastService,
 } from '../../shared/ui';
 import {
   formatPaise,
@@ -33,6 +35,7 @@ import { BankImportSheetComponent } from '../bank-import/bank-import-sheet.compo
     GlassCardComponent,
     ChipComponent,
     AvatarComponent,
+    ConfirmSheetComponent,
     AddEditTransactionSheetComponent,
     BankImportSheetComponent,
   ],
@@ -109,43 +112,61 @@ import { BankImportSheetComponent } from '../bank-import/bank-import-sheet.compo
       <app-glass-card style="margin-top: 14px">
         <div class="tx-timeline-list">
           @for (tx of filteredTransactions(); track tx.id) {
-            <button
-              type="button"
-              class="tx-history-item"
-              (click)="openEdit(tx)"
-            >
-              @if (tx.type === 'contribution') {
-                <app-avatar [name]="getMemberName(tx.memberId)" [colorIndex]="getMemberColor(tx.memberId)" [size]="40" />
-              } @else {
-                <div class="tx-icon-badge" [class.payment]="tx.type === 'bankPayment'">
-                  {{ tx.type === 'bankPayment' ? '🏦' : '✎' }}
-                </div>
-              }
-
-              <div class="tx-item-info">
-                <span class="tx-item-title">{{ getTitle(tx) }}</span>
-                <span class="tx-item-meta">
-                  {{ tx.date }} · {{ getTransactionMode(tx) }}
-                  @if (getTransactionReference(tx)) {
-                    · {{ getTransactionReference(tx) }}
-                  }
-                  @if (tx.type === 'bankPayment') {
-                    · interest {{ formatPaise(tx.interestPortion, { showPaise: true }) }}
-                  }
-                </span>
-                @if (tx.notes) {
-                  <span class="tx-item-notes">{{ tx.notes }}</span>
-                }
-              </div>
-
-              <span
-                class="tx-item-amount tabular-nums"
-                [class.positive]="tx.type === 'contribution'"
-                [class.negative]="tx.type === 'bankPayment'"
+            <div class="tx-history-row">
+              <button
+                type="button"
+                class="tx-history-item"
+                (click)="openEdit(tx)"
+                [attr.aria-label]="'Edit transaction ' + getTitle(tx)"
               >
-                {{ tx.type === 'contribution' ? '+' : '−' }}{{ formatPaise(getTransactionAmount(tx)) }}
-              </span>
-            </button>
+                @if (tx.type === 'contribution') {
+                  <app-avatar [name]="getMemberName(tx.memberId)" [colorIndex]="getMemberColor(tx.memberId)" [size]="40" />
+                } @else {
+                  <div class="tx-icon-badge" [class.payment]="tx.type === 'bankPayment'">
+                    {{ tx.type === 'bankPayment' ? '🏦' : '✎' }}
+                  </div>
+                }
+
+                <div class="tx-item-info">
+                  <span class="tx-item-title">{{ getTitle(tx) }}</span>
+                  <span class="tx-item-meta">
+                    {{ tx.date }} · {{ getTransactionMode(tx) }}
+                    @if (getTransactionReference(tx)) {
+                      · {{ getTransactionReference(tx) }}
+                    }
+                    @if (tx.type === 'bankPayment') {
+                      · interest {{ formatPaise(tx.interestPortion, { showPaise: true }) }}
+                    }
+                  </span>
+                  @if (tx.notes) {
+                    <span class="tx-item-notes">{{ tx.notes }}</span>
+                  }
+                </div>
+
+                <span
+                  class="tx-item-amount tabular-nums"
+                  [class.positive]="tx.type === 'contribution'"
+                  [class.negative]="tx.type === 'bankPayment'"
+                >
+                  {{ tx.type === 'contribution' ? '+' : '−' }}{{ formatPaise(getTransactionAmount(tx)) }}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                class="tx-delete-inline-btn"
+                (click)="promptDelete(tx, $event)"
+                aria-label="Delete transaction"
+                title="Delete transaction"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+              </button>
+            </div>
           } @empty {
             <div class="empty-filter-state">
               <span class="empty-icon">🔍</span>
@@ -157,6 +178,17 @@ import { BankImportSheetComponent } from '../bank-import/bank-import-sheet.compo
           }
         </div>
       </app-glass-card>
+
+      <!-- Delete Transaction Confirmation Sheet -->
+      <app-confirm-sheet
+        [isOpen]="isDeleteConfirmOpen()"
+        title="Delete Transaction"
+        [message]="deleteConfirmMessage()"
+        confirmText="Yes, Delete Transaction"
+        [isDanger]="true"
+        (confirmed)="executeDelete()"
+        (cancelled)="isDeleteConfirmOpen.set(false); txToDelete.set(null)"
+      />
 
       <!-- Add/Edit Transaction Bottom Sheet Instance -->
       <app-add-edit-transaction-sheet
@@ -319,35 +351,67 @@ import { BankImportSheetComponent } from '../bank-import/bank-import-sheet.compo
       flex-direction: column;
     }
 
+    .tx-history-row {
+      display: flex;
+      align-items: center;
+      border-top: 1px solid var(--line);
+      border-radius: 14px;
+      transition: background 0.2s ease;
+
+      &:first-child {
+        border-top: none;
+      }
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.025);
+      }
+    }
+
     .tx-history-item {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       gap: 12px;
-      padding: 12px 6px;
+      padding: 12px 8px;
       margin: 0;
       border: none;
-      border-top: 1px solid var(--line);
       background: transparent;
       border-radius: 14px;
       text-align: left;
       cursor: pointer;
-      width: 100%;
+      flex: 1;
+      min-width: 0;
       box-sizing: border-box;
       transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &:active {
+        transform: scale(0.99);
+      }
     }
 
-    .tx-history-item:hover {
-      background: rgba(0, 0, 0, 0.025);
-      transform: translateX(2px);
-    }
+    .tx-delete-inline-btn {
+      width: 38px;
+      height: 38px;
+      min-width: 38px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: #8e8e93;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      margin-right: 6px;
+      flex-shrink: 0;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
-    .tx-history-item:active {
-      transform: scale(0.98);
-    }
+      &:hover {
+        background: rgba(238, 77, 107, 0.12);
+        color: #ee4d6b;
+        transform: scale(1.08);
+      }
 
-    .tx-history-item:first-child {
-      border-top: none;
-      padding-top: 2px;
+      &:active {
+        transform: scale(0.92);
+      }
     }
 
     .tx-icon-badge {
@@ -450,6 +514,7 @@ import { BankImportSheetComponent } from '../bank-import/bank-import-sheet.compo
 export class HistoryComponent implements OnInit {
   readonly ledgerStore = inject(LedgerStore);
   private readonly route = inject(ActivatedRoute);
+  readonly toast = inject(ToastService);
 
   readonly formatPaise = formatPaise;
   readonly getTransactionAmount = getTransactionAmount;
@@ -463,6 +528,15 @@ export class HistoryComponent implements OnInit {
   readonly isSheetOpen = signal<boolean>(false);
   readonly showImportSheet = signal<boolean>(false);
   readonly selectedTxForEdit = signal<Transaction | null>(null);
+
+  readonly isDeleteConfirmOpen = signal<boolean>(false);
+  readonly txToDelete = signal<Transaction | null>(null);
+
+  readonly deleteConfirmMessage = computed(() => {
+    const tx = this.txToDelete();
+    if (!tx) return '';
+    return `Are you sure you want to delete this ${this.getTitle(tx)} payment of ${formatPaise(getTransactionAmount(tx))}? All loan calculations will automatically recalculate.`;
+  });
 
   ngOnInit(): void {
     const memberParam = this.route.snapshot.queryParamMap.get('member');
@@ -500,6 +574,25 @@ export class HistoryComponent implements OnInit {
   openEdit(tx: Transaction): void {
     this.selectedTxForEdit.set(tx);
     this.isSheetOpen.set(true);
+  }
+
+  promptDelete(tx: Transaction, event: Event): void {
+    event.stopPropagation();
+    this.txToDelete.set(tx);
+    this.isDeleteConfirmOpen.set(true);
+  }
+
+  async executeDelete(): Promise<void> {
+    const tx = this.txToDelete();
+    if (!tx) return;
+    try {
+      await this.ledgerStore.deleteTransaction(tx.id);
+      this.isDeleteConfirmOpen.set(false);
+      this.txToDelete.set(null);
+      this.toast.show('Payment deleted successfully', 'danger');
+    } catch {
+      this.toast.show('Failed to delete payment', 'danger');
+    }
   }
 
   clearFilters(): void {

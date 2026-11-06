@@ -14,15 +14,27 @@ import {
   formatCompactPaise,
   formatPaise,
   Paise,
+  Transaction,
   ZERO_PAISE,
 } from '../../core/engine';
-import { AvatarComponent, CountUpDirective } from '../../shared/ui';
+import {
+  AvatarComponent,
+  ConfirmSheetComponent,
+  CountUpDirective,
+  ToastService,
+} from '../../shared/ui';
+import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-transaction-sheet.component';
 
 @Component({
   selector: 'app-member-history',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AvatarComponent, CountUpDirective],
+  imports: [
+    AvatarComponent,
+    CountUpDirective,
+    ConfirmSheetComponent,
+    AddEditTransactionSheetComponent,
+  ],
   template: `
     <div class="member-history-page">
       <!-- 1. Top Bar with Back Button -->
@@ -112,7 +124,13 @@ import { AvatarComponent, CountUpDirective } from '../../shared/ui';
         } @else {
           <div class="payments-cards-stack">
             @for (tx of filteredPayments(); track tx.id) {
-              <div class="payment-squircle-card">
+              <div
+                class="payment-squircle-card clickable"
+                (click)="editPayment(tx)"
+                role="button"
+                tabindex="0"
+                [attr.aria-label]="'Edit payment of ' + formatPaise(tx.amount) + ' for ' + tx.memberName"
+              >
                 <!-- Left: Avatar + Name + Date -->
                 <div class="payment-left-group">
                   <app-avatar
@@ -131,20 +149,54 @@ import { AvatarComponent, CountUpDirective } from '../../shared/ui';
                   </div>
                 </div>
 
-                <!-- Right: Big Amount + Paid Badge -->
+                <!-- Right: Big Amount + Paid Badge + Delete Action -->
                 <div class="payment-right-group">
                   <span class="payment-amount tabular-nums">
                     + {{ formatPaise(tx.amount) }}
                   </span>
-                  <span class="payment-status-tag">
-                    Paid ✓
-                  </span>
+                  <div class="payment-badge-actions">
+                    <span class="payment-status-tag">
+                      Paid ✓
+                    </span>
+                    <button
+                      type="button"
+                      class="card-delete-icon-btn"
+                      (click)="promptDeletePayment(tx, $event)"
+                      aria-label="Delete this payment"
+                      title="Delete payment"
+                    >
+                      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
             }
           </div>
         }
       </section>
+
+      <!-- Delete Payment Confirmation Sheet -->
+      <app-confirm-sheet
+        [isOpen]="isDeleteConfirmOpen()"
+        title="Delete Payment"
+        [message]="deleteConfirmMessage()"
+        confirmText="Yes, Delete Payment"
+        [isDanger]="true"
+        (confirmed)="executeDeletePayment()"
+        (cancelled)="isDeleteConfirmOpen.set(false); txToDelete.set(null)"
+      />
+
+      <!-- Add/Edit Payment Bottom Sheet -->
+      <app-add-edit-transaction-sheet
+        [isOpen]="isEditSheetOpen()"
+        [editTransaction]="selectedTxForEdit()"
+        (dismissed)="isEditSheetOpen.set(false); selectedTxForEdit.set(null)"
+      />
     </div>
   `,
   styles: `
@@ -416,9 +468,17 @@ import { AvatarComponent, CountUpDirective } from '../../shared/ui';
       box-sizing: border-box;
       transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
 
-      &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.05);
+      &.clickable {
+        cursor: pointer;
+
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.05);
+        }
+
+        &:active {
+          transform: scale(0.985);
+        }
       }
     }
 
@@ -486,6 +546,35 @@ import { AvatarComponent, CountUpDirective } from '../../shared/ui';
       border-radius: 9999px;
     }
 
+    .payment-badge-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card-delete-icon-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(142, 142, 147, 0.12);
+      color: #8e8e93;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &:hover {
+        background: rgba(238, 77, 107, 0.14);
+        color: #ee4d6b;
+        transform: scale(1.1);
+      }
+
+      &:active {
+        transform: scale(0.9);
+      }
+    }
+
     /* Empty State */
     .empty-payments-card {
       background: #ffffff;
@@ -525,11 +614,24 @@ export class MemberHistoryComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   readonly router = inject(Router);
   readonly ledgerStore = inject(LedgerStore);
+  readonly toast = inject(ToastService);
 
   readonly selectedMemberId = signal<string | null>(null);
 
   readonly formatPaise = formatPaise;
   readonly formatCompactPaise = formatCompactPaise;
+
+  readonly isEditSheetOpen = signal<boolean>(false);
+  readonly selectedTxForEdit = signal<Transaction | null>(null);
+
+  readonly isDeleteConfirmOpen = signal<boolean>(false);
+  readonly txToDelete = signal<{ id: string; amount: Paise; memberName: string } | null>(null);
+
+  readonly deleteConfirmMessage = computed(() => {
+    const tx = this.txToDelete();
+    if (!tx) return '';
+    return `Are you sure you want to delete this payment of ${formatPaise(tx.amount)} by ${tx.memberName}? All member totals and loan balances will automatically recalculate.`;
+  });
 
   readonly members = computed(() =>
     this.ledgerStore.members().filter((m) => !m.deletedAt)
@@ -600,6 +702,30 @@ export class MemberHistoryComponent implements OnInit {
 
   goBack(): void {
     void this.router.navigate(['/members']);
+  }
+
+  editPayment(tx: ContributionTransaction): void {
+    this.selectedTxForEdit.set(tx);
+    this.isEditSheetOpen.set(true);
+  }
+
+  promptDeletePayment(tx: { id: string; amount: Paise; memberName: string }, event: Event): void {
+    event.stopPropagation();
+    this.txToDelete.set(tx);
+    this.isDeleteConfirmOpen.set(true);
+  }
+
+  async executeDeletePayment(): Promise<void> {
+    const tx = this.txToDelete();
+    if (!tx) return;
+    try {
+      await this.ledgerStore.deleteTransaction(tx.id);
+      this.isDeleteConfirmOpen.set(false);
+      this.txToDelete.set(null);
+      this.toast.show('Payment deleted successfully', 'danger');
+    } catch {
+      this.toast.show('Failed to delete payment', 'danger');
+    }
   }
 
   formatDisplayDate(isoDate: string): string {

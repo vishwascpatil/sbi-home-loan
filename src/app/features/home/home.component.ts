@@ -4,6 +4,8 @@ import { LedgerStore, SettingsStore } from '../../core/state';
 import {
   AvatarComponent,
   BarChartComponent,
+  ConfirmSheetComponent,
+  ToastService,
 } from '../../shared/ui';
 import { CountUpDirective } from '../../shared/ui/count-up/count-up.directive';
 import {
@@ -31,6 +33,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
     CountUpDirective,
     BarChartComponent,
     AvatarComponent,
+    ConfirmSheetComponent,
     AddEditTransactionSheetComponent,
     DailyLedgerSheetComponent,
   ],
@@ -266,34 +269,51 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
 
         <div class="squircle-items-list">
           @for (tx of ledgerStore.recentTransactions(); track tx.id) {
-            <button
-              type="button"
-              class="squircle-item-row clickable"
-              (click)="editSelectedTx(tx)"
-              [attr.aria-label]="'Edit payment ' + getTxTitle(tx)"
-            >
-              <div class="item-left-cluster">
-                <div class="activity-icon-bubble" [class.payment]="tx.type === 'bankPayment'">
-                  {{ tx.type === 'bankPayment' ? '🏦' : '👤' }}
+            <div class="squircle-item-row">
+              <button
+                type="button"
+                class="item-main-tap-target"
+                (click)="editSelectedTx(tx)"
+                [attr.aria-label]="'Edit payment ' + getTxTitle(tx)"
+              >
+                <div class="item-left-cluster">
+                  <div class="activity-icon-bubble" [class.payment]="tx.type === 'bankPayment'">
+                    {{ tx.type === 'bankPayment' ? '🏦' : '👤' }}
+                  </div>
+                  <div class="item-text-info">
+                    <span class="item-primary-name">{{ getTxTitle(tx) }}</span>
+                    <span class="item-secondary-sub">
+                      {{ tx.date }} · {{ getTransactionMode(tx) }}
+                    </span>
+                  </div>
                 </div>
-                <div class="item-text-info">
-                  <span class="item-primary-name">{{ getTxTitle(tx) }}</span>
-                  <span class="item-secondary-sub">
-                    {{ tx.date }} · {{ getTransactionMode(tx) }}
+                <div class="item-right-cluster">
+                  <span
+                    class="item-amount-val tabular-nums"
+                    [class.positive]="tx.type === 'contribution'"
+                    [class.negative]="tx.type === 'bankPayment'"
+                  >
+                    {{ tx.type === 'contribution' ? '+' : '−' }}{{ formatPaise(getTransactionAmount(tx)) }}
                   </span>
+                  <span class="item-chevron">›</span>
                 </div>
-              </div>
-              <div class="item-right-cluster">
-                <span
-                  class="item-amount-val tabular-nums"
-                  [class.positive]="tx.type === 'contribution'"
-                  [class.negative]="tx.type === 'bankPayment'"
-                >
-                  {{ tx.type === 'contribution' ? '+' : '−' }}{{ formatPaise(getTransactionAmount(tx)) }}
-                </span>
-                <span class="item-chevron">›</span>
-              </div>
-            </button>
+              </button>
+
+              <button
+                type="button"
+                class="item-delete-btn"
+                (click)="promptDeleteTx(tx, $event)"
+                aria-label="Delete this payment"
+                title="Delete payment"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+              </button>
+            </div>
           } @empty {
             <div class="squircle-empty-card">
               <p class="empty-hint">No payments recorded yet. Tap ＋ below to add a payment or deposit.</p>
@@ -301,6 +321,17 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
           }
         </div>
       </section>
+
+      <!-- Delete Payment Confirmation Sheet -->
+      <app-confirm-sheet
+        [isOpen]="isDeleteModalOpen()"
+        title="Delete Payment"
+        [message]="deleteModalMessage()"
+        confirmText="Yes, Delete Payment"
+        [isDanger]="true"
+        (confirmed)="executeDeleteTx()"
+        (cancelled)="isDeleteModalOpen.set(false); txToDelete.set(null)"
+      />
 
       <!-- Add/Edit Transaction Bottom Sheet Instance -->
       <app-add-edit-transaction-sheet
@@ -822,24 +853,66 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       background: #ffffff;
       border: none;
       width: 100%;
-      text-align: left;
-      font-family: inherit;
       border-radius: 22px;
-      padding: 14px 18px;
+      padding: 4px 6px 4px 4px;
       box-shadow: var(--shadow-card);
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      cursor: pointer;
       transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease;
 
       &:hover {
         transform: translateY(-1.5px);
         box-shadow: 0 6px 20px -2px rgba(0, 0, 0, 0.04);
       }
+    }
+
+    .item-main-tap-target {
+      flex: 1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: transparent;
+      border: none;
+      text-align: left;
+      font-family: inherit;
+      padding: 10px 14px;
+      cursor: pointer;
+      min-width: 0;
+      border-radius: 18px;
+      transition: background 0.15s ease;
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.015);
+      }
 
       &:active {
-        transform: scale(0.985);
+        transform: scale(0.99);
+      }
+    }
+
+    .item-delete-btn {
+      width: 38px;
+      height: 38px;
+      min-width: 38px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: #8e8e93;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      margin-right: 6px;
+      flex-shrink: 0;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &:hover {
+        background: rgba(238, 77, 107, 0.12);
+        color: #ee4d6b;
+        transform: scale(1.08);
+      }
+
+      &:active {
+        transform: scale(0.92);
       }
     }
 
@@ -976,6 +1049,7 @@ export class HomeComponent {
   readonly ledgerStore = inject(LedgerStore);
   readonly settings = inject(SettingsStore);
   readonly router = inject(Router);
+  readonly toast = inject(ToastService);
 
   readonly formatPaise = formatPaise;
   readonly formatCompactPaise = formatCompactPaise;
@@ -987,6 +1061,15 @@ export class HomeComponent {
   readonly isDailyLedgerOpen = signal<boolean>(false);
   readonly selectedTxForEdit = signal<Transaction | null>(null);
   readonly initialSheetType = signal<'contribution' | 'bankPayment'>('contribution');
+
+  readonly isDeleteModalOpen = signal<boolean>(false);
+  readonly txToDelete = signal<Transaction | null>(null);
+
+  readonly deleteModalMessage = computed(() => {
+    const tx = this.txToDelete();
+    if (!tx) return '';
+    return `Are you sure you want to delete this payment of ${formatPaise(getTransactionAmount(tx))} (${this.getTxTitle(tx)})? All loan balances will automatically recalculate.`;
+  });
 
   readonly summary = this.ledgerStore.thisMonthSummary;
   readonly funds = this.ledgerStore.groupFunds;
@@ -1144,6 +1227,25 @@ export class HomeComponent {
   editSelectedTx(tx: Transaction): void {
     this.selectedTxForEdit.set(tx);
     this.isSheetOpen.set(true);
+  }
+
+  promptDeleteTx(tx: Transaction, event: Event): void {
+    event.stopPropagation();
+    this.txToDelete.set(tx);
+    this.isDeleteModalOpen.set(true);
+  }
+
+  async executeDeleteTx(): Promise<void> {
+    const tx = this.txToDelete();
+    if (!tx) return;
+    try {
+      await this.ledgerStore.deleteTransaction(tx.id);
+      this.isDeleteModalOpen.set(false);
+      this.txToDelete.set(null);
+      this.toast.show('Payment deleted successfully', 'danger');
+    } catch {
+      this.toast.show('Failed to delete payment', 'danger');
+    }
   }
 
   getTxTitle(tx: Transaction): string {
