@@ -4,7 +4,6 @@ import { LedgerStore, SettingsStore } from '../../core/state';
 import {
   AvatarComponent,
   BarChartComponent,
-  SparklineChartComponent,
 } from '../../shared/ui';
 import { CountUpDirective } from '../../shared/ui/count-up/count-up.directive';
 import {
@@ -17,7 +16,6 @@ import {
   getTransactionMode,
   Paise,
   paise,
-  simulate,
   simulateV2,
   toPaise,
   toRupees,
@@ -32,7 +30,6 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CountUpDirective,
-    SparklineChartComponent,
     BarChartComponent,
     AvatarComponent,
     AddEditTransactionSheetComponent,
@@ -147,11 +144,20 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
                   <span class="metric-label-sub">Months Target</span>
                 </div>
               </div>
-              @if (simulationResult()) {
-                <div class="sparkline-wrap">
-                  <app-sparkline-chart [data]="simulationResult()!.schedule" />
+              <div class="metric-split-row">
+                <div class="metric-split-item">
+                  <span class="metric-split-val tabular-nums">
+                    {{ baselineSimResult() ? formatCompactPaise(baselineSimResult()!.totalInterest) : '—' }}
+                  </span>
+                  <span class="metric-split-lbl">Future Interest</span>
                 </div>
-              }
+                <div class="metric-split-item text-right">
+                  <span class="metric-split-val tabular-nums">
+                    {{ baselineSimResult() ? formatCompactPaise(baselineSimResult()!.totalPaid) : '—' }}
+                  </span>
+                  <span class="metric-split-lbl">Total Outflow</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -733,10 +739,6 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       gap: 16px;
     }
 
-    .sparkline-wrap {
-      margin-top: 4px;
-    }
-
     /* 4. Progress Feature Card (Screenshot Matched) */
     .progress-feature-card {
       background: #ffffff;
@@ -1190,12 +1192,6 @@ export class HomeComponent {
     return this.ledgerStore.snapshots().some(
       (s) => !s.deletedAt && s.date.slice(0, 7) === curMonth && s.variance === 0
     );
-  });
-
-  readonly simulationResult = computed(() => {
-    const loan = this.ledgerStore.loan();
-    const out = this.ledgerStore.currentOutstanding();
-    return simulate(out, loan.monthlyTarget, loan.currentRateBps);
   });
 
   readonly rupeeSplit = computed(() => {
