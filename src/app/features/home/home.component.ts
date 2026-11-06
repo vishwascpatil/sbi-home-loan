@@ -319,9 +319,16 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
             </div>
 
             <div class="split-total-footer">
-              <span class="footer-total-label">
-                Total {{ viewMode() === 'overall' ? 'Money Paid Overall' : 'Paid in ' + activeMonthSplit().label }}:
-              </span>
+              <div class="footer-info-col">
+                <span class="footer-total-label">
+                  Total {{ viewMode() === 'overall' ? 'Money Paid Overall' : 'Paid in ' + activeMonthSplit().label }}:
+                </span>
+                @if (viewMode() === 'monthly' && activeMonthSplit().totalPaid < monthlyTargetPaise()) {
+                  <small class="footer-target-hint">
+                    Target: {{ formatPaise(monthlyTargetPaise()) }} (Est. Monthly Interest: {{ formatPaise(monthlyCutCalculation().interestCut) }})
+                  </small>
+                }
+              </div>
               <span class="footer-total-val tabular-nums">{{ formatPaise(activeSplit().totalPaidToBank) }}</span>
             </div>
 
@@ -867,8 +874,8 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
 
     .action-pill-black {
       background: #111216;
-      color: #ffffff;
-      border-radius: var(--radius-pill, 9999px);
+      color: #fff;
+      border-radius: 99px;
       padding: 10px 20px;
       font-size: 13px;
       font-weight: 700;
@@ -879,7 +886,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       gap: 6px;
       align-self: flex-start;
       box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all 0.2s ease;
 
       &:hover {
         background: #2a2b32;
@@ -1013,7 +1020,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       color: #111216;
       background: #f3f4f7;
       padding: 4px 10px;
-      border-radius: var(--radius-pill, 9999px);
+      border-radius: 99px;
     }
 
     .item-chevron {
@@ -1212,7 +1219,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       align-items: center;
       gap: 5px;
       padding: 6px 12px;
-      border-radius: var(--radius-pill, 9999px);
+      border-radius: 99px;
       border: 1px solid var(--line, rgba(0, 0, 0, 0.06));
       background: #f8f9fb;
       color: #4b4c52;
@@ -1220,7 +1227,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       font-weight: 700;
       cursor: pointer;
       white-space: nowrap;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all 0.2s ease;
 
       &:hover {
         background: #f0f2f5;
@@ -1229,7 +1236,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
 
       &.active {
         background: #111216;
-        color: #ffffff;
+        color: #fff;
         border-color: #111216;
       }
 
@@ -1237,7 +1244,6 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
         font-size: 9px;
         opacity: 0.7;
         text-transform: uppercase;
-        letter-spacing: 0.02em;
       }
     }
 
@@ -1250,9 +1256,21 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       border-top: 1px solid var(--line, rgba(0, 0, 0, 0.06));
     }
 
+    .footer-info-col {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
     .footer-total-label {
       font-size: 12px;
       font-weight: 600;
+      color: #8e8e93;
+    }
+
+    .footer-target-hint {
+      font-size: 11px;
+      font-weight: 500;
       color: #8e8e93;
     }
 
@@ -1372,6 +1390,8 @@ export class HomeComponent {
   readonly arcRadius = 40;
   readonly arcCircumference = 2 * Math.PI * this.arcRadius;
 
+  readonly monthlyTargetPaise = computed<Paise>(() => this.ledgerStore.loan().monthlyTarget || toPaise(240000));
+
   readonly monthlyCutCalculation = computed(() => {
     const sum = this.summary();
     const loan = this.ledgerStore.loan();
@@ -1383,16 +1403,32 @@ export class HomeComponent {
       estInterest = paise(Math.round((principal * rateBps) / (12 * 10000)));
     }
 
-    const target = loan.monthlyTarget || toPaise(240000);
+    const target = this.monthlyTargetPaise();
     const hasRecordedPayment = sum.paidToBank > 0;
 
     const totalCut = hasRecordedPayment ? sum.paidToBank : target;
-    const interestCut = hasRecordedPayment
-      ? paise(Math.min(sum.paidToBank, estInterest))
-      : paise(Math.min(target, estInterest));
-    const principalCut = hasRecordedPayment
-      ? sum.principalReduced
-      : paise(Math.max(0, target - interestCut));
+    let interestCut: Paise;
+    let principalCut: Paise;
+
+    if (hasRecordedPayment) {
+      if (sum.principalReduced > 0) {
+        principalCut = sum.principalReduced;
+        interestCut = paise(Math.max(0, sum.paidToBank - principalCut));
+      } else if (sum.paidToBank >= target) {
+        interestCut = paise(Math.min(sum.paidToBank, estInterest));
+        principalCut = paise(Math.max(0, sum.paidToBank - interestCut));
+      } else if (target > 0 && estInterest > 0) {
+        // Fair proportional split for partial deposits
+        interestCut = paise(Math.round((sum.paidToBank * estInterest) / target));
+        principalCut = paise(Math.max(0, sum.paidToBank - interestCut));
+      } else {
+        interestCut = paise(0);
+        principalCut = sum.paidToBank;
+      }
+    } else {
+      interestCut = paise(Math.min(target, estInterest));
+      principalCut = paise(Math.max(0, target - interestCut));
+    }
 
     return {
       isRecorded: hasRecordedPayment,

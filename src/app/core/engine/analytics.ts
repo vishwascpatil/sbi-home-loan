@@ -81,11 +81,18 @@ export function computeMonthRupeeSplit(month: string, ledger: LedgerState): Mont
   let isEstimated = false;
   let hasActualPayments = false;
 
+  const target = ledger.loan.monthlyTarget || toPaise(240000);
+
   if (bankTxs.length > 0) {
     for (const tx of bankTxs) {
       totalPaid = paise(totalPaid + tx.amount);
       interestPaid = paise(interestPaid + tx.interestPortion);
       principalReduced = paise(principalReduced + tx.principalPortion);
+    }
+    // Proportional correction: if principal is 0 because of an estimated split on a partial payment
+    if (principalReduced === 0 && totalPaid > 0 && totalPaid < target && estInterest > 0) {
+      interestPaid = paise(Math.round((totalPaid * estInterest) / target));
+      principalReduced = paise(Math.max(0, totalPaid - interestPaid));
     }
     isEstimated = bankTxs.some((t) => t.isEstimatedSplit);
     hasActualPayments = true;
@@ -93,13 +100,21 @@ export function computeMonthRupeeSplit(month: string, ledger: LedgerState): Mont
     for (const tx of contribTxs) {
       totalPaid = paise(totalPaid + tx.amount);
     }
-    interestPaid = paise(Math.min(totalPaid, estInterest));
-    principalReduced = paise(Math.max(0, totalPaid - interestPaid));
+    // Proportional split according to monthly target ratio so partial deposits don't allocate 100% to interest
+    if (totalPaid >= target) {
+      interestPaid = paise(Math.min(totalPaid, estInterest));
+      principalReduced = paise(Math.max(0, totalPaid - interestPaid));
+    } else if (estInterest > 0 && target > 0) {
+      interestPaid = paise(Math.round((totalPaid * estInterest) / target));
+      principalReduced = paise(Math.max(0, totalPaid - interestPaid));
+    } else {
+      interestPaid = paise(0);
+      principalReduced = totalPaid;
+    }
     isEstimated = true;
     hasActualPayments = true;
   } else {
     // Current or projected month target
-    const target = ledger.loan.monthlyTarget || toPaise(240000);
     totalPaid = target;
     interestPaid = paise(Math.min(target, estInterest));
     principalReduced = paise(Math.max(0, target - interestPaid));
@@ -166,6 +181,12 @@ export function computeRupeeSplit(ledger: LedgerState): RupeeSplit {
       totalPaidToBank = paise(totalPaidToBank + tx.amount);
       totalInterestPaid = paise(totalInterestPaid + tx.interestPortion);
       totalPrincipalReduced = paise(totalPrincipalReduced + tx.principalPortion);
+    }
+    const target = ledger.loan.monthlyTarget || toPaise(240000);
+    const estInterest = monthlySummary(new Date().toISOString().slice(0, 7), ledger).interestIncurredEst;
+    if (totalPrincipalReduced === 0 && totalPaidToBank > 0 && totalPaidToBank < target && estInterest > 0) {
+      totalInterestPaid = paise(Math.round((totalPaidToBank * estInterest) / target));
+      totalPrincipalReduced = paise(Math.max(0, totalPaidToBank - totalInterestPaid));
     }
   } else {
     // 2. Aggregate month-by-month splits from member contributions
