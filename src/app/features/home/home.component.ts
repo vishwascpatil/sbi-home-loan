@@ -4,9 +4,13 @@ import { LedgerStore, SettingsStore } from '../../core/state';
 import {
   AvatarComponent,
   BarChartComponent,
+  SegmentedControlComponent,
+  SegmentOption,
 } from '../../shared/ui';
 import { CountUpDirective } from '../../shared/ui/count-up/count-up.directive';
 import {
+  computeAllMonthlyRupeeSplits,
+  computeMonthRupeeSplit,
   computeRupeeSplit,
   ContributionTransaction,
   divideHalfUp,
@@ -14,6 +18,7 @@ import {
   formatPaise,
   getTransactionAmount,
   getTransactionMode,
+  MonthRupeeSplit,
   Paise,
   paise,
   simulateV2,
@@ -32,6 +37,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
     CountUpDirective,
     BarChartComponent,
     AvatarComponent,
+    SegmentedControlComponent,
     AddEditTransactionSheetComponent,
     DailyLedgerSheetComponent,
   ],
@@ -243,41 +249,118 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       <!-- 5. Section: Where Did All Your Money Go? -->
       <section class="home-section">
         <div class="insight-squircle-card">
-          <h2 class="section-main-heading">Where Did All Your Money Go?</h2>
-          <span class="section-sub-caption">
-            @if (hasRecordedPayments()) {
-              How much of your deposited money actually reduced the loan vs went to bank interest
-            } @else {
-              Estimated breakdown of your ₹{{ (toRupees(ledgerStore.loan().monthlyTarget) || 240000).toLocaleString('en-IN') }} monthly target between loan reduction and bank interest
-            }
-          </span>
+          <div class="insight-header-wrap">
+            <div>
+              <h2 class="section-main-heading">Where Did All Your Money Go?</h2>
+              <span class="section-sub-caption">
+                {{ viewMode() === 'overall'
+                  ? 'All-time breakdown of loan reduction vs bank interest charges'
+                  : 'Monthly breakdown of loan reduction vs bank interest charges'
+                }}
+              </span>
+            </div>
+            <!-- Segmented Control: Overall vs Month-Wise -->
+            <div class="toggle-control-pill">
+              <app-segmented-control
+                [options]="viewOptions"
+                [selectedValue]="viewMode()"
+                (changed)="onViewModeChange($event)"
+              />
+            </div>
+          </div>
+
+          <!-- When in Month-Wise mode: Month Selector Chips -->
+          @if (viewMode() === 'monthly') {
+            <div class="month-selector-cluster">
+              <span class="month-selector-label">Select Month</span>
+              <div class="month-chips-scroll">
+                @for (m of monthlySplits(); track m.period) {
+                  <button
+                    type="button"
+                    class="month-chip-btn"
+                    [class.active]="selectedMonth() === m.period"
+                    (click)="selectedMonth.set(m.period)"
+                  >
+                    {{ m.label }}
+                    @if (!m.hasActualPayments) {
+                      <span class="est-tag">est.</span>
+                    }
+                  </button>
+                }
+              </div>
+            </div>
+          }
 
           <div class="rupee-split-container">
             <div class="split-bar-track">
               <div
                 class="split-segment principal"
-                [style.width.%]="rupeeSplit().principalPercent"
-                [title]="'Reduced Loan: ' + rupeeSplit().principalPercent.toFixed(1) + '%'"
+                [style.width.%]="activeSplit().principalPercent"
+                [title]="'Reduced Loan: ' + activeSplit().principalPercent.toFixed(1) + '%'"
               ></div>
               <div
                 class="split-segment interest"
-                [style.width.%]="rupeeSplit().interestPercent"
-                [title]="'Bank Interest: ' + rupeeSplit().interestPercent.toFixed(1) + '%'"
+                [style.width.%]="activeSplit().interestPercent"
+                [title]="'Bank Interest: ' + activeSplit().interestPercent.toFixed(1) + '%'"
               ></div>
             </div>
 
             <div class="split-stats-grid">
               <div class="split-stat-card principal">
                 <span class="stat-badge green">Reduced Your Loan</span>
-                <strong class="stat-amount tabular-nums">{{ formatPaise(rupeeSplit().totalPrincipalReduced) }}</strong>
-                <small class="stat-percent">{{ rupeeSplit().principalPercent.toFixed(1) }}% of total paid</small>
+                <strong class="stat-amount tabular-nums">{{ formatPaise(activeSplit().totalPrincipalReduced) }}</strong>
+                <small class="stat-percent">{{ activeSplit().principalPercent.toFixed(1) }}% of {{ viewMode() === 'overall' ? 'total' : 'month' }} paid</small>
               </div>
               <div class="split-stat-card interest">
                 <span class="stat-badge dark">Bank Interest Charges</span>
-                <strong class="stat-amount tabular-nums">{{ formatPaise(rupeeSplit().totalInterestPaid) }}</strong>
-                <small class="stat-percent">{{ rupeeSplit().interestPercent.toFixed(1) }}% of total paid</small>
+                <strong class="stat-amount tabular-nums">{{ formatPaise(activeSplit().totalInterestPaid) }}</strong>
+                <small class="stat-percent">{{ activeSplit().interestPercent.toFixed(1) }}% of {{ viewMode() === 'overall' ? 'total' : 'month' }} paid</small>
               </div>
             </div>
+
+            <div class="split-total-footer">
+              <span class="footer-total-label">
+                Total {{ viewMode() === 'overall' ? 'Money Paid Overall' : 'Paid in ' + activeMonthSplit().label }}:
+              </span>
+              <span class="footer-total-val tabular-nums">{{ formatPaise(activeSplit().totalPaidToBank) }}</span>
+            </div>
+
+            <!-- In Month-Wise mode: Clean Comparison Table of All Months -->
+            @if (viewMode() === 'monthly' && monthlySplits().length > 1) {
+              <div class="monthly-breakdown-table-wrap">
+                <span class="custom-chart-label">Month-by-Month History</span>
+                <div class="monthly-mini-table">
+                  @for (row of monthlySplits(); track row.period) {
+                    <div
+                      class="monthly-table-row"
+                      [class.highlight]="row.period === selectedMonth()"
+                      (click)="selectedMonth.set(row.period)"
+                      role="button"
+                      tabindex="0"
+                    >
+                      <div class="table-month-col">
+                        <span class="month-name-text">{{ row.label }}</span>
+                        @if (!row.hasActualPayments) {
+                          <span class="est-mini-tag">est.</span>
+                        }
+                      </div>
+                      <div class="table-stat-col">
+                        <span class="table-val text-green tabular-nums">{{ formatPaise(row.principalReduced) }}</span>
+                        <span class="table-lbl">Principal</span>
+                      </div>
+                      <div class="table-stat-col">
+                        <span class="table-val tabular-nums">{{ formatPaise(row.interestPaid) }}</span>
+                        <span class="table-lbl">Interest</span>
+                      </div>
+                      <div class="table-stat-col text-right">
+                        <span class="table-val bold tabular-nums">{{ formatPaise(row.totalPaid) }}</span>
+                        <span class="table-lbl">Total</span>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
           </div>
         </div>
       </section>
@@ -1083,6 +1166,188 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       font-weight: 500;
       color: #8e8e93;
     }
+
+    .insight-header-wrap {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .toggle-control-pill {
+      min-width: 190px;
+    }
+
+    .month-selector-cluster {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: -2px;
+    }
+
+    .month-selector-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #8e8e93;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .month-chips-scroll {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+
+      &::-webkit-scrollbar {
+        display: none;
+      }
+    }
+
+    .month-chip-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 12px;
+      border-radius: var(--radius-pill, 9999px);
+      border: 1px solid var(--line, rgba(0, 0, 0, 0.06));
+      background: #f8f9fb;
+      color: #4b4c52;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &:hover {
+        background: #f0f2f5;
+        color: #111216;
+      }
+
+      &.active {
+        background: #111216;
+        color: #ffffff;
+        border-color: #111216;
+      }
+
+      .est-tag {
+        font-size: 9px;
+        opacity: 0.7;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+      }
+    }
+
+    .split-total-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 10px;
+      margin-top: 2px;
+      border-top: 1px solid var(--line, rgba(0, 0, 0, 0.06));
+    }
+
+    .footer-total-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #8e8e93;
+    }
+
+    .footer-total-val {
+      font-size: 14px;
+      font-weight: 800;
+      color: #111216;
+    }
+
+    .monthly-breakdown-table-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line, rgba(0, 0, 0, 0.06));
+    }
+
+    .monthly-mini-table {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .monthly-table-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      border-radius: 14px;
+      background: #f8f9fb;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: #f0f2f5;
+      }
+
+      &.highlight {
+        background: rgba(108, 76, 255, 0.06);
+        border-color: rgba(108, 76, 255, 0.3);
+      }
+    }
+
+    .table-month-col {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      min-width: 80px;
+    }
+
+    .month-name-text {
+      font-size: 12px;
+      font-weight: 700;
+      color: #111216;
+    }
+
+    .est-mini-tag {
+      font-size: 9px;
+      font-weight: 700;
+      color: #8e8e93;
+      text-transform: uppercase;
+    }
+
+    .table-stat-col {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+
+      &.text-right {
+        text-align: right;
+        align-items: flex-end;
+      }
+    }
+
+    .table-val {
+      font-size: 12px;
+      font-weight: 700;
+      color: #111216;
+
+      &.text-green {
+        color: #0fb27c;
+      }
+
+      &.bold {
+        font-weight: 800;
+      }
+    }
+
+    .table-lbl {
+      font-size: 9px;
+      font-weight: 500;
+      color: #8e8e93;
+    }
   `,
 })
 export class HomeComponent {
@@ -1197,6 +1462,42 @@ export class HomeComponent {
   readonly rupeeSplit = computed(() => {
     return computeRupeeSplit(this.ledgerStore.ledgerState());
   });
+
+  readonly viewMode = signal<'overall' | 'monthly'>('overall');
+  readonly viewOptions: SegmentOption<'overall' | 'monthly'>[] = [
+    { label: 'Overall', value: 'overall' },
+    { label: 'Month-Wise', value: 'monthly' },
+  ];
+
+  readonly monthlySplits = computed<MonthRupeeSplit[]>(() => {
+    return computeAllMonthlyRupeeSplits(this.ledgerStore.ledgerState());
+  });
+
+  readonly selectedMonth = signal<string>(new Date().toISOString().slice(0, 7));
+
+  readonly activeMonthSplit = computed<MonthRupeeSplit>(() => {
+    const sel = this.selectedMonth();
+    const all = this.monthlySplits();
+    return all.find((m) => m.period === sel) || all[0] || computeMonthRupeeSplit(sel, this.ledgerStore.ledgerState());
+  });
+
+  readonly activeSplit = computed(() => {
+    if (this.viewMode() === 'monthly') {
+      const m = this.activeMonthSplit();
+      return {
+        totalPaidToBank: m.totalPaid,
+        totalInterestPaid: m.interestPaid,
+        totalPrincipalReduced: m.principalReduced,
+        interestPercent: m.interestPercent,
+        principalPercent: m.principalPercent,
+      };
+    }
+    return this.rupeeSplit();
+  });
+
+  onViewModeChange(mode: string): void {
+    this.viewMode.set(mode as 'overall' | 'monthly');
+  }
 
   readonly hasRecordedPayments = computed<boolean>(() => {
     return this.ledgerStore

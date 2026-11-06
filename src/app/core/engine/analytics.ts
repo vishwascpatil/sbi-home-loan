@@ -1,6 +1,6 @@
-import { ContributionTransaction, LedgerState } from './models';
-import { Paise, paise } from './money';
-import { monthlySummary } from './ledger';
+import { BankPaymentTransaction, ContributionTransaction, LedgerState } from './models';
+import { Paise, paise, toPaise } from './money';
+import { getEffectiveRateBps, monthlySummary, outstandingAt } from './ledger';
 
 export interface RupeeSplit {
   totalPaidToBank: Paise;
@@ -8,6 +8,18 @@ export interface RupeeSplit {
   totalPrincipalReduced: Paise;
   interestPercent: number;
   principalPercent: number;
+}
+
+export interface MonthRupeeSplit {
+  period: string; // YYYY-MM
+  label: string; // e.g. "Nov 2026"
+  totalPaid: Paise;
+  principalReduced: Paise;
+  interestPaid: Paise;
+  principalPercent: number;
+  interestPercent: number;
+  isEstimated: boolean;
+  hasActualPayments: boolean;
 }
 
 export interface MemberConsistencyMetric {
@@ -40,6 +52,104 @@ export interface HeatmapMonthGroup {
 }
 
 /**
+ * Computes rupee split for a specific calendar month.
+ */
+export function computeMonthRupeeSplit(month: string, ledger: LedgerState): MonthRupeeSplit {
+  const activeTxs = ledger.transactions.filter((tx) => !tx.deletedAt);
+  const bankTxs = activeTxs.filter(
+    (tx): tx is BankPaymentTransaction =>
+      tx.type === 'bankPayment' && (tx.forMonth === month || (!tx.forMonth && tx.date.slice(0, 7) === month))
+  );
+  const contribTxs = activeTxs.filter(
+    (tx): tx is ContributionTransaction =>
+      tx.type === 'contribution' && (tx.forMonth === month || (!tx.forMonth && tx.date.slice(0, 7) === month))
+  );
+
+  const curSummary = monthlySummary(month, ledger);
+  let estInterest = curSummary.interestIncurredEst;
+  if (estInterest <= 0) {
+    const p = outstandingAt(`${month}-01`, ledger);
+    const r = getEffectiveRateBps(month, ledger.loan, ledger.rateChanges);
+    if (p > 0 && r > 0) {
+      estInterest = paise(Math.round((p * r) / (12 * 10000)));
+    }
+  }
+
+  let totalPaid = paise(0);
+  let interestPaid = paise(0);
+  let principalReduced = paise(0);
+  let isEstimated = false;
+  let hasActualPayments = false;
+
+  if (bankTxs.length > 0) {
+    for (const tx of bankTxs) {
+      totalPaid = paise(totalPaid + tx.amount);
+      interestPaid = paise(interestPaid + tx.interestPortion);
+      principalReduced = paise(principalReduced + tx.principalPortion);
+    }
+    isEstimated = bankTxs.some((t) => t.isEstimatedSplit);
+    hasActualPayments = true;
+  } else if (contribTxs.length > 0) {
+    for (const tx of contribTxs) {
+      totalPaid = paise(totalPaid + tx.amount);
+    }
+    interestPaid = paise(Math.min(totalPaid, estInterest));
+    principalReduced = paise(Math.max(0, totalPaid - interestPaid));
+    isEstimated = true;
+    hasActualPayments = true;
+  } else {
+    // Current or projected month target
+    const target = ledger.loan.monthlyTarget || toPaise(240000);
+    totalPaid = target;
+    interestPaid = paise(Math.min(target, estInterest));
+    principalReduced = paise(Math.max(0, target - interestPaid));
+    isEstimated = true;
+    hasActualPayments = false;
+  }
+
+  const interestPercent = totalPaid > 0 ? (interestPaid / totalPaid) * 100 : 0;
+  const principalPercent = totalPaid > 0 ? (principalReduced / totalPaid) * 100 : 0;
+
+  const [yStr, mStr] = month.split('-');
+  const d = new Date(parseInt(yStr || '2026', 10), parseInt(mStr || '1', 10) - 1, 1, 12);
+  const label = d.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+
+  return {
+    period: month,
+    label,
+    totalPaid,
+    principalReduced,
+    interestPaid,
+    principalPercent,
+    interestPercent,
+    isEstimated,
+    hasActualPayments,
+  };
+}
+
+/**
+ * Computes month-by-month rupee splits for all active periods in ledger + current month.
+ */
+export function computeAllMonthlyRupeeSplits(ledger: LedgerState): MonthRupeeSplit[] {
+  const monthsSet = new Set<string>();
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  monthsSet.add(currentMonth);
+
+  for (const tx of ledger.transactions) {
+    if (!tx.deletedAt) {
+      const m = tx.forMonth || tx.date.slice(0, 7);
+      if (m && m.length === 7) {
+        monthsSet.add(m);
+      }
+    }
+  }
+
+  // Sort descending: newest month first
+  const sortedMonths = Array.from(monthsSet).sort((a, b) => b.localeCompare(a));
+  return sortedMonths.map((m) => computeMonthRupeeSplit(m, ledger));
+}
+
+/**
  * Computes Where Each Rupee Went breakdown of loan payments (bank payments or member contributions).
  */
 export function computeRupeeSplit(ledger: LedgerState): RupeeSplit {
@@ -47,53 +157,33 @@ export function computeRupeeSplit(ledger: LedgerState): RupeeSplit {
   let totalInterestPaid = paise(0);
   let totalPrincipalReduced = paise(0);
 
-  // 1. Check explicit bank payments if any
-  for (const tx of ledger.transactions) {
-    if (!tx.deletedAt && tx.type === 'bankPayment') {
+  const activeTxs = ledger.transactions.filter((tx) => !tx.deletedAt);
+  const bankPayments = activeTxs.filter((tx): tx is BankPaymentTransaction => tx.type === 'bankPayment');
+
+  // 1. If explicit bank payments exist, use them
+  if (bankPayments.length > 0) {
+    for (const tx of bankPayments) {
       totalPaidToBank = paise(totalPaidToBank + tx.amount);
       totalInterestPaid = paise(totalInterestPaid + tx.interestPortion);
       totalPrincipalReduced = paise(totalPrincipalReduced + tx.principalPortion);
     }
-  }
+  } else {
+    // 2. Aggregate month-by-month splits from member contributions
+    const monthlySplits = computeAllMonthlyRupeeSplits(ledger);
+    const monthsWithPayments = monthlySplits.filter((s) => s.hasActualPayments);
 
-  // 2. If no bank payments were recorded, compute split from member contributions & interest
-  if (totalPaidToBank === 0) {
-    const activeContributions = ledger.transactions.filter(
-      (tx): tx is ContributionTransaction => !tx.deletedAt && tx.type === 'contribution'
-    );
-
-    let totalContributions = paise(0);
-    for (const tx of activeContributions) {
-      totalContributions = paise(totalContributions + tx.amount);
-    }
-
-    if (totalContributions > 0) {
-      // Find all unique periods where contributions occurred
-      const monthsSet = new Set<string>();
-      for (const tx of activeContributions) {
-        const m = tx.forMonth || tx.date.slice(0, 7);
-        if (m) monthsSet.add(m);
+    if (monthsWithPayments.length > 0) {
+      for (const ms of monthsWithPayments) {
+        totalPaidToBank = paise(totalPaidToBank + ms.totalPaid);
+        totalInterestPaid = paise(totalInterestPaid + ms.interestPaid);
+        totalPrincipalReduced = paise(totalPrincipalReduced + ms.principalReduced);
       }
-
-      let totalEstInterest = paise(0);
-      for (const m of monthsSet) {
-        const summary = monthlySummary(m, ledger);
-        totalEstInterest = paise(totalEstInterest + summary.interestIncurredEst);
-      }
-
-      totalPaidToBank = totalContributions;
-      totalInterestPaid = paise(Math.min(totalContributions, totalEstInterest));
-      totalPrincipalReduced = paise(Math.max(0, totalContributions - totalInterestPaid));
-    } else if (ledger.loan.monthlyTarget > 0) {
-      // If no payments recorded yet, show target projection for current month
-      const currentMonth = new Date().toISOString().slice(0, 7);
-      const curSummary = monthlySummary(currentMonth, ledger);
-      const estInterest = curSummary.interestIncurredEst;
-      const target = ledger.loan.monthlyTarget;
-
-      totalPaidToBank = target;
-      totalInterestPaid = paise(Math.min(target, estInterest));
-      totalPrincipalReduced = paise(Math.max(0, target - totalInterestPaid));
+    } else {
+      // Fallback to current month target projection so numbers are never 0
+      const curSplit = monthlySplits[0] || computeMonthRupeeSplit(new Date().toISOString().slice(0, 7), ledger);
+      totalPaidToBank = curSplit.totalPaid;
+      totalInterestPaid = curSplit.interestPaid;
+      totalPrincipalReduced = curSplit.principalReduced;
     }
   }
 
