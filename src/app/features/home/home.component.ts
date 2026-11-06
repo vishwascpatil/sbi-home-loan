@@ -15,6 +15,7 @@ import {
   getTransactionAmount,
   getTransactionMode,
   Paise,
+  paise,
   simulate,
   simulateV2,
   toPaise,
@@ -97,16 +98,26 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
             </div>
             <div class="card-metric-body">
               <div class="metric-pair">
-                <span class="metric-big-num tabular-nums" [appCountUp]="summary().principalReduced">
-                  {{ formatPaise(summary().principalReduced) }}
+                <span class="metric-big-num tabular-nums" [appCountUp]="monthlyCutCalculation().totalCut">
+                  {{ formatPaise(monthlyCutCalculation().totalCut) }}
                 </span>
-                <span class="metric-label-sub">Loan Reduced</span>
+                <span class="metric-label-sub">
+                  {{ monthlyCutCalculation().isRecorded ? 'Money Cut (Paid)' : 'Per Month Cut (Est.)' }}
+                </span>
               </div>
-              <div class="metric-pair secondary">
-                <span class="metric-small-num tabular-nums">
-                  {{ formatPaise(summary().interestIncurredEst, { showPaise: true, isEstimated: true }) }}
-                </span>
-                <span class="metric-label-sub">Interest Added (Est.)</span>
+              <div class="metric-split-row">
+                <div class="metric-split-item">
+                  <span class="metric-split-val tabular-nums text-green">
+                    {{ formatPaise(monthlyCutCalculation().principalCut) }}
+                  </span>
+                  <span class="metric-split-lbl">Loan Reduced</span>
+                </div>
+                <div class="metric-split-item">
+                  <span class="metric-split-val tabular-nums">
+                    {{ formatPaise(monthlyCutCalculation().interestCut) }}
+                  </span>
+                  <span class="metric-split-lbl">Interest Cut</span>
+                </div>
               </div>
             </div>
           </button>
@@ -582,6 +593,39 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       }
     }
 
+    .metric-split-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+      margin-top: 4px;
+      padding-top: 8px;
+      border-top: 1px solid var(--line, rgba(0, 0, 0, 0.06));
+    }
+
+    .metric-split-item {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .metric-split-val {
+      font-size: 13px;
+      font-weight: 700;
+      color: #111216;
+      line-height: 1.2;
+
+      &.text-green {
+        color: #0fb27c;
+      }
+    }
+
+    .metric-split-lbl {
+      font-size: 10px;
+      font-weight: 500;
+      color: #8e8e93;
+    }
+
     .metric-big-num {
       font-size: clamp(18px, 4.5vw, 22px);
       font-weight: 800;
@@ -978,6 +1022,36 @@ export class HomeComponent {
 
   readonly arcRadius = 40;
   readonly arcCircumference = 2 * Math.PI * this.arcRadius;
+
+  readonly monthlyCutCalculation = computed(() => {
+    const sum = this.summary();
+    const loan = this.ledgerStore.loan();
+    const principal = this.ledgerStore.currentOutstanding();
+    const rateBps = loan.currentRateBps;
+
+    let estInterest = sum.interestIncurredEst;
+    if (estInterest <= 0 && principal > 0 && rateBps > 0) {
+      estInterest = paise(Math.round((principal * rateBps) / (12 * 10000)));
+    }
+
+    const target = loan.monthlyTarget || toPaise(240000);
+    const hasRecordedPayment = sum.paidToBank > 0;
+
+    const totalCut = hasRecordedPayment ? sum.paidToBank : target;
+    const interestCut = hasRecordedPayment
+      ? paise(Math.min(sum.paidToBank, estInterest))
+      : paise(Math.min(target, estInterest));
+    const principalCut = hasRecordedPayment
+      ? sum.principalReduced
+      : paise(Math.max(0, target - interestCut));
+
+    return {
+      isRecorded: hasRecordedPayment,
+      totalCut,
+      principalCut,
+      interestCut,
+    };
+  });
 
   readonly repaidAmount = computed<Paise>(() => {
     const lim = this.ledgerStore.loan().sanctionedLimit;
