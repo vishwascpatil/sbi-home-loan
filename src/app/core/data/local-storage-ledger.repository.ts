@@ -1,10 +1,7 @@
 import { Injectable } from '@angular/core';
 import {
   AuditEntry,
-  BankPaymentTransaction,
-  getTransactionAmount,
   LedgerState,
-  toPaise,
 } from '../engine';
 import { generateLedgerCsv } from './csv-export';
 import { LedgerRepository } from './ledger-repository.interface';
@@ -15,8 +12,8 @@ interface StoragePayload {
   data: LedgerState;
 }
 
-const STORAGE_KEY = 'loan_tracker_ledger_v2';
-const CURRENT_SCHEMA_VERSION = 2;
+const STORAGE_KEY = 'loan_tracker_ledger_v3';
+const CURRENT_SCHEMA_VERSION = 3;
 
 @Injectable({
   providedIn: 'root',
@@ -47,8 +44,9 @@ export class LocalStorageLedgerRepository implements LedgerRepository {
 
     try {
       if (typeof localStorage !== 'undefined') {
-        // Clear old dummy mock storage key if present
+        // Clear old dummy mock storage keys if present
         localStorage.removeItem('loan_tracker_ledger_v1');
+        localStorage.removeItem('loan_tracker_ledger_v2');
       }
 
       const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
@@ -62,6 +60,18 @@ export class LocalStorageLedgerRepository implements LedgerRepository {
       const parsed = JSON.parse(raw) as StoragePayload | LedgerState;
       const state = this.migrateSchema(parsed);
 
+      // Upgrade if stale data or outdated opening balance (e.g. not ₹1,20,55,189) is found
+      if (
+        !state.loan ||
+        state.loan.openingOutstanding !== getInitialSeedData().loan.openingOutstanding ||
+        state.members.some((m) => m.name.startsWith('Member '))
+      ) {
+        const freshSeed = getInitialSeedData();
+        await this.save(freshSeed);
+        this.inMemoryCache = freshSeed;
+        return freshSeed;
+      }
+
       const avatarMap: Record<string, string> = {
         vishwas: '/profiles/vishwas.jpeg',
         vikas: '/profiles/vikas.jpeg',
@@ -73,52 +83,6 @@ export class LocalStorageLedgerRepository implements LedgerRepository {
         if (!m.avatarUrl && avatarMap[m.name.toLowerCase().trim()]) {
           m.avatarUrl = avatarMap[m.name.toLowerCase().trim()];
         }
-      }
-
-      // Ensure November 2026 baseline payment of ₹2,18,900 is present and correctly split (Interest: ₹78,251, Principal: ₹1,40,649)
-      const novTargetPaise = toPaise(218900);
-      const novInterestPaise = toPaise(78251);
-      const novPrincipalPaise = toPaise(140649);
-      const existingNovPaymentIndex = state.transactions.findIndex(
-        (t) => !t.deletedAt && (getTransactionAmount(t) === novTargetPaise || t.id === 'tx-nov-2026-emi')
-      );
-
-      if (existingNovPaymentIndex >= 0) {
-        const existing = state.transactions[existingNovPaymentIndex]!;
-        if (existing.type !== 'bankPayment' || existing.principalPortion !== novPrincipalPaise) {
-          const updated: BankPaymentTransaction = {
-            id: existing.id || 'tx-nov-2026-emi',
-            type: 'bankPayment',
-            amount: novTargetPaise,
-            principalPortion: novPrincipalPaise,
-            interestPortion: novInterestPaise,
-            isEstimatedSplit: true,
-            date: existing.date || '2026-11-05',
-            forMonth: '2026-11',
-            mode: 'mode' in existing && existing.mode ? existing.mode : 'Bank transfer',
-            createdAt: existing.createdAt || new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          };
-          state.transactions[existingNovPaymentIndex] = updated;
-          await this.save(state);
-        }
-      } else {
-        const novPayment: BankPaymentTransaction = {
-          id: 'tx-nov-2026-emi',
-          type: 'bankPayment',
-          amount: novTargetPaise,
-          interestPortion: novInterestPaise,
-          principalPortion: novPrincipalPaise,
-          isEstimatedSplit: true,
-          date: '2026-11-05',
-          forMonth: '2026-11',
-          mode: 'Bank transfer',
-          notes: 'November EMI Payment',
-          createdAt: '2026-11-05T09:00:00.000Z',
-          updatedAt: '2026-11-05T09:00:00.000Z',
-        };
-        state.transactions = [novPayment, ...state.transactions];
-        await this.save(state);
       }
 
       this.inMemoryCache = state;

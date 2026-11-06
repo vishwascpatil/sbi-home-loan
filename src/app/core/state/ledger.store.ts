@@ -1,5 +1,6 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import {
+  addPaise,
   AuditEntry,
   BalanceSnapshot,
   BankPaymentTransaction,
@@ -78,9 +79,31 @@ export class LedgerStore {
   }));
 
   // Computed Projections
-  readonly currentOutstanding = computed<Paise>(() => {
+  readonly currentPrincipal = computed<Paise>(() => {
     const today = new Date().toISOString().slice(0, 10);
     return outstandingAt(today, this.ledgerState());
+  });
+
+  readonly currentOutstanding = computed<Paise>(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const baseOutstanding = outstandingAt(today, this.ledgerState());
+
+    // Check if an explicit interestCharge is already recorded in transactions for this month
+    const curMonth = today.slice(0, 7);
+    const hasExplicitInterest = this.transactions().some(
+      (t) =>
+        !t.deletedAt &&
+        t.type === 'interestCharge' &&
+        (t.forMonth === curMonth || t.date.slice(0, 7) === curMonth)
+    );
+
+    if (hasExplicitInterest) {
+      return baseOutstanding;
+    }
+
+    // On November / current period, add the calculated interest for the period back to the amount to be paid
+    const estInterest = this.thisMonthSummary().interestIncurredEst;
+    return addPaise(baseOutstanding, estInterest);
   });
 
   readonly thisMonthSummary = computed<MonthlySummary>(() => {
@@ -191,11 +214,19 @@ export class LedgerStore {
     const currentOut = outstandingAt(params.date, this.ledgerState());
     const estInterest = monthlySummary(forMonth, this.ledgerState()).interestIncurredEst;
 
-    const split = bankPaymentSplit(
-      params.amount,
-      estInterest || currentOut,
-      params.interestPortion
-    );
+    const isOverdraft = this.loan().type === 'Overdraft (OD)';
+    const split =
+      isOverdraft && params.interestPortion === undefined
+        ? {
+            principalPortion: params.amount,
+            interestPortion: paise(0),
+            isEstimatedSplit: false,
+          }
+        : bankPaymentSplit(
+            params.amount,
+            estInterest || currentOut,
+            params.interestPortion
+          );
 
     const tx: Transaction = {
       id: crypto.randomUUID(),

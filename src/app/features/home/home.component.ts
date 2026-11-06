@@ -1015,20 +1015,8 @@ export class HomeComponent {
     let principalCut: Paise;
 
     if (hasRecordedPayment) {
-      if (sum.principalReduced > 0) {
-        principalCut = sum.principalReduced;
-        interestCut = paise(Math.max(0, sum.paidToBank - principalCut));
-      } else if (sum.paidToBank >= target) {
-        interestCut = paise(Math.min(sum.paidToBank, estInterest));
-        principalCut = paise(Math.max(0, sum.paidToBank - interestCut));
-      } else if (target > 0 && estInterest > 0) {
-        // Fair proportional split for partial deposits
-        interestCut = paise(Math.round((sum.paidToBank * estInterest) / target));
-        principalCut = paise(Math.max(0, sum.paidToBank - interestCut));
-      } else {
-        interestCut = paise(0);
-        principalCut = sum.paidToBank;
-      }
+      interestCut = paise(Math.min(sum.paidToBank, estInterest));
+      principalCut = paise(Math.max(0, sum.paidToBank - interestCut));
     } else {
       interestCut = paise(Math.min(target, estInterest));
       principalCut = paise(Math.max(0, target - interestCut));
@@ -1044,7 +1032,7 @@ export class HomeComponent {
 
   readonly dailyInterestCalculation = computed(() => {
     const loan = this.ledgerStore.loan();
-    const principal = this.ledgerStore.currentOutstanding();
+    const principal = this.ledgerStore.currentPrincipal();
     const rateBps = loan.currentRateBps;
     const basisDays = loan.bankRules?.dayCountBasis === '360' ? 360 : 365;
 

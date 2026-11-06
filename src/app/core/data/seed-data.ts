@@ -14,8 +14,8 @@ export function getInitialSeedData(): LedgerState {
     type: 'Overdraft (OD)',
     accountNumber: '43054757071',
     sanctionedLimit: toPaise(12636108), // ₹1,26,36,108.00
-    openingOutstanding: toPaise(11886289), // ₹1,18,86,289.00 as of November baseline
-    openingDate: '2024-06-12',
+    openingOutstanding: toPaise(12055189), // ₹1,20,55,189.00 as of Oct 31st baseline
+    openingDate: '2026-10-31',
     maturityDate: '2044-06-12',
     currentRateBps: 790, // 7.90% p.a.
     monthlyTarget: toPaise(240000), // ₹2,40,000.00 (pool sum of member targets)
@@ -83,22 +83,76 @@ export function getInitialSeedData(): LedgerState {
     },
   ];
 
-  // November EMI payment of ₹2,18,900
-  // Interest: ₹78,251 (7.90% p.a. on ₹1,18,86,289), Principal reduction: ₹1,40,649
+  // November payments totaling ₹2,18,900 added on Nov 4th & Nov 5th
   const transactions: Transaction[] = [
+    // Vishwas contribution on Nov 4
     {
-      id: 'tx-nov-2026-emi',
+      id: 'tx-nov-4-vishwas',
+      type: 'contribution',
+      memberId: 'mem-vishwas',
+      amount: toPaise(105000),
+      date: '2026-11-04',
+      forMonth: '2026-11',
+      mode: 'Bank transfer',
+      notes: 'Vishwas deposit on Nov 4',
+      createdAt: '2026-11-04T10:00:00.000Z',
+      updatedAt: '2026-11-04T10:00:00.000Z',
+    },
+    // Loan payment on Nov 4
+    {
+      id: 'tx-nov-4-bank-payment',
       type: 'bankPayment',
-      amount: toPaise(218900),
-      interestPortion: toPaise(78251),
-      principalPortion: toPaise(140649),
-      isEstimatedSplit: true,
+      amount: toPaise(105000),
+      principalPortion: toPaise(105000),
+      interestPortion: toPaise(0),
+      isEstimatedSplit: false,
+      date: '2026-11-04',
+      forMonth: '2026-11',
+      mode: 'Bank transfer',
+      notes: 'Payment to loan on Nov 4',
+      createdAt: '2026-11-04T10:30:00.000Z',
+      updatedAt: '2026-11-04T10:30:00.000Z',
+    },
+    // Vikas contribution on Nov 5
+    {
+      id: 'tx-nov-5-vikas',
+      type: 'contribution',
+      memberId: 'mem-vikas',
+      amount: toPaise(105000),
       date: '2026-11-05',
       forMonth: '2026-11',
       mode: 'Bank transfer',
-      notes: 'November EMI Payment',
+      notes: 'Vikas deposit on Nov 5',
       createdAt: '2026-11-05T09:00:00.000Z',
       updatedAt: '2026-11-05T09:00:00.000Z',
+    },
+    // Bhavya contribution on Nov 5
+    {
+      id: 'tx-nov-5-bhavya',
+      type: 'contribution',
+      memberId: 'mem-bhavya',
+      amount: toPaise(8900),
+      date: '2026-11-05',
+      forMonth: '2026-11',
+      mode: 'Bank transfer',
+      notes: 'Bhavya deposit on Nov 5',
+      createdAt: '2026-11-05T09:15:00.000Z',
+      updatedAt: '2026-11-05T09:15:00.000Z',
+    },
+    // Loan payment on Nov 5
+    {
+      id: 'tx-nov-5-bank-payment',
+      type: 'bankPayment',
+      amount: toPaise(113900),
+      principalPortion: toPaise(113900),
+      interestPortion: toPaise(0),
+      isEstimatedSplit: false,
+      date: '2026-11-05',
+      forMonth: '2026-11',
+      mode: 'Bank transfer',
+      notes: 'Payment to loan on Nov 5',
+      createdAt: '2026-11-05T09:30:00.000Z',
+      updatedAt: '2026-11-05T09:30:00.000Z',
     },
   ];
 
@@ -117,13 +171,13 @@ export function getInitialSeedData(): LedgerState {
   const snapshots: BalanceSnapshot[] = [
     {
       id: crypto.randomUUID(),
-      date: '2026-11-01',
-      bankActualOutstanding: toPaise(11886289),
-      ledgerCalculatedOutstanding: toPaise(11886289),
+      date: '2026-10-31',
+      bankActualOutstanding: toPaise(12055189),
+      ledgerCalculatedOutstanding: toPaise(12055189),
       variance: toPaise(0),
-      notes: 'Passbook balance baseline as of November',
-      createdAt: '2026-11-01T00:00:00.000Z',
-      updatedAt: '2026-11-01T00:00:00.000Z',
+      notes: 'Passbook balance baseline as of Oct 31st',
+      createdAt: '2026-10-31T00:00:00.000Z',
+      updatedAt: '2026-10-31T00:00:00.000Z',
     },
   ];
 
