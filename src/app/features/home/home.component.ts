@@ -123,13 +123,13 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
             </div>
           </button>
 
-          <!-- Card 2: Debt Free Target -->
+          <!-- Card 2: Payoff Target -->
           <div
             class="squircle-metric-card"
-            aria-label="Debt Free Target"
+            aria-label="Loan Payoff Target"
           >
             <div class="card-top-header">
-              <span class="card-caption-title">Debt Free By</span>
+              <span class="card-caption-title">Payoff</span>
               <span class="card-badge-chip">{{ baselineSimResult()?.closureDate || 'Active' }}</span>
             </div>
             <div class="card-metric-body">
