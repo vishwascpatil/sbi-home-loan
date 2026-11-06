@@ -174,7 +174,9 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
                 <span class="metric-big-num tabular-nums" [appCountUp]="dailyInterestCalculation().dailyInterest" [showDecimals]="true">
                   {{ formatPaise(dailyInterestCalculation().dailyInterest, { showPaise: true }) }}
                 </span>
-                <span class="metric-label-sub">Interest added to loan per day</span>
+                <span class="metric-label-sub">
+                  <span class="today-highlight-pill">Today</span> Interest added to loan
+                </span>
               </div>
               <div class="metric-split-row">
                 <div class="metric-split-item">
@@ -707,6 +709,23 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       font-size: 11px;
       font-weight: 500;
       color: #8e8e93;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .today-highlight-pill {
+      display: inline-flex;
+      align-items: center;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      background: #111216;
+      color: #ffffff;
+      padding: 1px 7px;
+      border-radius: var(--radius-pill, 99px);
+      line-height: 1.4;
     }
 
     .metric-stat-row {
