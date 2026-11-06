@@ -581,6 +581,18 @@ export class AddEditTransactionSheetComponent implements OnChanges {
           mode,
         });
         this.toast.show('Payment updated successfully', 'success');
+      } else if (this.selectedType() === 'bankPayment') {
+        const actualInterest = this.customInterestInput() ? toPaise(this.customInterestInput()) : undefined;
+        await this.ledgerStore.recordBankPayment({
+          amount: amt,
+          interestPortion: actualInterest,
+          date,
+          forMonth,
+          mode,
+          reference: this.referenceInput,
+          notes: this.notesInput,
+        });
+        this.toast.show('Bank payment recorded', 'success');
       } else {
         await this.ledgerStore.addContribution({
           memberId,

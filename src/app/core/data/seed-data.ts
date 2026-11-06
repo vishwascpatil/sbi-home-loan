@@ -83,8 +83,23 @@ export function getInitialSeedData(): LedgerState {
     },
   ];
 
-  // Clean ledger starting from November passbook baseline — no assumed historical transactions
-  const transactions: Transaction[] = [];
+  // November EMI / OD payment of ₹2,18,900 reducing loan outstanding from November baseline
+  const transactions: Transaction[] = [
+    {
+      id: 'tx-nov-2026-emi',
+      type: 'bankPayment',
+      amount: toPaise(218900),
+      interestPortion: toPaise(0),
+      principalPortion: toPaise(218900),
+      isEstimatedSplit: false,
+      date: '2026-11-05',
+      forMonth: '2026-11',
+      mode: 'Bank transfer',
+      notes: 'November EMI / OD Payment',
+      createdAt: '2026-11-05T09:00:00.000Z',
+      updatedAt: '2026-11-05T09:00:00.000Z',
+    },
+  ];
 
   const rateChanges: RateChange[] = [
     {
@@ -101,13 +116,13 @@ export function getInitialSeedData(): LedgerState {
   const snapshots: BalanceSnapshot[] = [
     {
       id: crypto.randomUUID(),
-      date: '2024-11-01',
+      date: '2026-11-01',
       bankActualOutstanding: toPaise(11886289),
       ledgerCalculatedOutstanding: toPaise(11886289),
       variance: toPaise(0),
       notes: 'Passbook balance baseline as of November',
-      createdAt: '2024-11-01T00:00:00.000Z',
-      updatedAt: '2024-11-01T00:00:00.000Z',
+      createdAt: '2026-11-01T00:00:00.000Z',
+      updatedAt: '2026-11-01T00:00:00.000Z',
     },
   ];
 

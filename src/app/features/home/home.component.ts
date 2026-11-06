@@ -66,7 +66,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
               {{ formatPaise(ledgerStore.currentOutstanding()) }}
             </div>
             <span class="hero-balance-sub">
-              Adds ₹2,573 interest every day · Debited on 30th
+              Adds {{ formatPaise(dailyInterestCalculation().dailyInterest) }} interest every day · Debited on 30th
             </span>
           </div>
         </div>

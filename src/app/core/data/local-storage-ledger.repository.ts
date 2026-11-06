@@ -1,5 +1,11 @@
 import { Injectable } from '@angular/core';
-import { AuditEntry, LedgerState } from '../engine';
+import {
+  AuditEntry,
+  BankPaymentTransaction,
+  getTransactionAmount,
+  LedgerState,
+  toPaise,
+} from '../engine';
 import { generateLedgerCsv } from './csv-export';
 import { LedgerRepository } from './ledger-repository.interface';
 import { getInitialSeedData } from './seed-data';
@@ -67,6 +73,50 @@ export class LocalStorageLedgerRepository implements LedgerRepository {
         if (!m.avatarUrl && avatarMap[m.name.toLowerCase().trim()]) {
           m.avatarUrl = avatarMap[m.name.toLowerCase().trim()];
         }
+      }
+
+      // Ensure November 2026 baseline payment of ₹2,18,900 is present and reducing loan principal
+      const novTargetPaise = toPaise(218900);
+      const existingNovPaymentIndex = state.transactions.findIndex(
+        (t) => !t.deletedAt && (getTransactionAmount(t) === novTargetPaise || t.id === 'tx-nov-2026-emi')
+      );
+
+      if (existingNovPaymentIndex >= 0) {
+        const existing = state.transactions[existingNovPaymentIndex]!;
+        if (existing.type !== 'bankPayment' || existing.principalPortion !== novTargetPaise) {
+          const updated: BankPaymentTransaction = {
+            id: existing.id || 'tx-nov-2026-emi',
+            type: 'bankPayment',
+            amount: novTargetPaise,
+            principalPortion: novTargetPaise,
+            interestPortion: toPaise(0),
+            isEstimatedSplit: false,
+            date: existing.date || '2026-11-05',
+            forMonth: '2026-11',
+            mode: 'mode' in existing && existing.mode ? existing.mode : 'Bank transfer',
+            createdAt: existing.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          state.transactions[existingNovPaymentIndex] = updated;
+          await this.save(state);
+        }
+      } else {
+        const novPayment: BankPaymentTransaction = {
+          id: 'tx-nov-2026-emi',
+          type: 'bankPayment',
+          amount: novTargetPaise,
+          interestPortion: toPaise(0),
+          principalPortion: novTargetPaise,
+          isEstimatedSplit: false,
+          date: '2026-11-05',
+          forMonth: '2026-11',
+          mode: 'Bank transfer',
+          notes: 'November EMI / OD Payment',
+          createdAt: '2026-11-05T09:00:00.000Z',
+          updatedAt: '2026-11-05T09:00:00.000Z',
+        };
+        state.transactions = [novPayment, ...state.transactions];
+        await this.save(state);
       }
 
       this.inMemoryCache = state;
