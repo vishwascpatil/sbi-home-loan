@@ -1,11 +1,60 @@
-import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  input,
+  linkedSignal,
+} from '@angular/core';
+
+export function resolveAssetUrl(url: string | undefined | null): string | undefined {
+  if (!url) return undefined;
+  const trimmed = url.trim();
+  if (!trimmed) return undefined;
+
+  // External (http/https) or data/blob URLs are used as-is
+  if (/^(?:https?:)?\/\//i.test(trimmed) || trimmed.startsWith('data:') || trimmed.startsWith('blob:')) {
+    return trimmed;
+  }
+
+  // Determine base href from <base href="..."> or document.baseURI
+  let baseHref = '/';
+  if (typeof document !== 'undefined') {
+    const baseEl = document.querySelector('base');
+    const href = baseEl?.getAttribute('href');
+    if (href) {
+      baseHref = href;
+    } else if (document.baseURI) {
+      try {
+        baseHref = new URL(document.baseURI).pathname;
+      } catch {
+        baseHref = '/';
+      }
+    }
+  }
+
+  // Ensure baseHref ends with '/'
+  if (!baseHref.endsWith('/')) {
+    baseHref += '/';
+  }
+
+  // Strip leading slashes and relative notation './' from relative path
+  let relativePath = trimmed.replace(/^(\.\/|\/)+/, '');
+
+  // If relativePath already starts with baseHref without slashes (e.g. 'sbi-home-loan/profiles/...'), strip it
+  const cleanBase = baseHref.replace(/^\/+|\/+$/g, '');
+  if (cleanBase && relativePath.startsWith(cleanBase + '/')) {
+    relativePath = relativePath.slice(cleanBase.length + 1);
+  }
+
+  return `${baseHref}${relativePath}`;
+}
 
 const KNOWN_AVATARS: Record<string, string> = {
-  vishwas: '/profiles/vishwas.jpeg',
-  vikas: '/profiles/vikas.jpeg',
-  bhavya: '/profiles/bhavya.jpeg',
-  shruthi: '/profiles/shruthi.jpeg',
-  csp: '/profiles/csp.jpeg',
+  vishwas: 'profiles/vishwas.jpeg',
+  vikas: 'profiles/vikas.jpeg',
+  bhavya: 'profiles/bhavya.jpeg',
+  shruthi: 'profiles/shruthi.jpeg',
+  csp: 'profiles/csp.jpeg',
 };
 
 const MEMBER_GRADIENTS = [
@@ -29,7 +78,7 @@ const MEMBER_GRADIENTS = [
         [style.width.px]="size()"
         [style.height.px]="size()"
         [style.border-radius]="circular() ? '50%' : '32%'"
-        (error)="imageFailed.set(true)"
+        (error)="onImageError()"
       />
     } @else {
       <span
@@ -74,14 +123,22 @@ export class AvatarComponent {
   readonly avatarUrl = input<string | undefined>(undefined);
   readonly circular = input<boolean>(false);
 
-  readonly imageFailed = signal(false);
-
   readonly resolvedImage = computed(() => {
     const explicit = this.avatarUrl();
-    if (explicit) return explicit;
+    if (explicit) return resolveAssetUrl(explicit);
     const key = this.name().trim().toLowerCase();
-    return KNOWN_AVATARS[key] || undefined;
+    const known = KNOWN_AVATARS[key];
+    return resolveAssetUrl(known);
   });
+
+  readonly imageFailed = linkedSignal({
+    source: this.resolvedImage,
+    computation: () => false,
+  });
+
+  onImageError(): void {
+    this.imageFailed.set(true);
+  }
 
   readonly fontSize = computed(() => Math.round(this.size() * 0.42));
 

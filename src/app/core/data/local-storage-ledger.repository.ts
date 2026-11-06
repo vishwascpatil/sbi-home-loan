@@ -73,15 +73,19 @@ export class LocalStorageLedgerRepository implements LedgerRepository {
       }
 
       const avatarMap: Record<string, string> = {
-        vishwas: '/profiles/vishwas.jpeg',
-        vikas: '/profiles/vikas.jpeg',
-        bhavya: '/profiles/bhavya.jpeg',
-        shruthi: '/profiles/shruthi.jpeg',
-        csp: '/profiles/csp.jpeg',
+        vishwas: 'profiles/vishwas.jpeg',
+        vikas: 'profiles/vikas.jpeg',
+        bhavya: 'profiles/bhavya.jpeg',
+        shruthi: 'profiles/shruthi.jpeg',
+        csp: 'profiles/csp.jpeg',
       };
       for (const m of state.members) {
-        if (!m.avatarUrl && avatarMap[m.name.toLowerCase().trim()]) {
-          m.avatarUrl = avatarMap[m.name.toLowerCase().trim()];
+        const key = m.name.toLowerCase().trim();
+        if (!m.avatarUrl && avatarMap[key]) {
+          m.avatarUrl = avatarMap[key];
+        }
+        if (m.avatarUrl) {
+          m.avatarUrl = m.avatarUrl.replace(/^(\.\/|\/)+/, '');
         }
       }
 

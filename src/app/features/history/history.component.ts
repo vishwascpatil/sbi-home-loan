@@ -120,7 +120,12 @@ import { BankImportSheetComponent } from '../bank-import/bank-import-sheet.compo
                 [attr.aria-label]="'Edit transaction ' + getTitle(tx)"
               >
                 @if (tx.type === 'contribution') {
-                  <app-avatar [name]="getMemberName(tx.memberId)" [colorIndex]="getMemberColor(tx.memberId)" [size]="40" />
+                  <app-avatar
+                    [name]="getMemberName(tx.memberId)"
+                    [colorIndex]="getMemberColor(tx.memberId)"
+                    [size]="40"
+                    [avatarUrl]="getMemberAvatar(tx.memberId)"
+                  />
                 } @else {
                   <div class="tx-icon-badge" [class.payment]="tx.type === 'bankPayment'">
                     {{ tx.type === 'bankPayment' ? '🏦' : '✎' }}
@@ -620,6 +625,11 @@ export class HistoryComponent implements OnInit {
   getMemberColor(memberId: string): number {
     const m = this.ledgerStore.members().find((mem) => mem.id === memberId);
     return m ? m.colorIndex : 0;
+  }
+
+  getMemberAvatar(memberId: string): string | undefined {
+    const m = this.ledgerStore.members().find((mem) => mem.id === memberId);
+    return m ? m.avatarUrl : undefined;
   }
 
   async exportCsv(): Promise<void> {
