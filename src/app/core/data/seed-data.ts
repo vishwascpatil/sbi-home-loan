@@ -83,19 +83,20 @@ export function getInitialSeedData(): LedgerState {
     },
   ];
 
-  // November EMI / OD payment of ₹2,18,900 reducing loan outstanding from November baseline
+  // November EMI payment of ₹2,18,900
+  // Interest: ₹78,251 (7.90% p.a. on ₹1,18,86,289), Principal reduction: ₹1,40,649
   const transactions: Transaction[] = [
     {
       id: 'tx-nov-2026-emi',
       type: 'bankPayment',
       amount: toPaise(218900),
-      interestPortion: toPaise(0),
-      principalPortion: toPaise(218900),
-      isEstimatedSplit: false,
+      interestPortion: toPaise(78251),
+      principalPortion: toPaise(140649),
+      isEstimatedSplit: true,
       date: '2026-11-05',
       forMonth: '2026-11',
       mode: 'Bank transfer',
-      notes: 'November EMI / OD Payment',
+      notes: 'November EMI Payment',
       createdAt: '2026-11-05T09:00:00.000Z',
       updatedAt: '2026-11-05T09:00:00.000Z',
     },

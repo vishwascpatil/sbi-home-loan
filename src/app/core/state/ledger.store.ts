@@ -191,14 +191,11 @@ export class LedgerStore {
     const currentOut = outstandingAt(params.date, this.ledgerState());
     const estInterest = monthlySummary(forMonth, this.ledgerState()).interestIncurredEst;
 
-    const isOdLoan = this.loan().type === 'Overdraft (OD)';
-    const split = isOdLoan && params.interestPortion === undefined
-      ? { interestPortion: paise(0), principalPortion: params.amount, isEstimatedSplit: false }
-      : bankPaymentSplit(
-          params.amount,
-          estInterest || currentOut,
-          params.interestPortion
-        );
+    const split = bankPaymentSplit(
+      params.amount,
+      estInterest || currentOut,
+      params.interestPortion
+    );
 
     const tx: Transaction = {
       id: crypto.randomUUID(),

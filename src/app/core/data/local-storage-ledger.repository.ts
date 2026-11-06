@@ -75,22 +75,24 @@ export class LocalStorageLedgerRepository implements LedgerRepository {
         }
       }
 
-      // Ensure November 2026 baseline payment of ₹2,18,900 is present and reducing loan principal
+      // Ensure November 2026 baseline payment of ₹2,18,900 is present and correctly split (Interest: ₹78,251, Principal: ₹1,40,649)
       const novTargetPaise = toPaise(218900);
+      const novInterestPaise = toPaise(78251);
+      const novPrincipalPaise = toPaise(140649);
       const existingNovPaymentIndex = state.transactions.findIndex(
         (t) => !t.deletedAt && (getTransactionAmount(t) === novTargetPaise || t.id === 'tx-nov-2026-emi')
       );
 
       if (existingNovPaymentIndex >= 0) {
         const existing = state.transactions[existingNovPaymentIndex]!;
-        if (existing.type !== 'bankPayment' || existing.principalPortion !== novTargetPaise) {
+        if (existing.type !== 'bankPayment' || existing.principalPortion !== novPrincipalPaise) {
           const updated: BankPaymentTransaction = {
             id: existing.id || 'tx-nov-2026-emi',
             type: 'bankPayment',
             amount: novTargetPaise,
-            principalPortion: novTargetPaise,
-            interestPortion: toPaise(0),
-            isEstimatedSplit: false,
+            principalPortion: novPrincipalPaise,
+            interestPortion: novInterestPaise,
+            isEstimatedSplit: true,
             date: existing.date || '2026-11-05',
             forMonth: '2026-11',
             mode: 'mode' in existing && existing.mode ? existing.mode : 'Bank transfer',
@@ -105,13 +107,13 @@ export class LocalStorageLedgerRepository implements LedgerRepository {
           id: 'tx-nov-2026-emi',
           type: 'bankPayment',
           amount: novTargetPaise,
-          interestPortion: toPaise(0),
-          principalPortion: novTargetPaise,
-          isEstimatedSplit: false,
+          interestPortion: novInterestPaise,
+          principalPortion: novPrincipalPaise,
+          isEstimatedSplit: true,
           date: '2026-11-05',
           forMonth: '2026-11',
           mode: 'Bank transfer',
-          notes: 'November EMI / OD Payment',
+          notes: 'November EMI Payment',
           createdAt: '2026-11-05T09:00:00.000Z',
           updatedAt: '2026-11-05T09:00:00.000Z',
         };
