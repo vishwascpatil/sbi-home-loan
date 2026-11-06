@@ -239,7 +239,7 @@ import {
 
         <div class="members-luxury-list">
           @for (m of nonDeletedMembers(); track m.id) {
-            <div class="member-row" [class.inactive]="!m.active">
+            <div class="member-row">
               <div class="member-avatar-wrap">
                 <app-avatar
                   [name]="m.name"
@@ -259,31 +259,17 @@ import {
                 aria-label="Member name"
               />
 
-              <div class="member-controls">
-                <button
-                  type="button"
-                  class="ios-switch"
-                  role="switch"
-                  [attr.aria-checked]="m.active"
-                  (click)="toggleMemberActive(m)"
-                  [title]="m.active ? 'Active (tap to pause)' : 'Paused (tap to activate)'"
-                  [attr.aria-label]="m.name + (m.active ? ' is active' : ' is paused')"
-                >
-                  <span class="ios-switch-thumb"></span>
-                </button>
-
-                <button
-                  type="button"
-                  class="member-del-btn"
-                  (click)="confirmDeleteMember(m)"
-                  aria-label="Remove member"
-                  title="Remove member"
-                >
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                  </svg>
-                </button>
-              </div>
+              <button
+                type="button"
+                class="member-del-btn"
+                (click)="confirmDeleteMember(m)"
+                aria-label="Remove member"
+                title="Remove member"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
             </div>
           }
         </div>
@@ -749,10 +735,6 @@ import {
       padding-top: 4px;
     }
 
-    .member-row.inactive {
-      opacity: 0.45;
-    }
-
     .member-avatar-wrap {
       flex-shrink: 0;
       display: flex;
@@ -775,52 +757,6 @@ import {
 
     .member-name-input:focus {
       border-bottom: 1.5px solid var(--ink);
-    }
-
-    .member-controls {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-shrink: 0;
-    }
-
-    /* iOS-Style Toggle Switch */
-    .ios-switch {
-      position: relative;
-      width: 40px;
-      height: 24px;
-      border-radius: 9999px;
-      background: var(--line, #e2e4ea);
-      border: none;
-      cursor: pointer;
-      padding: 2px;
-      transition: background-color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-      flex-shrink: 0;
-      display: inline-flex;
-      align-items: center;
-      outline: none;
-    }
-
-    .ios-switch:focus-visible {
-      box-shadow: 0 0 0 2px var(--card), 0 0 0 4px #34c759;
-    }
-
-    .ios-switch[aria-checked="true"] {
-      background: #34c759;
-    }
-
-    .ios-switch-thumb {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: #ffffff;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 0 1px rgba(0, 0, 0, 0.1);
-      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-      transform: translateX(0);
-    }
-
-    .ios-switch[aria-checked="true"] .ios-switch-thumb {
-      transform: translateX(16px);
     }
 
     /* Modern SVG Trash Button */
@@ -969,12 +905,6 @@ export class SettingsComponent {
       this.memberNameTimeouts.delete(id);
     }, 450);
     this.memberNameTimeouts.set(id, t);
-  }
-
-  async toggleMemberActive(member: Member): Promise<void> {
-    await this.ledgerStore.updateMember(member.id, { active: !member.active });
-    const status = !member.active ? 'active' : 'paused';
-    this.toast.show(`${member.name} marked as ${status}`, 'info');
   }
 
   confirmDeleteMember(m: Member): void {
