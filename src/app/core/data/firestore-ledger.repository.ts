@@ -363,6 +363,38 @@ export class FirestoreLedgerRepository implements LedgerRepository {
     }
   }
 
+  async savePushSubscription(subData: Record<string, unknown>): Promise<void> {
+    try {
+      const subId = (subData['id'] as string) || crypto.randomUUID();
+      const subRef = doc(this.db, 'loans', PRIMARY_LOAN_ID, 'push_subscriptions', subId);
+      await setDoc(subRef, cleanForFirestore(subData), { merge: true });
+    } catch (err: unknown) {
+      console.warn('[FirestoreLedgerRepository] savePushSubscription error:', err);
+    }
+  }
+
+  async saveSmsConfig(config: Record<string, unknown>): Promise<void> {
+    try {
+      const cfgRef = doc(this.db, 'loans', PRIMARY_LOAN_ID, 'settings', 'sms_gateway');
+      await setDoc(cfgRef, cleanForFirestore(config), { merge: true });
+    } catch (err: unknown) {
+      console.warn('[FirestoreLedgerRepository] saveSmsConfig error:', err);
+    }
+  }
+
+  async getSmsConfig(): Promise<Record<string, unknown> | null> {
+    try {
+      const cfgRef = doc(this.db, 'loans', PRIMARY_LOAN_ID, 'settings', 'sms_gateway');
+      const snap = await getDoc(cfgRef);
+      if (snap.exists()) {
+        return snap.data();
+      }
+    } catch (err: unknown) {
+      console.warn('[FirestoreLedgerRepository] getSmsConfig error:', err);
+    }
+    return null;
+  }
+
   private purgeLegacyLocalStorage(): void {
     if (typeof localStorage !== 'undefined') {
       try {

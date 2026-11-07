@@ -13,4 +13,6 @@ export * from './hash-chain';
 export * from './analytics';
 export * from './broadcast';
 export * from './haptics';
+export * from './sms-dispatcher';
+export * from './push-notification.service';
 

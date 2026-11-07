@@ -16,20 +16,27 @@ import {
 import {
   buildAnnualReportMailtoUrl,
   buildDailyInterestBroadcast,
+  buildDailyInterestSms,
   buildMonthlyDueReminder,
   computeDailyInterest,
+  dispatchSms,
   formatCompactPaise,
   formatPaise,
   generateAnnualExcelSpreadsheet,
+  loadLocalSmsConfig,
   Member,
   MemberStatistics,
   Paise,
   paise,
+  PushNotificationService,
+  saveLocalSmsConfig,
+  SmsGatewayConfig,
   toPaise,
   toRupees,
   triggerHaptic,
   ZERO_PAISE,
 } from '../../core/engine';
+import { FirestoreLedgerRepository } from '../../core/data/firestore-ledger.repository';
 
 @Component({
   selector: 'app-settings',
@@ -412,6 +419,14 @@ import {
           >
             📊 Nov Excel &amp; Email
           </button>
+          <button
+            type="button"
+            class="settings-pill-tab"
+            [class.active]="alertsTab() === 'push_sms'"
+            (click)="selectAlertsTab('push_sms')"
+          >
+            📲 Push &amp; SMS Hub
+          </button>
         </div>
 
         <!-- TAB 1: DAILY 9 AM INTEREST -->
@@ -445,6 +460,45 @@ import {
                 Share to Family WhatsApp Group
               </a>
             </div>
+
+            <!-- Direct Test Buttons for iPhone Push & SMS -->
+            <div class="quick-test-actions-row">
+              <button
+                type="button"
+                class="quick-test-btn push-btn"
+                (click)="triggerTestPush()"
+                [disabled]="isTestingPush()"
+              >
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+                  <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/>
+                </svg>
+                {{ isTestingPush() ? 'Firing Push...' : '⚡ Test iPhone Lock-Screen Push' }}
+              </button>
+
+              <button
+                type="button"
+                class="quick-test-btn sms-btn"
+                (click)="triggerTestSms()"
+                [disabled]="isSendingSms()"
+              >
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+                  <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM9 11H7V9h2v2zm4 0h-2V9h2v2zm4 0h-2V9h2v2z"/>
+                </svg>
+                {{ isSendingSms() ? 'Sending SMS...' : '📲 Send Test SMS to 8105242578' }}
+              </button>
+            </div>
+
+            @if (pushTestStatus()) {
+              <div class="quick-feedback-note push-note" [class.success]="pushTestStatus()?.startsWith('✓')">
+                {{ pushTestStatus() }}
+              </div>
+            }
+
+            @if (smsStatusMessage()) {
+              <div class="quick-feedback-note sms-note" [class.success]="smsStatusMessage()?.startsWith('✓')">
+                {{ smsStatusMessage() }}
+              </div>
+            }
 
             <!-- Direct Personal Chips -->
             <div class="direct-chips-container">
@@ -537,6 +591,118 @@ import {
         </svg>
         Send Email to Vishwas &amp; Vikas
       </a>
+    </div>
+  </div>
+}
+
+<!-- TAB 4: PUSH & SMS GATEWAY HUB -->
+@if (alertsTab() === 'push_sms') {
+  <div class="alerts-tab-content">
+    <p class="section-sub" style="margin-bottom: 16px">
+      Configure and trigger real lock-screen banners on your iPhone 17 Pro Max and automated SMS to +918105242578.
+    </p>
+
+    <!-- SECTION A: IPHONE LOCK-SCREEN PUSH -->
+    <div class="settings-sub-panel">
+      <div class="sub-panel-header">
+        <div class="panel-icon-wrap push-icon">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/>
+          </svg>
+        </div>
+        <div class="sub-panel-text">
+          <h4 class="sub-panel-title">iPhone Lock-Screen Web Push</h4>
+          <p class="sub-panel-desc">Fires native lock-screen notification banners on iPhone 17 Pro Max via Apple APNs.</p>
+        </div>
+        <div class="status-pill" [class.granted]="pushService.permission() === 'granted'" [class.denied]="pushService.permission() === 'denied'">
+          {{ pushService.permission() === 'granted' ? '● Active' : pushService.permission() === 'denied' ? '✕ Blocked' : '○ Needed' }}
+        </div>
+      </div>
+
+      <div class="panel-action-grid">
+        @if (pushService.permission() !== 'granted') {
+          <button type="button" class="panel-btn enable-push-btn" (click)="triggerEnablePush()" [disabled]="pushService.isBusy()">
+            🔔 Enable iPhone Push Banners
+          </button>
+        }
+        <button type="button" class="panel-btn test-push-btn" (click)="triggerTestPush()" [disabled]="isTestingPush()">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+            <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/>
+          </svg>
+          {{ isTestingPush() ? 'Firing Push...' : '⚡ Trigger Test Push to iPhone' }}
+        </button>
+      </div>
+
+      @if (pushTestStatus()) {
+        <div class="push-status-note" [class.success]="pushTestStatus()?.startsWith('✓')">
+          {{ pushTestStatus() }}
+        </div>
+      }
+    </div>
+
+    <!-- SECTION B: AUTOMATED SMS GATEWAY -->
+    <div class="settings-sub-panel" style="margin-top: 14px;">
+      <div class="sub-panel-header">
+        <div class="panel-icon-wrap sms-icon">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM9 11H7V9h2v2zm4 0h-2V9h2v2zm4 0h-2V9h2v2z"/>
+          </svg>
+        </div>
+        <div class="sub-panel-text">
+          <h4 class="sub-panel-title">Automated SMS Gateway</h4>
+          <p class="sub-panel-desc">Direct text message delivery to Vishwas (+918105242578) via Fast2SMS.</p>
+        </div>
+        <div class="status-pill granted">
+          8105242578
+        </div>
+      </div>
+
+      <!-- Fast2SMS API Key Input -->
+      <div class="sms-input-group">
+        <div class="sms-label-row">
+          <label for="fast2sms-key-field" class="sms-input-label">Fast2SMS API Key (for direct carrier SMS):</label>
+          <a href="https://www.fast2sms.com" target="_blank" class="get-key-link">Get Free Key (50 SMS) ↗</a>
+        </div>
+        <input
+          id="fast2sms-key-field"
+          type="password"
+          class="sms-key-field"
+          placeholder="Paste Fast2SMS API Key here..."
+          [value]="smsConfig().fast2smsApiKey || ''"
+          (input)="onSmsApiKeyInput($event)"
+        />
+        <small class="sms-helper-text">
+          Sign up free at fast2sms.com to get your API key with 50 free credits for India SMS.
+        </small>
+      </div>
+
+      <div class="panel-action-grid">
+        <button
+          type="button"
+          class="panel-btn test-sms-btn"
+          (click)="triggerTestSms()"
+          [disabled]="isSendingSms()"
+        >
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+            <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM9 11H7V9h2v2zm4 0h-2V9h2v2zm4 0h-2V9h2v2z"/>
+          </svg>
+          {{ isSendingSms() ? 'Sending SMS...' : '📲 Send Test SMS to 8105242578' }}
+        </button>
+
+        <a
+          [href]="getMemberDailyWhatsApp(getMember('mem-vishwas') || { id: 'mem-vishwas', name: 'Vishwas', active: true, colorIndex: 0, phone: '8105242578', createdAt: '', updatedAt: '' })"
+          target="_blank"
+          class="panel-btn whatsapp-direct-btn"
+        >
+          💬 Free WhatsApp Direct (No Key Needed)
+        </a>
+      </div>
+
+      @if (smsStatusMessage()) {
+        <div class="sms-status-note" [class.success]="smsStatusMessage()?.startsWith('✓')">
+          {{ smsStatusMessage() }}
+        </div>
+      }
     </div>
   </div>
 }
@@ -1704,6 +1870,292 @@ import {
       }
     }
 
+    /* Quick Test Action Buttons */
+    .quick-test-actions-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .quick-test-btn {
+      flex: 1;
+      min-width: 170px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1.5px solid transparent;
+      transition: all 0.2s ease;
+
+      &:active {
+        transform: scale(0.97);
+      }
+    }
+
+    .quick-test-btn.push-btn {
+      background: rgba(99, 102, 241, 0.12);
+      color: #6366f1;
+      border-color: rgba(99, 102, 241, 0.25);
+
+      &:hover {
+        background: rgba(99, 102, 241, 0.18);
+      }
+    }
+
+    .quick-test-btn.sms-btn {
+      background: rgba(16, 185, 129, 0.12);
+      color: #10b981;
+      border-color: rgba(16, 185, 129, 0.25);
+
+      &:hover {
+        background: rgba(16, 185, 129, 0.18);
+      }
+    }
+
+    .quick-feedback-note {
+      margin-top: 8px;
+      padding: 9px 12px;
+      border-radius: 10px;
+      font-size: 11.5px;
+      font-weight: 600;
+      line-height: 1.4;
+      background: rgba(238, 77, 107, 0.1);
+      color: #ee4d6b;
+      border: 1px solid rgba(238, 77, 107, 0.2);
+
+      &.success {
+        background: rgba(15, 178, 124, 0.1);
+        color: #0fb27c;
+        border-color: rgba(15, 178, 124, 0.25);
+      }
+    }
+
+    /* Sub-panels in Push & SMS Hub */
+    .settings-sub-panel {
+      background: var(--card-inner, rgba(0, 0, 0, 0.03));
+      border: 1.5px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .sub-panel-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .panel-icon-wrap {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+
+      &.push-icon {
+        background: rgba(99, 102, 241, 0.12);
+        color: #6366f1;
+      }
+
+      &.sms-icon {
+        background: rgba(16, 185, 129, 0.12);
+        color: #10b981;
+      }
+    }
+
+    .sub-panel-text {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .sub-panel-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--ink);
+      margin: 0 0 3px 0;
+      letter-spacing: -0.01em;
+    }
+
+    .sub-panel-desc {
+      font-size: 11.5px;
+      color: var(--muted);
+      margin: 0;
+      line-height: 1.4;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+      background: rgba(245, 159, 0, 0.12);
+      color: #f59f00;
+      border: 1px solid rgba(245, 159, 0, 0.25);
+
+      &.granted {
+        background: rgba(16, 185, 129, 0.12);
+        color: #10b981;
+        border-color: rgba(16, 185, 129, 0.25);
+      }
+
+      &.denied {
+        background: rgba(238, 77, 107, 0.12);
+        color: #ee4d6b;
+        border-color: rgba(238, 77, 107, 0.25);
+      }
+    }
+
+    .panel-action-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .panel-btn {
+      flex: 1;
+      min-width: 170px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      border: 1.5px solid transparent;
+
+      &:active {
+        transform: scale(0.98);
+      }
+    }
+
+    .enable-push-btn {
+      background: #6366f1;
+      color: #ffffff;
+      box-shadow: 0 6px 16px -3px rgba(99, 102, 241, 0.4);
+
+      &:hover {
+        background: #4f46e5;
+      }
+    }
+
+    .test-push-btn {
+      background: rgba(99, 102, 241, 0.1);
+      color: #6366f1;
+      border-color: rgba(99, 102, 241, 0.3);
+
+      &:hover {
+        background: rgba(99, 102, 241, 0.16);
+      }
+    }
+
+    .test-sms-btn {
+      background: #10b981;
+      color: #ffffff;
+      box-shadow: 0 6px 16px -3px rgba(16, 185, 129, 0.4);
+
+      &:hover {
+        background: #059669;
+      }
+    }
+
+    .whatsapp-direct-btn {
+      background: rgba(37, 211, 102, 0.1);
+      color: #128c7e;
+      border-color: rgba(37, 211, 102, 0.3);
+
+      &:hover {
+        background: rgba(37, 211, 102, 0.16);
+      }
+    }
+
+    .sms-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .sms-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sms-input-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .get-key-link {
+      font-size: 11px;
+      font-weight: 700;
+      color: #6366f1;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+
+    .sms-key-field {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px 14px;
+      border-radius: 11px;
+      border: 1.5px solid var(--border);
+      background: var(--card, #ffffff);
+      color: var(--ink);
+      font-size: 12.5px;
+      font-family: inherit;
+      outline: none;
+      transition: all 0.2s ease;
+
+      &:focus {
+        border-color: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+      }
+    }
+
+    .sms-helper-text {
+      font-size: 10.5px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .push-status-note,
+    .sms-status-note {
+      padding: 10px 14px;
+      border-radius: 11px;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.4;
+      background: rgba(238, 77, 107, 0.1);
+      color: #ee4d6b;
+      border: 1px solid rgba(238, 77, 107, 0.2);
+
+      &.success {
+        background: rgba(16, 185, 129, 0.1);
+        color: #059669;
+        border-color: rgba(16, 185, 129, 0.25);
+      }
+    }
+
     /* Warning Card */
     .alert-warning-card {
       background: rgba(245, 159, 0, 0.12);
@@ -1790,6 +2242,8 @@ export class SettingsComponent {
   readonly ledgerStore = inject(LedgerStore);
   readonly userProfile = inject(UserProfileStore);
   readonly settings = inject(SettingsStore);
+  readonly pushService = inject(PushNotificationService);
+  private readonly repo = inject(FirestoreLedgerRepository);
 
   readonly formatPaise = formatPaise;
   readonly formatCompactPaise = formatCompactPaise;
@@ -1809,17 +2263,61 @@ export class SettingsComponent {
   readonly memberToDelete = signal<Member | null>(null);
   readonly isDeleteConfirmOpen = signal(false);
 
-  readonly alertsTab = signal<'daily' | 'monthly' | 'annual'>('daily');
+  readonly alertsTab = signal<'daily' | 'monthly' | 'annual' | 'push_sms'>('daily');
+
+  // Push & SMS state
+  readonly isTestingPush = signal(false);
+  readonly pushTestStatus = signal<string | null>(null);
+
+  readonly smsConfig = signal<SmsGatewayConfig>(loadLocalSmsConfig());
+  readonly isSendingSms = signal(false);
+  readonly smsStatusMessage = signal<string | null>(null);
+  readonly smsTargetPhone = signal('8105242578');
 
   private lastHapticTime = 0;
 
-  selectAlertsTab(tab: 'daily' | 'monthly' | 'annual'): void {
+  selectAlertsTab(tab: 'daily' | 'monthly' | 'annual' | 'push_sms'): void {
     const now = Date.now();
     if (now - this.lastHapticTime > 60) {
       this.lastHapticTime = now;
       triggerHaptic('selection');
     }
     this.alertsTab.set(tab);
+  }
+
+  async triggerTestPush(): Promise<void> {
+    this.isTestingPush.set(true);
+    triggerHaptic('medium');
+    const res = await this.pushService.sendLocalTestNotification(
+      '🏦 SBI Home Loan Daily Update',
+      `Today's Interest: +${this.formatPaise(this.dailyInterest())} | Total Balance: ${this.formatPaise(this.effectiveTodayBalance())}. Lock-screen banner active on your iPhone!`
+    );
+    this.pushTestStatus.set(res.message);
+    this.isTestingPush.set(false);
+  }
+
+  async triggerEnablePush(): Promise<void> {
+    triggerHaptic('selection');
+    const res = await this.pushService.requestPermissionAndSubscribe('mem-vishwas', '8105242578');
+    this.pushTestStatus.set(res.message);
+  }
+
+  async triggerTestSms(): Promise<void> {
+    this.isSendingSms.set(true);
+    triggerHaptic('medium');
+    const msg = buildDailyInterestSms(this.ledgerStore.ledgerState());
+    const res = await dispatchSms(this.smsTargetPhone(), msg, this.smsConfig());
+    this.smsStatusMessage.set(res.message);
+    this.isSendingSms.set(false);
+  }
+
+  onSmsApiKeyInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const key = input.value.trim();
+    const updated: SmsGatewayConfig = { ...this.smsConfig(), fast2smsApiKey: key };
+    this.smsConfig.set(updated);
+    saveLocalSmsConfig(updated);
+    void this.repo.saveSmsConfig({ fast2smsApiKey: key, updatedAt: new Date().toISOString() });
   }
 
   readonly dailyInterest = computed<Paise>(() => {

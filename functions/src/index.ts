@@ -213,13 +213,70 @@ export const annualNovemberExcelReport = onSchedule(
 );
 
 /**
- * Helper to dispatch SMS / WhatsApp notifications.
- * Can be hooked up to Fast2SMS, Twilio, or WhatsApp Cloud API.
+ * Helper to dispatch SMS notifications via Fast2SMS or Twilio.
+ * Reads API key from Firestore settings (/loans/loan-primary/settings/sms_gateway) or environment.
  */
 async function dispatchMessage(phone: string, text: string): Promise<void> {
-  logger.info(`[Dispatch] Sending notification to ${phone}:`);
+  const cleanPhone = phone.replace(/\D/g, '').replace(/^91/, '');
+  logger.info(`[Dispatch] Sending SMS to ${cleanPhone}:`);
   logger.info(text);
-  // Optional: Connect to your SMS/WhatsApp provider API (e.g. Twilio / Fast2SMS)
-  // fetch('https://api.twilio.com/...', ...)
+
+  try {
+    const cfgSnap = await db.doc(`loans/${PRIMARY_LOAN_ID}/settings/sms_gateway`).get();
+    const config = cfgSnap.exists ? cfgSnap.data() : {};
+    const fast2smsKey = process.env.FAST2SMS_API_KEY || config?.fast2smsApiKey;
+
+    if (fast2smsKey) {
+      const response = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+        method: 'POST',
+        headers: {
+          authorization: fast2smsKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          route: 'q',
+          message: text,
+          flash: 0,
+          numbers: cleanPhone,
+        }),
+      });
+      const resData = await response.json();
+      logger.info(`[Fast2SMS] Response for ${cleanPhone}:`, resData);
+      return;
+    }
+
+    const twilioSid = process.env.TWILIO_ACCOUNT_SID || config?.twilioAccountSid;
+    const twilioToken = process.env.TWILIO_AUTH_TOKEN || config?.twilioAuthToken;
+    const twilioFrom = process.env.TWILIO_FROM_NUMBER || config?.twilioFromNumber;
+
+    if (twilioSid && twilioToken && twilioFrom) {
+      const auth = Buffer.from(`${twilioSid}:${twilioToken}`).toString('base64');
+      const bodyParams = new URLSearchParams({
+        To: `+91${cleanPhone}`,
+        From: twilioFrom,
+        Body: text,
+      });
+
+      const response = await fetch(
+        `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Basic ${auth}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: bodyParams.toString(),
+        }
+      );
+      const resData = await response.json();
+      logger.info(`[Twilio] Response for ${cleanPhone}:`, resData);
+      return;
+    }
+
+    logger.info(`[Dispatch] No active SMS gateway configured. Message logged above.`);
+  } catch (err) {
+    logger.error(`[Dispatch] Error delivering SMS to ${cleanPhone}:`, err);
+  }
 }
+
 
