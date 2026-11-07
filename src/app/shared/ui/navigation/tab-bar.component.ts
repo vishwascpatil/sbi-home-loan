@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, output } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { triggerHaptic } from '../../../core/engine';
 
 @Component({
   selector: 'app-tab-bar',
@@ -16,6 +17,8 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         [routerLinkActiveOptions]="{ exact: true }"
         class="dock-item"
         aria-label="Home"
+        (pointerdown)="triggerFeedback()"
+        (click)="triggerFeedback()"
       >
         <svg class="dock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 10.5 12 3l9 7.5V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
@@ -28,7 +31,8 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
       <button
         type="button"
         class="dock-action-btn"
-        (click)="openAdd.emit()"
+        (click)="onActionClick()"
+        (pointerdown)="triggerFeedback()"
         aria-label="Add transaction"
         title="Add transaction"
       >
@@ -44,6 +48,8 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         routerLinkActive="active"
         class="dock-item"
         aria-label="Members"
+        (pointerdown)="triggerFeedback()"
+        (click)="triggerFeedback()"
       >
         <svg class="dock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
@@ -176,4 +182,19 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 })
 export class TabBarComponent {
   readonly openAdd = output<void>();
+
+  private lastHaptic = 0;
+
+  triggerFeedback(): void {
+    const now = Date.now();
+    if (now - this.lastHaptic > 60) {
+      this.lastHaptic = now;
+      triggerHaptic('light');
+    }
+  }
+
+  onActionClick(): void {
+    this.triggerFeedback();
+    this.openAdd.emit();
+  }
 }

@@ -20,6 +20,7 @@ import {
   toPaise,
   toRupees,
   Transaction,
+  triggerHaptic,
 } from '../../core/engine';
 import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-transaction-sheet.component';
 import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.component';
@@ -77,6 +78,8 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
           class="top-circle-action-btn"
           aria-label="Settings"
           title="Settings"
+          (pointerdown)="triggerNavHaptic()"
+          (click)="triggerNavHaptic()"
         >
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"/>
@@ -1388,6 +1391,16 @@ export class HomeComponent {
   readonly userProfile = inject(UserProfileStore);
   readonly settings = inject(SettingsStore);
   readonly router = inject(Router);
+
+  private lastHapticTime = 0;
+
+  triggerNavHaptic(): void {
+    const now = Date.now();
+    if (now - this.lastHapticTime > 60) {
+      this.lastHapticTime = now;
+      triggerHaptic('light');
+    }
+  }
 
   readonly formatPaise = formatPaise;
   readonly formatCompactPaise = formatCompactPaise;

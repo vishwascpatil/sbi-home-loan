@@ -6,7 +6,7 @@ import {
 } from '@angular/core';
 import { LedgerStore, UserProfileStore } from '../../core/state';
 import { AvatarComponent } from '../../shared/ui';
-import { formatPaise, Member } from '../../core/engine';
+import { formatPaise, Member, triggerHaptic } from '../../core/engine';
 
 @Component({
   selector: 'app-welcome-board',
@@ -427,6 +427,7 @@ export class WelcomeBoardComponent {
   }
 
   selectMember(m: Member): void {
+    triggerHaptic('selection');
     this.selectedId.set(m.id);
     // Smooth transition
     setTimeout(() => {

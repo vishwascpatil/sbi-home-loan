@@ -26,6 +26,7 @@ import {
   paise,
   toPaise,
   toRupees,
+  triggerHaptic,
   ZERO_PAISE,
 } from '../../core/engine';
 
@@ -314,7 +315,8 @@ import {
             type="button"
             class="settings-pill-tab"
             [class.active]="alertsTab() === 'daily'"
-            (click)="alertsTab.set('daily')"
+            (click)="selectAlertsTab('daily')"
+            (pointerdown)="selectAlertsTab('daily')"
           >
             ☀️ Daily 9 AM Interest
           </button>
@@ -322,7 +324,8 @@ import {
             type="button"
             class="settings-pill-tab"
             [class.active]="alertsTab() === 'monthly'"
-            (click)="alertsTab.set('monthly')"
+            (click)="selectAlertsTab('monthly')"
+            (pointerdown)="selectAlertsTab('monthly')"
           >
             🔔 1st of Month Reminders
           </button>
@@ -330,7 +333,8 @@ import {
             type="button"
             class="settings-pill-tab"
             [class.active]="alertsTab() === 'annual'"
-            (click)="alertsTab.set('annual')"
+            (click)="selectAlertsTab('annual')"
+            (pointerdown)="selectAlertsTab('annual')"
           >
             📊 Nov Excel &amp; Email
           </button>
@@ -1359,6 +1363,17 @@ export class SettingsComponent {
   readonly isDeleteConfirmOpen = signal(false);
 
   readonly alertsTab = signal<'daily' | 'monthly' | 'annual'>('daily');
+
+  private lastHapticTime = 0;
+
+  selectAlertsTab(tab: 'daily' | 'monthly' | 'annual'): void {
+    const now = Date.now();
+    if (now - this.lastHapticTime > 60) {
+      this.lastHapticTime = now;
+      triggerHaptic('selection');
+    }
+    this.alertsTab.set(tab);
+  }
 
   readonly dailyInterest = computed<Paise>(() => {
     const loan = this.ledgerStore.loan();

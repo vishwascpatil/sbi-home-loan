@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { LedgerStore, UserProfileStore } from '../../core/state';
 import {
   addPaise,
@@ -8,6 +8,7 @@ import {
   formatPaise,
   MemberStatistics,
   Paise,
+  triggerHaptic,
   ZERO_PAISE,
 } from '../../core/engine';
 import {
@@ -22,6 +23,7 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    RouterLink,
     CountUpDirective,
     AvatarComponent,
     ProgressBarComponent,
@@ -61,6 +63,20 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
             </div>
           </div>
         </div>
+
+        <a
+          routerLink="/settings"
+          class="top-circle-action-btn"
+          aria-label="Settings"
+          title="Settings"
+          (pointerdown)="triggerNavHaptic()"
+          (click)="triggerNavHaptic()"
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </a>
       </header>
 
       <!-- 2. Matte Black Hero Card (Go Premium style in screenshot) -->
@@ -393,6 +409,32 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       color: #111216;
       letter-spacing: -0.02em;
       margin: 0;
+    }
+
+    .top-circle-action-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      color: #111216;
+      text-decoration: none;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &:hover {
+        background: #f7f8fa;
+        transform: scale(1.06);
+        color: #111216;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+      }
+
+      &:active {
+        transform: scale(0.94);
+      }
     }
 
     /* 2. Matte Black Hero Card (Living Cyber-Card / Video UI) */
@@ -1132,6 +1174,16 @@ export class MembersComponent {
   readonly ledgerStore = inject(LedgerStore);
   readonly userProfile = inject(UserProfileStore);
   readonly router = inject(Router);
+
+  private lastHapticTime = 0;
+
+  triggerNavHaptic(): void {
+    const now = Date.now();
+    if (now - this.lastHapticTime > 60) {
+      this.lastHapticTime = now;
+      triggerHaptic('light');
+    }
+  }
 
   readonly isAddTxOpen = signal(false);
   readonly selectedMemberId = signal<string | undefined>(undefined);

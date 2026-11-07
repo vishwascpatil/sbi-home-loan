@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, output } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { triggerHaptic } from '../../../core/engine';
 
 @Component({
   selector: 'app-side-rail',
@@ -16,14 +17,14 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
       </div>
 
       <nav class="rail-links">
-        <a routerLink="/home" routerLinkActive="active" class="rail-link">
+        <a routerLink="/home" routerLinkActive="active" class="rail-link" (pointerdown)="triggerFeedback()" (click)="triggerFeedback()">
           <svg class="rail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10" />
           </svg>
           <span>Home</span>
         </a>
 
-        <a routerLink="/members" routerLinkActive="active" class="rail-link">
+        <a routerLink="/members" routerLinkActive="active" class="rail-link" (pointerdown)="triggerFeedback()" (click)="triggerFeedback()">
           <svg class="rail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
             <circle cx="9" cy="7" r="4"></circle>
@@ -31,7 +32,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
           <span>Members</span>
         </a>
 
-        <a routerLink="/members/history" routerLinkActive="active" class="rail-link">
+        <a routerLink="/members/history" routerLinkActive="active" class="rail-link" (pointerdown)="triggerFeedback()" (click)="triggerFeedback()">
           <svg class="rail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"></circle>
             <polyline points="12 6 12 12 16 14"></polyline>
@@ -39,7 +40,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
           <span>Payment History</span>
         </a>
 
-        <a routerLink="/settings" routerLinkActive="active" class="rail-link">
+        <a routerLink="/settings" routerLinkActive="active" class="rail-link" (pointerdown)="triggerFeedback()" (click)="triggerFeedback()">
           <svg class="rail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -52,7 +53,8 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         <button
           type="button"
           class="add-action-btn"
-          (click)="openAdd.emit()"
+          (click)="onActionClick()"
+          (pointerdown)="triggerFeedback()"
         >
           ＋ New Entry
         </button>
@@ -201,5 +203,20 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 })
 export class SideRailComponent {
   readonly openAdd = output<void>();
+
+  private lastHaptic = 0;
+
+  triggerFeedback(): void {
+    const now = Date.now();
+    if (now - this.lastHaptic > 60) {
+      this.lastHaptic = now;
+      triggerHaptic('light');
+    }
+  }
+
+  onActionClick(): void {
+    this.triggerFeedback();
+    this.openAdd.emit();
+  }
 }
 

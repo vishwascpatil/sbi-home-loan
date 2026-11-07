@@ -23,6 +23,7 @@ import {
   PaymentMode,
   toPaise,
   Transaction,
+  triggerHaptic,
 } from '../../core/engine';
 
 type FormType = 'contribution' | 'bankPayment' | 'withdrawal' | 'principalAdjustment';
@@ -749,6 +750,7 @@ export class AddEditTransactionSheetComponent implements OnChanges {
   }
 
   selectMember(m: Member): void {
+    triggerHaptic('light');
     this.selectedMemberId.set(m.id);
     const stats = this.ledgerStore.memberStats().find((s) => s.memberId === m.id);
     if (stats?.target) {
@@ -835,6 +837,7 @@ export class AddEditTransactionSheetComponent implements OnChanges {
         });
       }
 
+      triggerHaptic('success');
       this.dismissed.emit();
     } catch {
       // Ignore or log error silently
