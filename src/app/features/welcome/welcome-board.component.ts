@@ -41,7 +41,7 @@ import { formatPaise, Member, triggerHaptic } from '../../core/engine';
             <span>Family Member Profile</span>
           </div>
 
-          <h1 id="welcome-title" class="welcome-headline">Who is using this phone?</h1>
+          <h1 id="welcome-title" class="welcome-headline">Who are you?</h1>
           <p class="welcome-subtext">
             Choose your profile below. We'll save it to this phone so every time you open the app, it greets you with your personal loan numbers and targets.
           </p>
