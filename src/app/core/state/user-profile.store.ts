@@ -55,3 +55,4 @@ export class UserProfileStore {
     this.isWelcomeBoardOpen.set(true);
   }
 }
+

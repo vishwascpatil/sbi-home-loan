@@ -45,3 +45,4 @@ export class BrowserDeviceStorageAdapter implements DeviceStorageAdapter {
     }
   }
 }
+
