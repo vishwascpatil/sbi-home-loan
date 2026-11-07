@@ -39,3 +39,4 @@ export function triggerHaptic(type: HapticType = 'light'): void {
     // Graceful no-op on platforms or permissions where vibration is unavailable
   }
 }
+

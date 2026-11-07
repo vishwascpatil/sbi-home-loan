@@ -18,3 +18,4 @@ export class HapticDirective {
     triggerHaptic(this.hapticType() || 'light');
   }
 }
+
