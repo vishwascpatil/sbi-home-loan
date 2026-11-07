@@ -39,6 +39,18 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
   ],
   template: `
     <div class="home-page-container">
+      <!-- Living Video-feel Background Ambient Mesh -->
+      <div class="video-ambient-mesh" aria-hidden="true">
+        <div class="mesh-orb orb-violet"></div>
+        <div class="mesh-orb orb-pink"></div>
+        <div class="mesh-orb orb-emerald"></div>
+        <div class="mesh-orb orb-cyan"></div>
+        <svg class="mesh-wave-svg" viewBox="0 0 1440 320" preserveAspectRatio="none">
+          <path class="wave-path wave-path-1" d="M0,192L48,197.3C96,203,192,213,288,192C384,171,480,117,576,112C672,107,768,149,864,165.3C960,181,1056,171,1152,149.3C1248,128,1344,96,1392,80L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+          <path class="wave-path wave-path-2" d="M0,96L48,128C96,160,192,224,288,213.3C384,203,480,117,576,101.3C672,85,768,139,864,165.3C960,192,1056,192,1152,176C1248,160,1344,128,1392,112L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+        </svg>
+      </div>
+
       <!-- 1. Top User Profile Bar (Screenshot Matched) -->
       <header class="app-top-bar">
         <div
@@ -86,6 +98,25 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
 
       <!-- 2. Matte Black Hero Card (Current Loan Balance) -->
       <div class="matte-hero-banner" role="region" aria-label="Current Loan Balance">
+        <!-- Living Laser Trace Border (Conic Rotation) -->
+        <div class="hero-laser-border" aria-hidden="true"></div>
+
+        <!-- Internal Living Nebula Blooms -->
+        <div class="hero-nebula-glow nebula-1" aria-hidden="true"></div>
+        <div class="hero-nebula-glow nebula-2" aria-hidden="true"></div>
+
+        <!-- Floating Digital Particle Embers -->
+        <div class="hero-particles-field" aria-hidden="true">
+          <span class="particle p-1"></span>
+          <span class="particle p-2"></span>
+          <span class="particle p-3"></span>
+          <span class="particle p-4"></span>
+          <span class="particle p-5"></span>
+        </div>
+
+        <!-- Dynamic Shimmer Ray -->
+        <div class="hero-shimmer-sweep" aria-hidden="true"></div>
+
         <div class="hero-top-row">
           <div class="hero-rate-pill">
             <span class="lightning-bolt">⚡</span>
@@ -103,13 +134,11 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
         <!-- Hero Highlights Row: Today's Interest + Loan Cleared -->
         <div class="hero-pulse-strip">
           <div class="hero-glass-pill" (click)="isDailyLedgerOpen.set(true)" role="button" tabindex="0">
-            <span class="pill-dot glow-amber"></span>
             <span class="pill-main tabular-nums">+{{ formatPaise(dailyInterestCalculation().dailyInterest) }}</span>
             <span class="pill-sub">Today</span>
           </div>
 
           <div class="hero-glass-pill">
-            <span class="pill-dot glow-green"></span>
             <span class="pill-main tabular-nums">{{ repaidPercent().toFixed(1) }}%</span>
             <span class="pill-sub">Cleared ({{ formatCompactPaise(repaidAmount()) }})</span>
           </div>
@@ -126,6 +155,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
             (click)="isDailyLedgerOpen.set(true)"
             aria-label="View This Month Breakdown"
           >
+            <div class="card-iridescent-edge" aria-hidden="true"></div>
             <div class="card-top-header">
               <span class="card-caption-title">This Month</span>
               <span class="card-chevron-icon">›</span>
@@ -163,6 +193,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
             class="squircle-metric-card"
             aria-label="Loan Payoff Target"
           >
+            <div class="card-iridescent-edge" aria-hidden="true"></div>
             <div class="card-top-header">
               <span class="card-caption-title">Debt Free</span>
               <span class="card-badge-chip">{{ baselineSimResult()?.closureDate || 'Active' }}</span>
@@ -202,7 +233,10 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
         <div class="trend-feature-card">
           <div class="trend-card-header">
             <div>
-              <span class="trend-eyebrow-pill">Deposit Trend</span>
+              <span class="trend-eyebrow-pill">
+                <span class="live-pulse-dot" aria-hidden="true"></span>
+                <span>Deposit Trend</span>
+              </span>
               <h2 class="trend-main-heading" style="margin-top: 4px">Past 6 Months</h2>
             </div>
             <div class="trend-header-stats">
@@ -319,6 +353,78 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       box-sizing: border-box;
       overflow-x: hidden;
       padding: 0 0 96px;
+      position: relative;
+    }
+
+    /* Living Video-feel Background Ambient Mesh */
+    .video-ambient-mesh {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .mesh-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(85px);
+      opacity: 0.22;
+      will-change: transform;
+    }
+
+    .orb-violet {
+      width: 380px;
+      height: 380px;
+      background: radial-gradient(circle, #6c4cff 0%, #4f35ff 70%, transparent 100%);
+      top: -80px;
+      left: -90px;
+      animation: orbDrift1 18s ease-in-out infinite alternate;
+    }
+
+    .orb-pink {
+      width: 420px;
+      height: 420px;
+      background: radial-gradient(circle, #ff5f9e 0%, #ff8cb9 70%, transparent 100%);
+      top: 25%;
+      right: -110px;
+      animation: orbDrift2 22s ease-in-out infinite alternate;
+    }
+
+    .orb-emerald {
+      width: 340px;
+      height: 340px;
+      background: radial-gradient(circle, #0fb27c 0%, #34d399 70%, transparent 100%);
+      bottom: 12%;
+      left: -60px;
+      animation: orbDrift3 20s ease-in-out infinite alternate;
+    }
+
+    .orb-cyan {
+      width: 360px;
+      height: 360px;
+      background: radial-gradient(circle, #38bdf8 0%, #818cf8 70%, transparent 100%);
+      top: 62%;
+      right: -70px;
+      animation: orbDrift4 24s ease-in-out infinite alternate;
+    }
+
+    .mesh-wave-svg {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 200%;
+      height: 280px;
+      opacity: 0.07;
+      animation: waveFloat 16s linear infinite alternate;
+    }
+
+    .wave-path-1 {
+      fill: #6c4cff;
+    }
+
+    .wave-path-2 {
+      fill: #ff5f9e;
     }
 
     /* 1. Top User Profile Bar */
@@ -328,6 +434,9 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       align-items: center;
       margin: 8px 0 20px;
       padding: 0 4px;
+      position: relative;
+      z-index: 2;
+      animation: cinematicSlideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
     }
 
     .cloud-status-banner {
@@ -457,19 +566,130 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       }
     }
 
-    /* 2. Matte Black Hero Card (Bold, Minimal, High Contrast) */
+    /* 2. Matte Black Hero Card (Living Cyber-Card / Video UI) */
     .matte-hero-banner {
-      background: #111216;
+      background: #0f1118;
       color: #ffffff;
       border-radius: 28px;
-      padding: 22px 22px 20px;
+      padding: 24px 22px 22px;
       margin-bottom: 22px;
       display: flex;
       flex-direction: column;
       gap: 18px;
-      box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.28);
+      box-shadow: 0 20px 48px -10px rgba(10, 12, 20, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
       position: relative;
       overflow: hidden;
+      animation: heroCardEntrance 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 1.5px;
+        border-radius: 26.5px;
+        background: linear-gradient(150deg, #10121a 0%, #171a26 60%, #0d0f17 100%);
+        z-index: 1;
+        pointer-events: none;
+      }
+    }
+
+    /* Living Conic Laser Border Sweep */
+    .hero-laser-border {
+      position: absolute;
+      top: -150%;
+      left: -150%;
+      width: 400%;
+      height: 400%;
+      background: conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        transparent 50deg,
+        rgba(108, 76, 255, 0.95) 95deg,
+        rgba(255, 95, 158, 0.95) 135deg,
+        rgba(15, 178, 124, 0.95) 175deg,
+        transparent 215deg,
+        transparent 360deg
+      );
+      animation: laserSpin 6.5s linear infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Internal Living Nebula Blooms */
+    .hero-nebula-glow {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(48px);
+      pointer-events: none;
+      z-index: 2;
+      opacity: 0.36;
+      mix-blend-mode: screen;
+    }
+
+    .nebula-1 {
+      width: 220px;
+      height: 220px;
+      background: radial-gradient(circle, #6c4cff 0%, transparent 70%);
+      top: -40px;
+      right: -30px;
+      animation: nebulaMorph1 9s ease-in-out infinite alternate;
+    }
+
+    .nebula-2 {
+      width: 240px;
+      height: 240px;
+      background: radial-gradient(circle, #ff5f9e 0%, transparent 70%);
+      bottom: -60px;
+      left: 15%;
+      animation: nebulaMorph2 11s ease-in-out infinite alternate;
+    }
+
+    /* Floating Digital Particle Embers */
+    .hero-particles-field {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+      overflow: hidden;
+    }
+
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.85);
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.95), 0 0 16px rgba(108, 76, 255, 0.7);
+      bottom: -10px;
+      animation: particleRise 6s ease-in infinite;
+    }
+
+    .p-1 { left: 15%; animation-duration: 5.5s; animation-delay: 0s; width: 3px; height: 3px; }
+    .p-2 { left: 38%; animation-duration: 7.5s; animation-delay: 1.5s; width: 4px; height: 4px; }
+    .p-3 { left: 62%; animation-duration: 6.2s; animation-delay: 3s; width: 2.5px; height: 2.5px; }
+    .p-4 { left: 82%; animation-duration: 8.2s; animation-delay: 0.8s; width: 3.5px; height: 3.5px; }
+    .p-5 { left: 93%; animation-duration: 6.8s; animation-delay: 2.2s; width: 3px; height: 3px; }
+
+    /* Dynamic Shimmer Ray */
+    .hero-shimmer-sweep {
+      position: absolute;
+      top: -100%;
+      left: -100%;
+      width: 300%;
+      height: 300%;
+      background: linear-gradient(
+        115deg,
+        transparent 35%,
+        rgba(255, 255, 255, 0.12) 50%,
+        transparent 65%
+      );
+      pointer-events: none;
+      z-index: 2;
+      animation: shimmerSweep 5.5s ease-in-out infinite;
+    }
+
+    .hero-top-row,
+    .hero-main-stat,
+    .hero-pulse-strip {
+      position: relative;
+      z-index: 3;
     }
 
     .hero-top-row {
@@ -490,11 +710,14 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       border-radius: 99px;
       border: 1px solid rgba(255, 255, 255, 0.1);
       letter-spacing: -0.01em;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
     }
 
     .lightning-bolt {
       color: #f59e0b;
       font-size: 13px;
+      animation: liveBlink 2s ease-in-out infinite;
     }
 
     .hero-main-stat {
@@ -517,6 +740,8 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       letter-spacing: -0.035em;
       line-height: 1.05;
       color: #ffffff;
+      text-shadow: 0 0 35px rgba(255, 255, 255, 0.25);
+      animation: headlineBreathe 4s ease-in-out infinite alternate;
     }
 
     .hero-pulse-strip {
@@ -538,11 +763,12 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
       cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 
       &:hover {
-        background: rgba(255, 255, 255, 0.12);
-        transform: translateY(-1.5px);
+        background: rgba(255, 255, 255, 0.13);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
       }
 
       &:active {
@@ -554,19 +780,30 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       position: absolute;
       top: 12px;
       right: 12px;
-      width: 7px;
-      height: 7px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
 
       &.glow-amber {
         background: #f59e0b;
-        box-shadow: 0 0 10px rgba(245, 158, 11, 0.8);
+        color: #f59e0b;
+        box-shadow: 0 0 10px rgba(245, 158, 11, 0.9);
       }
 
       &.glow-green {
         background: #10b981;
-        box-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
+        color: #10b981;
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.9);
       }
+    }
+
+    .dot-radar {
+      position: absolute;
+      inset: -5px;
+      border-radius: 50%;
+      border: 1.5px solid currentColor;
+      opacity: 0;
+      animation: radarRing 2.2s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
     }
 
     .pill-main {
@@ -589,6 +826,8 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       display: flex;
       flex-direction: column;
       margin-bottom: 22px;
+      position: relative;
+      z-index: 2;
     }
 
     .section-main-heading {
@@ -597,6 +836,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       letter-spacing: -0.025em;
       color: #111216;
       margin: 0;
+      animation: cardPopUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
     }
 
     .section-title-bar {
@@ -604,6 +844,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       justify-content: space-between;
       align-items: center;
       margin: 0 4px 12px;
+      animation: cardPopUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
     }
 
     .section-see-all-btn {
@@ -614,10 +855,11 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       font-weight: 700;
       cursor: pointer;
       padding: 4px 6px;
-      transition: color 0.15s ease;
+      transition: color 0.15s ease, transform 0.15s ease;
 
       &:hover {
         color: #111216;
+        transform: translateX(2px);
       }
     }
 
@@ -642,16 +884,38 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       flex-direction: column;
       justify-content: space-between;
       min-height: 150px;
+      position: relative;
+      overflow: hidden;
       transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
 
+      &:first-child {
+        animation: cardPopLeft 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.14s both;
+      }
+
+      &:last-child {
+        animation: cardPopRight 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+      }
+
       &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.06);
+        transform: translateY(-4px) scale(1.015);
+        box-shadow: 0 16px 36px rgba(108, 76, 255, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04);
       }
 
       &:active {
         transform: scale(0.98);
       }
+    }
+
+    .card-iridescent-edge {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #6c4cff, #ff5f9e, #0fb27c, #6c4cff);
+      background-size: 300% 100%;
+      border-radius: 24px 24px 0 0;
+      animation: edgeGradientFlow 4.5s linear infinite;
     }
 
     .card-top-header {
@@ -751,18 +1015,27 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
 
     .squircle-item-row {
       background: #ffffff;
-      border: none;
+      border: 1px solid rgba(0, 0, 0, 0.04);
       width: 100%;
       border-radius: 22px;
       padding: 4px 6px 4px 4px;
       box-shadow: var(--shadow-card);
       display: flex;
       align-items: center;
-      transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease;
+      transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, border-color 0.2s ease;
+      animation: rowWaterfall 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+      &:nth-child(1) { animation-delay: 0.35s; }
+      &:nth-child(2) { animation-delay: 0.41s; }
+      &:nth-child(3) { animation-delay: 0.47s; }
+      &:nth-child(4) { animation-delay: 0.53s; }
+      &:nth-child(5) { animation-delay: 0.59s; }
+      &:nth-child(n+6) { animation-delay: 0.65s; }
 
       &:hover {
-        transform: translateY(-1.5px);
-        box-shadow: 0 6px 20px -2px rgba(0, 0, 0, 0.04);
+        transform: translateY(-2px) translateX(3px);
+        border-color: rgba(108, 76, 255, 0.2);
+        box-shadow: 0 8px 24px rgba(108, 76, 255, 0.08);
       }
     }
 
@@ -921,10 +1194,12 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       display: flex;
       flex-direction: column;
       gap: 16px;
+      animation: cardPopUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both;
       transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
 
       &:hover {
-        box-shadow: 0 10px 28px -4px rgba(0, 0, 0, 0.06);
+        transform: translateY(-2px);
+        box-shadow: 0 12px 32px -4px rgba(108, 76, 255, 0.08);
       }
     }
 
@@ -950,6 +1225,19 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       padding: 3px 9px;
       border-radius: 99px;
       letter-spacing: 0.02em;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .live-pulse-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #0fb27c;
+      box-shadow: 0 0 8px #0fb27c;
+      animation: liveBlink 1.8s ease-in-out infinite;
     }
 
     .trend-eyebrow-target {
@@ -998,6 +1286,138 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       background: rgba(16, 185, 129, 0.12);
       padding: 3px 8px;
       border-radius: var(--radius-pill, 99px);
+    }
+
+    /* Keyframe Animations for Living UI / Video Feel */
+    @keyframes laserSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes nebulaMorph1 {
+      0% { transform: scale(1) translate(0, 0); opacity: 0.28; }
+      50% { transform: scale(1.25) translate(-20px, 15px); opacity: 0.44; }
+      100% { transform: scale(1) translate(0, 0); opacity: 0.28; }
+    }
+
+    @keyframes nebulaMorph2 {
+      0% { transform: scale(1.2) translate(0, 0); opacity: 0.22; }
+      50% { transform: scale(0.9) translate(25px, -15px); opacity: 0.38; }
+      100% { transform: scale(1.2) translate(0, 0); opacity: 0.22; }
+    }
+
+    @keyframes particleRise {
+      0% { transform: translateY(0) scale(0.6); opacity: 0; }
+      20% { opacity: 0.85; }
+      80% { opacity: 0.85; }
+      100% { transform: translateY(-160px) scale(1.2); opacity: 0; }
+    }
+
+    @keyframes shimmerSweep {
+      0% { transform: translate(-50%, -50%) rotate(0deg); opacity: 0; }
+      20% { opacity: 1; }
+      50% { transform: translate(50%, 50%) rotate(0deg); opacity: 0; }
+      100% { transform: translate(50%, 50%) rotate(0deg); opacity: 0; }
+    }
+
+    @keyframes radarRing {
+      0% { transform: scale(0.8); opacity: 0.9; }
+      100% { transform: scale(2.8); opacity: 0; }
+    }
+
+    @keyframes headlineBreathe {
+      0% { text-shadow: 0 0 25px rgba(255, 255, 255, 0.2); }
+      100% { text-shadow: 0 0 45px rgba(255, 255, 255, 0.45), 0 0 15px rgba(108, 76, 255, 0.3); }
+    }
+
+    @keyframes orbDrift1 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(60px, 40px) scale(1.18); }
+    }
+
+    @keyframes orbDrift2 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(-50px, -60px) scale(1.22); }
+    }
+
+    @keyframes orbDrift3 {
+      0% { transform: translate(0, 0) scale(1.1); }
+      100% { transform: translate(40px, -30px) scale(0.9); }
+    }
+
+    @keyframes orbDrift4 {
+      0% { transform: translate(0, 0) scale(0.95); }
+      100% { transform: translate(-45px, 35px) scale(1.15); }
+    }
+
+    @keyframes waveFloat {
+      0% { transform: translateX(0) scaleY(1); }
+      100% { transform: translateX(-25%) scaleY(1.15); }
+    }
+
+    @keyframes cinematicSlideDown {
+      from { opacity: 0; transform: translateY(-16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes heroCardEntrance {
+      from { opacity: 0; transform: translateY(28px) scale(0.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes cardPopLeft {
+      from { opacity: 0; transform: translate3d(-20px, 20px, 0) scale(0.95); }
+      to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+    }
+
+    @keyframes cardPopRight {
+      from { opacity: 0; transform: translate3d(20px, 20px, 0) scale(0.95); }
+      to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+    }
+
+    @keyframes cardPopUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes edgeGradientFlow {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 300% 50%; }
+    }
+
+    @keyframes liveBlink {
+      0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 6px #0fb27c; }
+      50% { opacity: 0.4; transform: scale(0.7); box-shadow: none; }
+    }
+
+    @keyframes rowWaterfall {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .video-ambient-mesh,
+      .hero-laser-border,
+      .hero-nebula-glow,
+      .hero-particles-field,
+      .hero-shimmer-sweep,
+      .dot-radar,
+      .card-iridescent-edge,
+      .live-pulse-dot {
+        animation: none !important;
+        display: none !important;
+      }
+
+      .app-top-bar,
+      .matte-hero-banner,
+      .squircle-metric-card,
+      .trend-feature-card,
+      .section-main-heading,
+      .section-title-bar,
+      .squircle-item-row {
+        animation: none !important;
+        transform: none !important;
+      }
     }
   `,
 })

@@ -50,6 +50,11 @@ const PAYMENT_MODES: PaymentMode[] = [
       [title]="sheetTitle()"
       (dismissed)="cancelSheet()"
     >
+      <!-- Ambient Shifting Top Edge & Glow Blobs -->
+      <div class="sheet-ambient-edge" aria-hidden="true"></div>
+      <div class="sheet-ambient-orb orb-sheet-1" aria-hidden="true"></div>
+      <div class="sheet-ambient-orb orb-sheet-2" aria-hidden="true"></div>
+
       <form class="tx-form" (ngSubmit)="saveTransaction()">
         <!-- Locked Period Alert Banner -->
         @if (isLocked()) {
@@ -137,7 +142,9 @@ const PAYMENT_MODES: PaymentMode[] = [
         <!-- Action Buttons -->
         <div class="sheet-actions">
           <button type="submit" class="submit-btn" [disabled]="numericAmount() <= 0 || isLocked()">
-            {{ isEdit() ? 'Save Changes' : 'Save Payment' }}
+            <span class="btn-laser-halo" aria-hidden="true"></span>
+            <span class="btn-shimmer" aria-hidden="true"></span>
+            <span class="btn-text">{{ isEdit() ? 'Save Changes' : 'Save Payment' }}</span>
           </button>
 
           @if (isEdit()) {
@@ -199,7 +206,50 @@ const PAYMENT_MODES: PaymentMode[] = [
     </app-bottom-sheet>
   `,
   styles: `
+    .sheet-ambient-edge {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      border-radius: 24px 24px 0 0;
+      background: linear-gradient(90deg, #6c4cff, #ff5f9e, #0fb27c, #6c4cff);
+      background-size: 200% 100%;
+      animation: edgeGradientFlow 4s linear infinite;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .sheet-ambient-orb {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      filter: blur(44px);
+      z-index: 0;
+      opacity: 0.22;
+    }
+
+    .orb-sheet-1 {
+      top: -30px;
+      right: -20px;
+      width: 140px;
+      height: 140px;
+      background: radial-gradient(circle, #ff5f9e 0%, rgba(108, 76, 255, 0.4) 60%, transparent 80%);
+      animation: orbDrift1 7s ease-in-out infinite alternate;
+    }
+
+    .orb-sheet-2 {
+      bottom: 60px;
+      left: -20px;
+      width: 130px;
+      height: 130px;
+      background: radial-gradient(circle, #0fb27c 0%, rgba(108, 76, 255, 0.3) 60%, transparent 80%);
+      animation: orbDrift2 9s ease-in-out infinite alternate;
+    }
+
     .tx-form {
+      position: relative;
+      z-index: 1;
       display: flex;
       flex-direction: column;
       gap: 18px;
@@ -212,7 +262,12 @@ const PAYMENT_MODES: PaymentMode[] = [
       gap: 6px;
       width: 100%;
       box-sizing: border-box;
+      animation: fieldCascade 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
     }
+
+    .form-group:nth-of-type(1) { animation-delay: 0.04s; }
+    .form-group:nth-of-type(2) { animation-delay: 0.10s; }
+    .form-group:nth-of-type(3) { animation-delay: 0.16s; }
 
     .field-label {
       font-size: 12px;
@@ -241,6 +296,13 @@ const PAYMENT_MODES: PaymentMode[] = [
       border-radius: 18px;
       outline: none;
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      animation: avatarBouncyIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+
+      &:nth-child(1) { animation-delay: 0.05s; }
+      &:nth-child(2) { animation-delay: 0.09s; }
+      &:nth-child(3) { animation-delay: 0.13s; }
+      &:nth-child(4) { animation-delay: 0.17s; }
+      &:nth-child(5) { animation-delay: 0.21s; }
 
       &:hover {
         transform: translateY(-2px);
@@ -255,35 +317,55 @@ const PAYMENT_MODES: PaymentMode[] = [
       position: relative;
       display: inline-flex;
       border-radius: 50%;
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .member-select-card.selected .avatar-ring-container {
-      transform: scale(1.08);
-      box-shadow: 0 0 0 3px #ffffff, 0 0 0 5.5px #111216, 0 8px 20px rgba(17, 18, 22, 0.25);
+      transform: scale(1.1);
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset: -4px;
+        border-radius: 50%;
+        background: conic-gradient(from 0deg, #6c4cff, #ff5f9e, #0fb27c, #6c4cff);
+        animation: laserSpin 2.5s linear infinite;
+        z-index: 0;
+        box-shadow: 0 0 14px rgba(108, 76, 255, 0.45);
+      }
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: -1.5px;
+        border-radius: 50%;
+        background: var(--bg-card, #ffffff);
+        z-index: 1;
+      }
+
+      app-avatar {
+        position: relative;
+        z-index: 2;
+      }
     }
 
     .selected-check-badge {
       position: absolute;
       bottom: -2px;
       right: -2px;
-      width: 18px;
-      height: 18px;
+      width: 19px;
+      height: 19px;
       border-radius: 50%;
-      background: #111216;
+      background: linear-gradient(135deg, #0fb27c 0%, #059669 100%);
       color: #ffffff;
       font-size: 11px;
       font-weight: 800;
       display: grid;
       place-items: center;
       border: 2px solid #ffffff;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
-      animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    @keyframes popIn {
-      from { transform: scale(0.5); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
+      box-shadow: 0 2px 8px rgba(15, 178, 124, 0.4);
+      z-index: 3;
+      animation: checkPopIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
     }
 
     .member-name-label {
@@ -299,7 +381,9 @@ const PAYMENT_MODES: PaymentMode[] = [
     }
 
     .member-select-card.selected .member-name-label {
-      color: #111216;
+      background: linear-gradient(135deg, #6c4cff, #ff5f9e);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
       font-weight: 800;
     }
 
@@ -314,8 +398,14 @@ const PAYMENT_MODES: PaymentMode[] = [
       left: 14px;
       font-size: 26px;
       font-weight: 800;
-      color: var(--brand-a, #111216);
+      color: #0fb27c;
+      text-shadow: 0 0 12px rgba(15, 178, 124, 0.35);
       pointer-events: none;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .amount-input-wrap:focus-within .currency-prefix {
+      transform: scale(1.1);
     }
 
     .large-amount-input {
@@ -338,9 +428,10 @@ const PAYMENT_MODES: PaymentMode[] = [
     }
 
     .large-amount-input:focus {
-      border-color: #111216;
-      box-shadow: 0 0 0 4px rgba(17, 18, 22, 0.1);
+      border-color: #6c4cff;
+      box-shadow: 0 0 0 4px rgba(108, 76, 255, 0.18), 0 8px 24px rgba(108, 76, 255, 0.12);
       background: #ffffff;
+      transform: translateY(-1px);
     }
 
     .form-input {
@@ -379,7 +470,8 @@ const PAYMENT_MODES: PaymentMode[] = [
     }
 
     .form-input:focus {
-      border-color: #111216;
+      border-color: #6c4cff;
+      box-shadow: 0 0 0 3px rgba(108, 76, 255, 0.15);
       background: #ffffff;
     }
 
@@ -387,37 +479,77 @@ const PAYMENT_MODES: PaymentMode[] = [
       display: flex;
       flex-direction: column;
       gap: 10px;
-      margin-top: 8px;
+      margin-top: 10px;
+      animation: fieldCascade 0.4s 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
     }
 
     .submit-btn {
+      position: relative;
+      overflow: hidden;
       width: 100%;
-      height: 50px;
+      height: 52px;
       border-radius: var(--radius-pill, 9999px);
-      background: #111216;
+      background: linear-gradient(135deg, #4f35ff 0%, #8743ff 50%, #ff5f9e 100%);
+      background-size: 200% 200%;
+      animation: btnGradientShift 6s ease infinite;
       color: #ffffff;
       border: none;
       font-size: 15px;
       font-weight: 800;
       letter-spacing: -0.01em;
       cursor: pointer;
-      box-shadow: 0 4px 14px rgba(17, 18, 22, 0.25);
+      box-shadow: 0 6px 20px rgba(108, 76, 255, 0.38), 0 2px 8px rgba(255, 95, 158, 0.25);
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-laser-halo {
+      position: absolute;
+      inset: -2px;
+      border-radius: inherit;
+      background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.4), transparent 70%);
+      pointer-events: none;
+      opacity: 0.6;
+    }
+
+    .btn-shimmer {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: 45%;
+      background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.32) 50%, transparent 100%);
+      transform: skewX(-22deg) translateX(-180%);
+      animation: btnShimmerSweep 3.2s infinite cubic-bezier(0.4, 0, 0.2, 1);
+      pointer-events: none;
+    }
+
+    .btn-text {
+      position: relative;
+      z-index: 2;
     }
 
     .submit-btn:hover:not(:disabled) {
-      transform: translateY(-1px);
-      box-shadow: 0 8px 22px rgba(17, 18, 22, 0.35);
+      transform: translateY(-2px) scale(1.01);
+      box-shadow: 0 10px 28px rgba(108, 76, 255, 0.48), 0 4px 12px rgba(255, 95, 158, 0.35);
     }
 
     .submit-btn:active:not(:disabled) {
-      transform: scale(0.97);
+      transform: scale(0.98);
     }
 
     .submit-btn:disabled {
       opacity: 0.45;
       cursor: not-allowed;
       box-shadow: none;
+      animation: none;
+      background: #8e8e93;
+
+      .btn-shimmer {
+        display: none;
+      }
     }
 
     .delete-btn {
@@ -502,6 +634,72 @@ const PAYMENT_MODES: PaymentMode[] = [
       color: var(--muted, #8e8e93);
       line-height: 1.45;
       margin: 0;
+    }
+
+    @keyframes edgeGradientFlow {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
+    }
+
+    @keyframes orbDrift1 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(-14px, 14px) scale(1.15); }
+    }
+
+    @keyframes orbDrift2 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(16px, -12px) scale(1.2); }
+    }
+
+    @keyframes fieldCascade {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes avatarBouncyIn {
+      0% { opacity: 0; transform: scale(0.7) translateY(8px); }
+      70% { transform: scale(1.05) translateY(-2px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    @keyframes laserSpin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes checkPopIn {
+      0% { opacity: 0; transform: scale(0.2) rotate(-45deg); }
+      70% { transform: scale(1.2) rotate(10deg); }
+      100% { opacity: 1; transform: scale(1) rotate(0deg); }
+    }
+
+    @keyframes btnGradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes btnShimmerSweep {
+      0% { transform: skewX(-22deg) translateX(-180%); }
+      40%, 100% { transform: skewX(-22deg) translateX(360%); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .sheet-ambient-edge,
+      .sheet-ambient-orb,
+      .submit-btn,
+      .btn-shimmer,
+      .member-select-card.selected .avatar-ring-container::before {
+        animation: none !important;
+      }
+      .form-group,
+      .member-select-card,
+      .selected-check-badge,
+      .sheet-actions {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+      }
     }
   `,
 })
