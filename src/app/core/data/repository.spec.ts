@@ -1,14 +1,13 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import { LocalStorageLedgerRepository } from './local-storage-ledger.repository';
+import { FirestoreLedgerRepository } from './firestore-ledger.repository';
 import { generateLedgerCsv } from './csv-export';
 import { getInitialSeedData } from './seed-data';
 
-describe('LocalStorageLedgerRepository', () => {
-  let repo: LocalStorageLedgerRepository;
+describe('FirestoreLedgerRepository', () => {
+  let repo: FirestoreLedgerRepository;
 
   beforeEach(() => {
-    localStorage.clear();
-    repo = new LocalStorageLedgerRepository();
+    repo = new FirestoreLedgerRepository();
   });
 
   it('loads initial seed data when localStorage is empty', async () => {

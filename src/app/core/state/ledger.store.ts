@@ -37,14 +37,14 @@ import {
   Transaction,
   WithdrawalTransaction,
 } from '../engine';
-import { getInitialSeedData, LocalStorageLedgerRepository } from '../data';
+import { FirestoreLedgerRepository, getInitialSeedData } from '../data';
 import { SettingsStore } from './settings.store';
 
 @Injectable({
   providedIn: 'root',
 })
 export class LedgerStore {
-  private readonly repo = inject(LocalStorageLedgerRepository);
+  private readonly repo = inject(FirestoreLedgerRepository);
   private readonly settingsStore = inject(SettingsStore);
 
   // Core State Signals
@@ -162,6 +162,9 @@ export class LedgerStore {
 
   constructor() {
     void this.initialize();
+    this.repo.subscribeToRemoteChanges((remoteState) => {
+      this.syncState(remoteState);
+    });
   }
 
   async initialize(): Promise<void> {

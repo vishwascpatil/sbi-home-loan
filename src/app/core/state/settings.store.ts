@@ -1,5 +1,5 @@
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
-import { LocalStorageLedgerRepository } from '../data';
+import { FirestoreLedgerRepository } from '../data';
 
 export type AppTheme = 'light';
 export type AppDateFormat = 'DD/MM/YYYY' | 'YYYY-MM-DD';
@@ -8,7 +8,7 @@ export type AppDateFormat = 'DD/MM/YYYY' | 'YYYY-MM-DD';
   providedIn: 'root',
 })
 export class SettingsStore {
-  private readonly repo = inject(LocalStorageLedgerRepository);
+  private readonly repo = inject(FirestoreLedgerRepository);
 
   readonly theme = signal<AppTheme>('light');
   readonly dateFormat = signal<AppDateFormat>('DD/MM/YYYY');
