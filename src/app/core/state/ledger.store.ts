@@ -101,9 +101,19 @@ export class LedgerStore {
       return baseOutstanding;
     }
 
-    // On November / current period, add the calculated interest for the period back to the amount to be paid
-    const estInterest = this.thisMonthSummary().interestIncurredEst;
-    return addPaise(baseOutstanding, estInterest);
+    // Add interest to current outstanding amount ONLY on the last day of the month
+    const year = parseInt(today.slice(0, 4), 10);
+    const month = parseInt(today.slice(5, 7), 10);
+    const day = parseInt(today.slice(8, 10), 10);
+    const lastDayOfMonth = new Date(year, month, 0).getDate();
+    const isLastDay = day === lastDayOfMonth;
+
+    if (isLastDay) {
+      const estInterest = this.thisMonthSummary().interestIncurredEst;
+      return addPaise(baseOutstanding, estInterest);
+    }
+
+    return baseOutstanding;
   });
 
   readonly thisMonthSummary = computed<MonthlySummary>(() => {
