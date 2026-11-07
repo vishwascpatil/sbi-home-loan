@@ -35,8 +35,8 @@ export const routes: Routes = [
   },
   {
     path: 'history',
-    loadComponent: () =>
-      import('./features/history/history.component').then((m) => m.HistoryComponent),
+    redirectTo: 'members/history',
+    pathMatch: 'full',
   },
   {
     path: 'statements',

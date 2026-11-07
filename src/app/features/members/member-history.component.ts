@@ -43,8 +43,8 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
           type="button"
           class="back-circle-btn"
           (click)="goBack()"
-          aria-label="Back to Members"
-          title="Back to Members"
+          aria-label="Back"
+          title="Back"
         >
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#111216" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="15 18 9 12 15 6"></polyline>
@@ -701,7 +701,11 @@ export class MemberHistoryComponent implements OnInit {
   }
 
   goBack(): void {
-    void this.router.navigate(['/members']);
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      void this.router.navigate(['/members']);
+    }
   }
 
   editPayment(tx: ContributionTransaction): void {

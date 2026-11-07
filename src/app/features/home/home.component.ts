@@ -70,18 +70,6 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
             <span class="lightning-bolt">⚡</span>
             <span>{{ (ledgerStore.loan().currentRateBps / 100).toFixed(2) }}% p.a. · Overdraft</span>
           </div>
-
-          <button
-            type="button"
-            class="hero-circle-cta"
-            (click)="openAddWith('bankPayment')"
-            aria-label="Pay Bank EMI"
-            title="Record Bank Payment"
-          >
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#111216" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="9 18 15 12 9 6"></polyline>
-            </svg>
-          </button>
         </div>
 
         <div class="hero-main-stat">
@@ -215,7 +203,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       <section class="home-section">
         <div class="section-title-bar">
           <h2 class="section-main-heading">Recent Payments</h2>
-          <button type="button" class="section-see-all-btn" (click)="router.navigate(['/history'])">
+          <button type="button" class="section-see-all-btn" (click)="router.navigate(['/members/history'])">
             View all ›
           </button>
         </div>
@@ -403,7 +391,6 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
 
     .hero-top-row {
       display: flex;
-      justify-content: space-between;
       align-items: center;
       width: 100%;
     }
@@ -425,28 +412,6 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
     .lightning-bolt {
       color: #f59e0b;
       font-size: 13px;
-    }
-
-    .hero-circle-cta {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      background: #ffffff;
-      border: none;
-      display: grid;
-      place-items: center;
-      cursor: pointer;
-      flex-shrink: 0;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
-      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-
-      &:hover {
-        transform: scale(1.08);
-      }
-
-      &:active {
-        transform: scale(0.92);
-      }
     }
 
     .hero-main-stat {

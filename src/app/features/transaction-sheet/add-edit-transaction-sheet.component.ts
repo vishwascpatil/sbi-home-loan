@@ -211,6 +211,8 @@ const PAYMENT_MODES: PaymentMode[] = [
       display: flex;
       flex-direction: column;
       gap: 6px;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .field-label {
@@ -318,7 +320,9 @@ const PAYMENT_MODES: PaymentMode[] = [
     }
 
     .large-amount-input {
+      box-sizing: border-box;
       width: 100%;
+      max-width: 100%;
       height: 60px;
       padding-left: 38px;
       padding-right: 16px;
@@ -330,6 +334,7 @@ const PAYMENT_MODES: PaymentMode[] = [
       font-weight: 800;
       letter-spacing: -0.02em;
       outline: none;
+      font-family: inherit;
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
@@ -340,7 +345,9 @@ const PAYMENT_MODES: PaymentMode[] = [
     }
 
     .form-input {
+      box-sizing: border-box;
       width: 100%;
+      max-width: 100%;
       height: 48px;
       border-radius: 14px;
       border: 1.5px solid var(--line, #e5e5ea);
@@ -350,7 +357,26 @@ const PAYMENT_MODES: PaymentMode[] = [
       font-size: 16px;
       font-weight: 600;
       outline: none;
+      display: block;
+      -webkit-appearance: none;
+      appearance: none;
+      font-family: inherit;
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    input[type='date'].form-input {
+      box-sizing: border-box;
+      width: 100%;
+      max-width: 100%;
+      display: block;
+      -webkit-appearance: none;
+      appearance: none;
+      min-height: 48px;
+      line-height: 48px;
+    }
+
+    input[type='date']::-webkit-date-and-time-value {
+      text-align: left;
     }
 
     .form-input:focus {

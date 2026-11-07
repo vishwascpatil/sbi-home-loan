@@ -35,8 +35,12 @@ import {
                 class="close-btn"
                 (click)="dismissed.emit()"
                 aria-label="Close dialog"
+                title="Close"
               >
-                ✕
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
               </button>
             </div>
           }
@@ -107,27 +111,29 @@ import {
     }
 
     .close-btn {
-      width: 34px;
-      height: 34px;
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
       border-radius: 50%;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      background: rgba(0, 0, 0, 0.04);
-      color: var(--muted);
+      border: none;
+      background: rgba(0, 0, 0, 0.06);
+      color: #636779;
       cursor: pointer;
       display: grid;
       place-items: center;
-      font-size: 13px;
-      font-weight: 700;
-      transition: all 0.2s ease;
-    }
+      padding: 0;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      -webkit-tap-highlight-color: transparent;
 
-    .close-btn:hover {
-      color: var(--ink);
-      background: rgba(0, 0, 0, 0.08);
-    }
+      &:hover {
+        background: rgba(0, 0, 0, 0.12);
+        color: #111216;
+        transform: scale(1.06);
+      }
 
-    .close-btn:active {
-      transform: scale(0.9);
+      &:active {
+        transform: scale(0.92);
+      }
     }
 
     .sheet-content {
