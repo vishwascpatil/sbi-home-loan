@@ -218,15 +218,31 @@ export class FirestoreLedgerRepository implements LedgerRepository {
    * Subscribe to real-time changes from Firestore across devices.
    */
   subscribeToRemoteChanges(callback: (state: LedgerState) => void): Unsubscribe {
-    const unsubLoan = onSnapshot(doc(this.db, 'loans', PRIMARY_LOAN_ID), async () => {
-      // Force reload when cloud data changes
+    const notifyFresh = async () => {
       this.inMemoryCache = null;
       const fresh = await this.load();
       callback(fresh);
+    };
+
+    const unsubLoan = onSnapshot(doc(this.db, 'loans', PRIMARY_LOAN_ID), () => {
+      void notifyFresh();
     });
 
-    this.activeListeners.push(unsubLoan);
-    return unsubLoan;
+    const unsubTx = onSnapshot(collection(this.db, 'loans', PRIMARY_LOAN_ID, 'transactions'), () => {
+      void notifyFresh();
+    });
+
+    const unsubMembers = onSnapshot(collection(this.db, 'loans', PRIMARY_LOAN_ID, 'members'), () => {
+      void notifyFresh();
+    });
+
+    this.activeListeners.push(unsubLoan, unsubTx, unsubMembers);
+
+    return () => {
+      unsubLoan();
+      unsubTx();
+      unsubMembers();
+    };
   }
 
   async exportBackup(): Promise<string> {
