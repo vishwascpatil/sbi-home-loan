@@ -16,7 +16,6 @@ import {
   ProgressBarComponent,
 } from '../../shared/ui';
 import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-transaction-sheet.component';
-import { BroadcastModalComponent } from '../broadcast/broadcast-modal.component';
 
 @Component({
   selector: 'app-members',
@@ -27,7 +26,6 @@ import { BroadcastModalComponent } from '../broadcast/broadcast-modal.component'
     AvatarComponent,
     ProgressBarComponent,
     AddEditTransactionSheetComponent,
-    BroadcastModalComponent,
   ],
   template: `
     <div class="members-page-container">
@@ -59,18 +57,6 @@ import { BroadcastModalComponent } from '../broadcast/broadcast-modal.component'
           </div>
         </div>
       </div>
-
-      <!-- 2.5 Broadcast Hub Banner -->
-      <button type="button" class="broadcast-hub-banner-btn" (click)="isBroadcastOpen.set(true)">
-        <div class="banner-left-group">
-          <span class="banner-pulse-icon">📢</span>
-          <div class="banner-text-group">
-            <span class="banner-main-title">Family Notifications Hub</span>
-            <span class="banner-sub-caption">Daily 9 AM interest, 1st of month reminders &amp; Nov Excel report</span>
-          </div>
-        </div>
-        <span class="banner-arrow-pill">Open ›</span>
-      </button>
 
       <!-- 3. Section: Member Cards List ("Past Activities" style in screenshot) -->
       <section class="page-section">
@@ -213,12 +199,6 @@ import { BroadcastModalComponent } from '../broadcast/broadcast-modal.component'
           (dismissed)="isAddTxOpen.set(false)"
         />
       }
-
-      <!-- Family Broadcast Modal Sheet -->
-      <app-broadcast-modal
-        [isOpen]="isBroadcastOpen()"
-        (dismissed)="isBroadcastOpen.set(false)"
-      />
     </div>
   `,
   styles: `
@@ -769,7 +749,6 @@ export class MembersComponent {
   readonly router = inject(Router);
 
   readonly isAddTxOpen = signal(false);
-  readonly isBroadcastOpen = signal(false);
   readonly selectedMemberId = signal<string | undefined>(undefined);
 
   readonly formatPaise = formatPaise;

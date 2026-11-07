@@ -23,7 +23,6 @@ import {
 } from '../../core/engine';
 import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-transaction-sheet.component';
 import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.component';
-import { BroadcastModalComponent } from '../broadcast/broadcast-modal.component';
 
 @Component({
   selector: 'app-home',
@@ -37,7 +36,6 @@ import { BroadcastModalComponent } from '../broadcast/broadcast-modal.component'
     ConfirmSheetComponent,
     AddEditTransactionSheetComponent,
     DailyLedgerSheetComponent,
-    BroadcastModalComponent,
   ],
   template: `
     <div class="home-page-container">
@@ -91,7 +89,7 @@ import { BroadcastModalComponent } from '../broadcast/broadcast-modal.component'
           </div>
         </div>
 
-        <!-- Hero Highlights Row: Today's Interest + Loan Cleared + Alerts -->
+        <!-- Hero Highlights Row: Today's Interest + Loan Cleared -->
         <div class="hero-pulse-strip">
           <div class="hero-glass-pill" (click)="isDailyLedgerOpen.set(true)" role="button" tabindex="0">
             <span class="pill-dot glow-amber"></span>
@@ -103,12 +101,6 @@ import { BroadcastModalComponent } from '../broadcast/broadcast-modal.component'
             <span class="pill-dot glow-green"></span>
             <span class="pill-main tabular-nums">{{ repaidPercent().toFixed(1) }}%</span>
             <span class="pill-sub">Cleared ({{ formatCompactPaise(repaidAmount()) }})</span>
-          </div>
-
-          <div class="hero-glass-pill" (click)="isBroadcastOpen.set(true)" role="button" tabindex="0">
-            <span class="pill-dot glow-green"></span>
-            <span class="pill-main">📢 Alerts</span>
-            <span class="pill-sub">WhatsApp</span>
           </div>
         </div>
       </div>
@@ -304,12 +296,6 @@ import { BroadcastModalComponent } from '../broadcast/broadcast-modal.component'
       <app-daily-ledger-sheet
         [isOpen]="isDailyLedgerOpen()"
         (dismissed)="isDailyLedgerOpen.set(false)"
-      />
-
-      <!-- Family Broadcast Modal Sheet -->
-      <app-broadcast-modal
-        [isOpen]="isBroadcastOpen()"
-        (dismissed)="isBroadcastOpen.set(false)"
       />
     </div>
   `,
@@ -989,7 +975,6 @@ export class HomeComponent {
 
   readonly isSheetOpen = signal<boolean>(false);
   readonly isDailyLedgerOpen = signal<boolean>(false);
-  readonly isBroadcastOpen = signal<boolean>(false);
   readonly selectedTxForEdit = signal<Transaction | null>(null);
   readonly initialSheetType = signal<'contribution' | 'bankPayment'>('contribution');
 
