@@ -206,7 +206,7 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       max-width: 100%;
       box-sizing: border-box;
       overflow-x: hidden;
-      padding: 0 0 96px;
+      padding: 0 0 114px;
     }
 
     /* 1. Top Bar */

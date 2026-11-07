@@ -32,7 +32,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         aria-label="Add transaction"
         title="Add transaction"
       >
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
           <line x1="12" y1="5" x2="12" y2="19"></line>
           <line x1="5" y1="12" x2="19" y2="12"></line>
         </svg>
@@ -58,23 +58,23 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   styles: `
     .floating-glass-dock {
       position: fixed;
-      bottom: max(16px, env(safe-area-inset-bottom, 16px));
+      bottom: max(20px, env(safe-area-inset-bottom, 20px));
       left: 50%;
       transform: translateX(-50%);
       z-index: 1000;
       display: flex;
       align-items: center;
-      gap: 4px;
-      padding: 5px 6px;
+      gap: 8px;
+      padding: 7px 10px;
       border-radius: var(--radius-pill, 9999px);
-      background: rgba(255, 255, 255, 0.88);
+      background: rgba(255, 255, 255, 0.9);
       backdrop-filter: var(--blur-dock);
       -webkit-backdrop-filter: var(--blur-dock);
-      border: 1px solid rgba(255, 255, 255, 0.95);
+      border: 1.5px solid rgba(255, 255, 255, 0.95);
       box-shadow: 
-        0 16px 40px -6px rgba(0, 0, 0, 0.12),
-        0 2px 10px rgba(0, 0, 0, 0.04),
-        inset 0 1px 1px rgba(255, 255, 255, 0.9);
+        0 20px 48px -6px rgba(0, 0, 0, 0.16),
+        0 4px 16px rgba(0, 0, 0, 0.06),
+        inset 0 1px 1px rgba(255, 255, 255, 0.95);
       user-select: none;
       -webkit-user-select: none;
       max-width: calc(100vw - 20px);
@@ -97,9 +97,9 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
       justify-content: center;
       text-decoration: none;
       color: #9ca3af;
-      padding: 6px clamp(12px, 3.5vw, 18px);
+      padding: 8px clamp(18px, 4.5vw, 24px);
       border-radius: var(--radius-pill, 9999px);
-      min-height: 44px;
+      min-height: 52px;
       touch-action: manipulation;
       user-select: none;
       -webkit-user-select: none;
@@ -118,54 +118,54 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
       &.active {
         background: #ffffff;
         color: #111216;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
 
         .dock-icon {
           animation: appStoreTabBounce 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
-          stroke-width: 2.3;
+          stroke-width: 2.4;
         }
 
         .dock-label {
-          font-weight: 700;
+          font-weight: 800;
           color: #111216;
         }
       }
     }
 
     .dock-icon {
-      width: 20px;
-      height: 20px;
+      width: 24px;
+      height: 24px;
       transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .dock-label {
-      font-size: 10px;
-      font-weight: 500;
+      font-size: 11.5px;
+      font-weight: 600;
       letter-spacing: -0.01em;
-      margin-top: 2px;
+      margin-top: 3px;
       color: inherit;
       transition: color 0.2s ease, font-weight 0.2s ease;
     }
 
     /* Center Action Button (Matte Obsidian Black Orb) */
     .dock-action-btn {
-      width: 40px;
-      height: 40px;
+      width: 52px;
+      height: 52px;
       border-radius: 50%;
-      background: #111216;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+      background: linear-gradient(135deg, #181b24 0%, #0d0f17 100%);
+      border: 1.5px solid rgba(255, 255, 255, 0.22);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35), 0 0 0 3px rgba(108, 76, 255, 0.16);
       display: grid;
       place-items: center;
       cursor: pointer;
-      margin: 0 4px;
+      margin: 0 6px;
       flex-shrink: 0;
       transition: transform 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.22s ease;
       -webkit-tap-highlight-color: transparent;
 
       &:hover {
         transform: scale(1.08);
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.32);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.42), 0 0 0 4px rgba(108, 76, 255, 0.25);
       }
 
       &:active {

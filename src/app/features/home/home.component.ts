@@ -352,7 +352,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       max-width: 100%;
       box-sizing: border-box;
       overflow-x: hidden;
-      padding: 0 0 96px;
+      padding: 0 0 114px;
       position: relative;
     }
 

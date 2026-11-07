@@ -485,7 +485,7 @@ import {
       max-width: 100%;
       box-sizing: border-box;
       overflow-x: hidden;
-      padding-bottom: 96px;
+      padding-bottom: 114px;
     }
 
     .settings-header {
