@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import {
   AuditEntry,
   LedgerState,
+  toPaise,
 } from '../engine';
 import { generateLedgerCsv } from './csv-export';
 import { LedgerRepository } from './ledger-repository.interface';
@@ -60,10 +61,10 @@ export class LocalStorageLedgerRepository implements LedgerRepository {
       const parsed = JSON.parse(raw) as StoragePayload | LedgerState;
       const state = this.migrateSchema(parsed);
 
-      // Upgrade if stale data or outdated opening balance (e.g. not ₹1,20,55,189) is found
+      // Upgrade if stale data or outdated legacy opening balance (₹1,21,05,189) is found
       if (
         !state.loan ||
-        state.loan.openingOutstanding !== getInitialSeedData().loan.openingOutstanding ||
+        state.loan.openingOutstanding === toPaise(12105189) ||
         state.members.some((m) => m.name.startsWith('Member '))
       ) {
         const freshSeed = getInitialSeedData();

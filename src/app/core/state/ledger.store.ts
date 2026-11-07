@@ -328,6 +328,21 @@ export class LedgerStore {
     return result;
   }
 
+  async setCurrentOutstanding(targetOutstanding: Paise): Promise<void> {
+    const curOut = this.currentOutstanding();
+    const curOpening = this.loan().openingOutstanding;
+    const delta = curOut - curOpening;
+    let newOpening = paise(Math.max(0, targetOutstanding - delta));
+
+    await this.updateLoanDetails({ openingOutstanding: newOpening });
+    const resultingOut = this.currentOutstanding();
+    if (resultingOut !== targetOutstanding) {
+      const diff = resultingOut - targetOutstanding;
+      newOpening = paise(Math.max(0, newOpening - diff));
+      await this.updateLoanDetails({ openingOutstanding: newOpening });
+    }
+  }
+
   async updateLoanDetails(updates: Partial<Loan>): Promise<void> {
     const prev = this.loan();
     const updated: Loan = {

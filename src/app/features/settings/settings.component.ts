@@ -108,17 +108,17 @@ import {
           <div class="setting-item">
             <label class="setting-label" for="loan-outstanding">
               <span>Outstanding Amount (₹)</span>
-              <span class="compact-hint">{{ formatCompactPaise(loan().openingOutstanding) }}</span>
+              <span class="compact-hint">{{ formatCompactPaise(ledgerStore.currentOutstanding()) }}</span>
             </label>
             <input
               id="loan-outstanding"
               type="text"
               inputmode="decimal"
               class="setting-input tabular-nums"
-              [value]="getMoneyParamDisplay('openingOutstanding')"
-              (focus)="onMoneyParamFocus('openingOutstanding')"
-              (input)="onMoneyParamInput('openingOutstanding', $event)"
-              (blur)="onMoneyParamBlur('openingOutstanding', $event)"
+              [value]="getMoneyParamDisplay('currentOutstanding')"
+              (focus)="onMoneyParamFocus('currentOutstanding')"
+              (input)="onMoneyParamInput('currentOutstanding', $event)"
+              (blur)="onMoneyParamBlur('currentOutstanding', $event)"
             />
           </div>
 
@@ -711,8 +711,8 @@ export class SettingsComponent {
   rateEffectiveDate = new Date().toISOString().slice(0, 10);
   private saveTimeout: ReturnType<typeof setTimeout> | null = null;
   private memberNameTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
-  private focusedMoneyField = signal<'sanctionedLimit' | 'openingOutstanding' | 'monthlyTarget' | null>(null);
-  private moneyFieldRaw = new Map<'sanctionedLimit' | 'openingOutstanding' | 'monthlyTarget', string>();
+  private focusedMoneyField = signal<'sanctionedLimit' | 'currentOutstanding' | 'monthlyTarget' | null>(null);
+  private moneyFieldRaw = new Map<'sanctionedLimit' | 'currentOutstanding' | 'monthlyTarget', string>();
 
   readonly memberToDelete = signal<Member | null>(null);
   readonly isDeleteConfirmOpen = signal(false);
@@ -739,19 +739,22 @@ export class SettingsComponent {
     return isNegative ? `-${formatted}` : formatted;
   }
 
-  getMoneyParamDisplay(key: 'sanctionedLimit' | 'openingOutstanding' | 'monthlyTarget'): string {
+  getMoneyParamDisplay(key: 'sanctionedLimit' | 'currentOutstanding' | 'monthlyTarget'): string {
     if (this.focusedMoneyField() === key && this.moneyFieldRaw.has(key)) {
       return this.moneyFieldRaw.get(key)!;
+    }
+    if (key === 'currentOutstanding') {
+      return this.formatRupeesWithCommas(this.ledgerStore.currentOutstanding());
     }
     return this.formatRupeesWithCommas(this.loan()[key]);
   }
 
-  onMoneyParamFocus(key: 'sanctionedLimit' | 'openingOutstanding' | 'monthlyTarget'): void {
+  onMoneyParamFocus(key: 'sanctionedLimit' | 'currentOutstanding' | 'monthlyTarget'): void {
     this.focusedMoneyField.set(key);
   }
 
   onMoneyParamInput(
-    key: 'sanctionedLimit' | 'openingOutstanding' | 'monthlyTarget',
+    key: 'sanctionedLimit' | 'currentOutstanding' | 'monthlyTarget',
     event: Event
   ): void {
     this.focusedMoneyField.set(key);
@@ -769,12 +772,16 @@ export class SettingsComponent {
     }
 
     this.saveTimeout = setTimeout(async () => {
-      await this.ledgerStore.updateLoanDetails({ [key]: toPaise(clean) });
+      if (key === 'currentOutstanding') {
+        await this.ledgerStore.setCurrentOutstanding(toPaise(clean));
+      } else {
+        await this.ledgerStore.updateLoanDetails({ [key]: toPaise(clean) });
+      }
     }, 450);
   }
 
   onMoneyParamBlur(
-    key: 'sanctionedLimit' | 'openingOutstanding' | 'monthlyTarget',
+    key: 'sanctionedLimit' | 'currentOutstanding' | 'monthlyTarget',
     event: Event
   ): void {
     this.focusedMoneyField.set(null);
@@ -789,13 +796,22 @@ export class SettingsComponent {
           clearTimeout(this.saveTimeout);
           this.saveTimeout = null;
         }
-        void this.ledgerStore.updateLoanDetails({ [key]: toPaise(clean) }).then(() => {
-          input.value = this.formatRupeesWithCommas(this.loan()[key]);
+        const savePromise = key === 'currentOutstanding'
+          ? this.ledgerStore.setCurrentOutstanding(toPaise(clean))
+          : this.ledgerStore.updateLoanDetails({ [key]: toPaise(clean) });
+        void savePromise.then(() => {
+          const displayVal = key === 'currentOutstanding'
+            ? this.ledgerStore.currentOutstanding()
+            : this.loan()[key];
+          input.value = this.formatRupeesWithCommas(displayVal);
         });
         return;
       }
     }
-    input.value = this.formatRupeesWithCommas(this.loan()[key]);
+    const displayVal = key === 'currentOutstanding'
+      ? this.ledgerStore.currentOutstanding()
+      : this.loan()[key];
+    input.value = this.formatRupeesWithCommas(displayVal);
   }
 
   async updateLoanParam(key: string, value: unknown): Promise<void> {
