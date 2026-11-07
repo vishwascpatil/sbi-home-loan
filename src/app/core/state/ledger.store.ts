@@ -58,7 +58,24 @@ export class LedgerStore {
   readonly auditLog = signal<AuditEntry[]>([]);
 
   readonly isLoading = signal<boolean>(true);
-  readonly storageWarning = signal<string | null>(null);
+  readonly storageWarning = computed<string | null>(() => {
+    if (this.repo.isStorageDegraded()) {
+      const err = this.repo.getLastError?.();
+      if (
+        err &&
+        (err.includes('PERMISSION_DENIED') ||
+          err.includes('permission-denied') ||
+          err.includes('has not been used'))
+      ) {
+        return 'Cloud Firestore is not enabled yet in your Firebase Project. In Firebase Console, go to Build -> Firestore Database and click "Create database".';
+      }
+      return (
+        err ||
+        'Cloud Firestore is currently unreachable. Operating in local memory fallback; data will synchronize once Firestore connects.'
+      );
+    }
+    return null;
+  });
 
   // Full derived LedgerState object for pure engine functions
   readonly ledgerState = computed<LedgerState>(() => ({
@@ -173,12 +190,6 @@ export class LedgerStore {
       const state = await this.repo.load();
       this.syncState(state);
       this.settingsStore.initFromState(state.settings);
-
-      if (this.repo.isStorageDegraded()) {
-        this.storageWarning.set(
-          'Storage quota exceeded or private browsing active. Running in in-memory mode; data will not persist across browser restarts.'
-        );
-      }
     } finally {
       this.isLoading.set(false);
     }

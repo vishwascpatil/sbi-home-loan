@@ -62,6 +62,17 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
         </a>
       </header>
 
+      <!-- Storage / Cloud Sync Warning Banner -->
+      @if (ledgerStore.storageWarning()) {
+        <div class="cloud-status-banner" role="alert">
+          <span class="cloud-status-icon">⚠️</span>
+          <div class="cloud-status-text">
+            <strong>Cloud Sync Setup Required</strong>
+            <p>{{ ledgerStore.storageWarning() }}</p>
+          </div>
+        </div>
+      }
+
       <!-- 2. Matte Black Hero Card (Current Loan Balance) -->
       <div class="matte-hero-banner" role="region" aria-label="Current Loan Balance">
         <div class="hero-top-row">
@@ -306,6 +317,40 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       align-items: center;
       margin: 8px 0 20px;
       padding: 0 4px;
+    }
+
+    .cloud-status-banner {
+      background: rgba(238, 77, 107, 0.12);
+      border: 1px solid rgba(238, 77, 107, 0.35);
+      border-radius: 16px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      color: var(--ink);
+
+      .cloud-status-icon {
+        font-size: 20px;
+        flex-shrink: 0;
+      }
+
+      .cloud-status-text {
+        font-size: 13px;
+        line-height: 1.4;
+
+        strong {
+          display: block;
+          font-weight: 700;
+          margin-bottom: 2px;
+          color: #ee4d6b;
+        }
+
+        p {
+          margin: 0;
+          color: var(--muted);
+        }
+      }
     }
 
     .user-profile-cluster {

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import {
   initializeFirestore,
@@ -33,6 +33,13 @@ import { environment } from '../../../environments/environment';
 
 const PRIMARY_LOAN_ID = 'loan-primary';
 
+function cleanForFirestore<T>(data: T): T {
+  if (data === undefined || data === null) {
+    return data;
+  }
+  return JSON.parse(JSON.stringify(data)) as T;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -40,7 +47,8 @@ export class FirestoreLedgerRepository implements LedgerRepository {
   private app: FirebaseApp;
   private db: Firestore;
   private inMemoryCache: LedgerState | null = null;
-  private isDegraded = false;
+  private readonly degradedSignal = signal<boolean>(false);
+  private readonly errorSignal = signal<string | null>(null);
   private activeListeners: Unsubscribe[] = [];
 
   constructor() {
@@ -56,6 +64,7 @@ export class FirestoreLedgerRepository implements LedgerRepository {
 
     try {
       this.db = initializeFirestore(this.app, {
+        ignoreUndefinedProperties: true,
         localCache: persistentLocalCache(),
       });
     } catch {
@@ -65,7 +74,11 @@ export class FirestoreLedgerRepository implements LedgerRepository {
   }
 
   isStorageDegraded(): boolean {
-    return this.isDegraded;
+    return this.degradedSignal();
+  }
+
+  getLastError(): string | null {
+    return this.errorSignal();
   }
 
   async load(): Promise<LedgerState> {
@@ -160,11 +173,15 @@ export class FirestoreLedgerRepository implements LedgerRepository {
       };
 
       this.inMemoryCache = state;
-      this.isDegraded = false;
+      this.degradedSignal.set(false);
+      this.errorSignal.set(null);
       return state;
-    } catch {
+    } catch (err: unknown) {
       // Offline fallback: Use seed data and operate in-memory if Firestore is unreachable
-      this.isDegraded = true;
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn('[FirestoreLedgerRepository] load() failed (operating offline):', msg);
+      this.degradedSignal.set(true);
+      this.errorSignal.set(msg);
       const seed = getInitialSeedData();
       this.inMemoryCache = seed;
       return seed;
@@ -179,12 +196,12 @@ export class FirestoreLedgerRepository implements LedgerRepository {
 
       // 1. Save root loan document
       const loanDocRef = doc(this.db, 'loans', PRIMARY_LOAN_ID);
-      batch.set(loanDocRef, state.loan, { merge: true });
+      batch.set(loanDocRef, cleanForFirestore(state.loan), { merge: true });
 
       // 2. Save members
       for (const member of state.members) {
         const memRef = doc(this.db, 'loans', PRIMARY_LOAN_ID, 'members', member.id);
-        batch.set(memRef, member, { merge: true });
+        batch.set(memRef, cleanForFirestore(member), { merge: true });
       }
 
       // 3. Save transactions
@@ -193,40 +210,45 @@ export class FirestoreLedgerRepository implements LedgerRepository {
           continue;
         }
         const txRef = doc(this.db, 'loans', PRIMARY_LOAN_ID, 'transactions', tx.id);
-        batch.set(txRef, tx, { merge: true });
+        batch.set(txRef, cleanForFirestore(tx), { merge: true });
       }
 
       // 4. Save rate changes
       for (const rc of state.rateChanges) {
         const rcRef = doc(this.db, 'loans', PRIMARY_LOAN_ID, 'rateChanges', rc.id);
-        batch.set(rcRef, rc, { merge: true });
+        batch.set(rcRef, cleanForFirestore(rc), { merge: true });
       }
 
       // 5. Save snapshots
       for (const snap of state.snapshots) {
         const snapRef = doc(this.db, 'loans', PRIMARY_LOAN_ID, 'snapshots', snap.id);
-        batch.set(snapRef, snap, { merge: true });
+        batch.set(snapRef, cleanForFirestore(snap), { merge: true });
       }
 
       // 6. Save statements
       for (const stmt of state.statements || []) {
         const stmtRef = doc(this.db, 'loans', PRIMARY_LOAN_ID, 'statements', stmt.id);
-        batch.set(stmtRef, stmt, { merge: true });
+        batch.set(stmtRef, cleanForFirestore(stmt), { merge: true });
       }
 
       await batch.commit();
-      this.isDegraded = false;
-    } catch {
+      this.degradedSignal.set(false);
+      this.errorSignal.set(null);
+    } catch (err: unknown) {
       // Changes remain safely in inMemoryCache and will synchronize once Firestore connects
-      this.isDegraded = true;
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[FirestoreLedgerRepository] save() failed:', msg);
+      this.degradedSignal.set(true);
+      this.errorSignal.set(msg);
     }
   }
 
   async appendAudit(entry: AuditEntry): Promise<void> {
     try {
       const auditRef = doc(this.db, 'loans', PRIMARY_LOAN_ID, 'auditLog', entry.id);
-      await setDoc(auditRef, entry);
-    } catch {
+      await setDoc(auditRef, cleanForFirestore(entry));
+    } catch (err: unknown) {
+      console.warn('[FirestoreLedgerRepository] appendAudit() failed:', err);
       // In-memory fallback
       if (this.inMemoryCache) {
         this.inMemoryCache.auditLog = [entry, ...this.inMemoryCache.auditLog];
@@ -298,35 +320,35 @@ export class FirestoreLedgerRepository implements LedgerRepository {
 
       // Loan document
       const loanDocRef = doc(this.db, 'loans', PRIMARY_LOAN_ID);
-      batch.set(loanDocRef, seed.loan);
+      batch.set(loanDocRef, cleanForFirestore(seed.loan));
 
       // The 5 Member profiles
       for (const m of seed.members) {
         const memRef = doc(this.db, 'loans', PRIMARY_LOAN_ID, 'members', m.id);
-        batch.set(memRef, m);
+        batch.set(memRef, cleanForFirestore(m));
       }
 
       // Initial transactions
       for (const tx of seed.transactions) {
         const txRef = doc(this.db, 'loans', PRIMARY_LOAN_ID, 'transactions', tx.id);
-        batch.set(txRef, tx);
+        batch.set(txRef, cleanForFirestore(tx));
       }
 
       // Rate changes
       for (const rc of seed.rateChanges) {
         const rcRef = doc(this.db, 'loans', PRIMARY_LOAN_ID, 'rateChanges', rc.id);
-        batch.set(rcRef, rc);
+        batch.set(rcRef, cleanForFirestore(rc));
       }
 
       // Snapshots
       for (const snap of seed.snapshots) {
         const snapRef = doc(this.db, 'loans', PRIMARY_LOAN_ID, 'snapshots', snap.id);
-        batch.set(snapRef, snap);
+        batch.set(snapRef, cleanForFirestore(snap));
       }
 
       await batch.commit();
-    } catch {
-      // In-memory will serve if network is down during initial seed
+    } catch (err: unknown) {
+      console.warn('[FirestoreLedgerRepository] bootstrapSeedData failed:', err);
     }
   }
 
