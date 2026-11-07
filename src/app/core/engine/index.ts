@@ -11,4 +11,5 @@ export * from './notifications';
 export * from './backup';
 export * from './hash-chain';
 export * from './analytics';
+export * from './broadcast';
 

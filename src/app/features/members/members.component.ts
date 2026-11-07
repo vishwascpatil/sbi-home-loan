@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { LedgerStore } from '../../core/state';
 import {
   addPaise,
+  buildMonthlyDueReminder,
   formatCompactPaise,
   formatPaise,
   MemberStatistics,
@@ -15,6 +16,7 @@ import {
   ProgressBarComponent,
 } from '../../shared/ui';
 import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-transaction-sheet.component';
+import { BroadcastModalComponent } from '../broadcast/broadcast-modal.component';
 
 @Component({
   selector: 'app-members',
@@ -25,6 +27,7 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
     AvatarComponent,
     ProgressBarComponent,
     AddEditTransactionSheetComponent,
+    BroadcastModalComponent,
   ],
   template: `
     <div class="members-page-container">
@@ -56,6 +59,18 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
           </div>
         </div>
       </div>
+
+      <!-- 2.5 Broadcast Hub Banner -->
+      <button type="button" class="broadcast-hub-banner-btn" (click)="isBroadcastOpen.set(true)">
+        <div class="banner-left-group">
+          <span class="banner-pulse-icon">📢</span>
+          <div class="banner-text-group">
+            <span class="banner-main-title">Family Notifications Hub</span>
+            <span class="banner-sub-caption">Daily 9 AM interest, 1st of month reminders &amp; Nov Excel report</span>
+          </div>
+        </div>
+        <span class="banner-arrow-pill">Open ›</span>
+      </button>
 
       <!-- 3. Section: Member Cards List ("Past Activities" style in screenshot) -->
       <section class="page-section">
@@ -153,13 +168,28 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
                     <span> · Last {{ m.lastContributionDate }}</span>
                   }
                 </div>
-                <button
-                  type="button"
-                  class="member-action-btn-subtle"
-                  (click)="viewMemberHistory(m.memberId)"
-                >
-                  History ›
-                </button>
+                <div class="footer-btn-group">
+                  @if (m.target && m.thisMonthContribution < m.target) {
+                    <a
+                      [href]="getMemberWhatsAppReminder(m.memberId)"
+                      target="_blank"
+                      class="member-whatsapp-remind-btn"
+                      title="Send WhatsApp Reminder"
+                    >
+                      <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+                        <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2M12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15C10.56 20.15 9.11 19.76 7.85 19L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 14.99 3.8 13.47 3.8 11.91C3.81 7.37 7.5 3.67 12.05 3.67M9.53 7.37C9.36 7.37 9.09 7.43 8.85 7.69C8.61 7.95 7.94 8.58 7.94 9.87C7.94 11.15 8.88 12.39 9.01 12.56C9.14 12.73 10.84 15.36 13.45 16.49C14.07 16.76 14.56 16.92 14.94 17.04C15.56 17.24 16.13 17.21 16.57 17.15C17.07 17.07 18.09 16.53 18.3 15.93C18.52 15.34 18.52 14.83 18.45 14.73C18.39 14.62 18.21 14.56 17.95 14.43C17.69 14.3 16.42 13.67 16.18 13.59C15.95 13.5 15.78 13.46 15.6 13.72C15.43 13.97 14.95 14.56 14.8 14.73C14.66 14.9 14.51 14.92 14.25 14.79C14 14.66 12.92 14.31 11.64 13.17C10.65 12.28 9.98 11.19 9.79 10.85C9.59 10.51 9.77 10.33 9.9 10.2C10.02 10.08 10.16 9.89 10.29 9.74C10.42 9.59 10.46 9.49 10.55 9.32C10.64 9.15 10.59 9 10.53 8.87C10.46 8.74 9.95 7.48 9.73 6.97C9.52 6.47 9.31 6.54 9.15 6.53C9 6.52 8.83 6.52 8.65 6.52" />
+                      </svg>
+                      Remind
+                    </a>
+                  }
+                  <button
+                    type="button"
+                    class="member-action-btn-subtle"
+                    (click)="viewMemberHistory(m.memberId)"
+                  >
+                    History ›
+                  </button>
+                </div>
               </div>
             </div>
           }
@@ -183,6 +213,12 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
           (dismissed)="isAddTxOpen.set(false)"
         />
       }
+
+      <!-- Family Broadcast Modal Sheet -->
+      <app-broadcast-modal
+        [isOpen]="isBroadcastOpen()"
+        (dismissed)="isBroadcastOpen.set(false)"
+      />
     </div>
   `,
   styles: `
@@ -632,6 +668,89 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       color: #8e8e93;
     }
 
+    .broadcast-hub-banner-btn {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 16px;
+      margin: 4px 0 16px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(37, 211, 102, 0.12) 0%, rgba(18, 140, 126, 0.08) 100%);
+      border: 1px solid rgba(37, 211, 102, 0.35);
+      cursor: pointer;
+      width: 100%;
+      box-sizing: border-box;
+      text-align: left;
+      transition: transform 0.15s ease, background 0.2s ease;
+
+      &:active {
+        transform: scale(0.99);
+      }
+
+      .banner-left-group {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        .banner-pulse-icon {
+          font-size: 22px;
+          flex-shrink: 0;
+        }
+
+        .banner-text-group {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+
+          .banner-main-title {
+            font-size: 14px;
+            font-weight: 800;
+            color: #128c7e;
+          }
+
+          .banner-sub-caption {
+            font-size: 11.5px;
+            color: var(--muted, #767a90);
+          }
+        }
+      }
+
+      .banner-arrow-pill {
+        padding: 5px 10px;
+        border-radius: 99px;
+        background: #25d366;
+        color: #ffffff;
+        font-size: 11px;
+        font-weight: 800;
+        flex-shrink: 0;
+      }
+    }
+
+    .footer-btn-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .member-whatsapp-remind-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      border-radius: 99px;
+      background: rgba(37, 211, 102, 0.12);
+      color: #128c7e;
+      border: 1px solid rgba(37, 211, 102, 0.35);
+      font-size: 11px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: background 0.15s ease;
+
+      &:hover {
+        background: rgba(37, 211, 102, 0.2);
+      }
+    }
+
     @media (max-width: 360px) {
       .member-card-footer {
         flex-direction: column;
@@ -650,6 +769,7 @@ export class MembersComponent {
   readonly router = inject(Router);
 
   readonly isAddTxOpen = signal(false);
+  readonly isBroadcastOpen = signal(false);
   readonly selectedMemberId = signal<string | undefined>(undefined);
 
   readonly formatPaise = formatPaise;
@@ -667,6 +787,12 @@ export class MembersComponent {
   getMemberProgress(m: MemberStatistics): number {
     if (!m.target || m.target <= 0) return 0;
     return Math.min(100, (m.thisMonthContribution / m.target) * 100);
+  }
+
+  getMemberWhatsAppReminder(memberId: string): string {
+    const member = this.ledgerStore.activeMembers().find((m) => m.id === memberId);
+    if (!member) return '';
+    return buildMonthlyDueReminder(member, this.ledgerStore.ledgerState()).whatsappUrl;
   }
 
   viewMemberHistory(memberId: string): void {

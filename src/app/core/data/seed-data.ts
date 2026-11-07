@@ -38,6 +38,8 @@ export function getInitialSeedData(): LedgerState {
       target: toPaise(105000), // ₹1,05,000.00
       colorIndex: 0,
       avatarUrl: 'profiles/vishwas.jpeg',
+      phone: '8105242578',
+      email: 'vishwascpatilonline@gmail.com',
       createdAt: '2024-06-12T00:00:00.000Z',
       updatedAt: '2024-06-12T00:00:00.000Z',
     },
@@ -48,6 +50,8 @@ export function getInitialSeedData(): LedgerState {
       target: toPaise(105000), // ₹1,05,000.00
       colorIndex: 1,
       avatarUrl: 'profiles/vikas.jpeg',
+      phone: '9880413201',
+      email: 'vikascpatil123@gmail.com',
       createdAt: '2024-06-12T00:00:00.000Z',
       updatedAt: '2024-06-12T00:00:00.000Z',
     },
@@ -58,6 +62,7 @@ export function getInitialSeedData(): LedgerState {
       target: toPaise(10000), // ₹10,000.00
       colorIndex: 2,
       avatarUrl: 'profiles/bhavya.jpeg',
+      phone: '9902103979',
       createdAt: '2024-06-12T00:00:00.000Z',
       updatedAt: '2024-06-12T00:00:00.000Z',
     },
@@ -68,6 +73,7 @@ export function getInitialSeedData(): LedgerState {
       target: toPaise(10000), // ₹10,000.00
       colorIndex: 3,
       avatarUrl: 'profiles/shruthi.jpeg',
+      phone: '9844586757',
       createdAt: '2024-06-12T00:00:00.000Z',
       updatedAt: '2024-06-12T00:00:00.000Z',
     },
@@ -78,6 +84,7 @@ export function getInitialSeedData(): LedgerState {
       target: toPaise(10000), // ₹10,000.00
       colorIndex: 4,
       avatarUrl: 'profiles/csp.jpeg',
+      phone: '9880404025',
       createdAt: '2024-06-12T00:00:00.000Z',
       updatedAt: '2024-06-12T00:00:00.000Z',
     },

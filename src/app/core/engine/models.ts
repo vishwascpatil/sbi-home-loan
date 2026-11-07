@@ -110,6 +110,8 @@ export interface Member extends BaseEntity {
   target?: Paise;
   colorIndex: number;
   avatarUrl?: string;
+  phone?: string;
+  email?: string;
 }
 
 export interface ContributionTransaction extends BaseEntity {

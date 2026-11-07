@@ -140,7 +140,7 @@ export class FirestoreLedgerRepository implements LedgerRepository {
       const statements = statementsSnap.docs.map((d) => d.data() as StatementSnapshot);
       const auditLog = auditLogSnap.docs.map((d) => d.data() as AuditEntry);
 
-      // Ensure proper avatar paths for the 5 member profiles
+      // Ensure proper avatar paths and contact details for the 5 member profiles
       const avatarMap: Record<string, string> = {
         vishwas: 'profiles/vishwas.jpeg',
         vikas: 'profiles/vikas.jpeg',
@@ -148,10 +148,21 @@ export class FirestoreLedgerRepository implements LedgerRepository {
         shruthi: 'profiles/shruthi.jpeg',
         csp: 'profiles/csp.jpeg',
       };
+      const contactMap: Record<string, { phone: string; email?: string }> = {
+        vishwas: { phone: '8105242578', email: 'vishwascpatilonline@gmail.com' },
+        vikas: { phone: '9880413201', email: 'vikascpatil123@gmail.com' },
+        bhavya: { phone: '9902103979' },
+        shruthi: { phone: '9844586757' },
+        csp: { phone: '9880404025' },
+      };
       for (const m of members) {
         const key = m.name.toLowerCase().trim();
         if (!m.avatarUrl && avatarMap[key]) {
           m.avatarUrl = avatarMap[key];
+        }
+        if (contactMap[key]) {
+          if (!m.phone) m.phone = contactMap[key].phone;
+          if (!m.email && contactMap[key].email) m.email = contactMap[key].email;
         }
       }
 
