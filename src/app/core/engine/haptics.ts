@@ -9,7 +9,7 @@
  */
 export type HapticType = 'light' | 'medium' | 'heavy' | 'selection' | 'success' | 'warning';
 
-let iosSwitchLabel: HTMLLabelElement | null = null;
+let iosSwitchLabel: HTMLElement | null = null;
 let audioCtx: AudioContext | null = null;
 let lastIOSHaptic = 0;
 
@@ -21,24 +21,29 @@ function isIOS(): boolean {
   );
 }
 
-function ensureIOSSwitch(): HTMLLabelElement | null {
+function getIOSSwitchLabel(): HTMLElement | null {
   if (typeof document === 'undefined') return null;
   if (!iosSwitchLabel) {
+    const existing = document.getElementById('haptic-label');
+    if (existing) {
+      iosSwitchLabel = existing;
+      return iosSwitchLabel;
+    }
+
     try {
       const input = document.createElement('input');
       input.type = 'checkbox';
-      input.id = 'ios-taptic-switch';
+      input.id = 'haptic-switch';
       input.setAttribute('switch', '');
-      input.style.cssText =
-        'position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none;z-index:-1;';
+      input.style.cssText = 'position:fixed;opacity:0;width:0;height:0;top:-100px;left:-100px;';
       input.tabIndex = -1;
       input.setAttribute('aria-hidden', 'true');
       document.body.appendChild(input);
 
       const label = document.createElement('label');
-      label.htmlFor = 'ios-taptic-switch';
-      label.style.cssText =
-        'position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none;z-index:-1;';
+      label.htmlFor = 'haptic-switch';
+      label.id = 'haptic-label';
+      label.style.display = 'none';
       label.tabIndex = -1;
       label.setAttribute('aria-hidden', 'true');
       document.body.appendChild(label);
@@ -51,8 +56,8 @@ function ensureIOSSwitch(): HTMLLabelElement | null {
 }
 
 /**
- * High-fidelity synthetic micro-tap pop (120Hz damped in 12ms)
- * Simulates the mechanical impulse click felt on iPhone haptic touch.
+ * High-fidelity synthetic micro-tap pop (130Hz damped in 12ms)
+ * Simulates the physical mechanical impulse click felt on iPhone haptic touch.
  */
 function playTactileMicroPop(): void {
   try {
@@ -128,7 +133,7 @@ export function triggerHaptic(type: HapticType = 'light'): void {
     if (now - lastIOSHaptic > 50) {
       lastIOSHaptic = now;
       try {
-        const label = ensureIOSSwitch();
+        const label = getIOSSwitchLabel();
         if (label) {
           label.click();
         }
