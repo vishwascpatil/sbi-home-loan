@@ -6,6 +6,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { LedgerStore, SettingsStore, UserProfileStore } from '../../core/state';
 import {
   AvatarComponent,
@@ -35,18 +36,98 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FormsModule,
+    RouterLink,
     GlassCardComponent,
     AvatarComponent,
     ConfirmSheetComponent,
   ],
   template: `
     <div class="settings-page">
-      <header class="settings-header">
-        <div>
-          <small class="header-sub">App & Loan Settings</small>
-          <h1 class="header-title">Settings</h1>
+      <!-- Living Video-feel Background Ambient Mesh -->
+      <div class="video-ambient-mesh" aria-hidden="true">
+        <div class="mesh-orb orb-violet"></div>
+        <div class="mesh-orb orb-pink"></div>
+        <div class="mesh-orb orb-emerald"></div>
+        <div class="mesh-orb orb-cyan"></div>
+        <svg class="mesh-wave-svg" viewBox="0 0 1440 320" preserveAspectRatio="none">
+          <path class="wave-path wave-path-1" d="M0,192L48,197.3C96,203,192,213,288,192C384,171,480,117,576,112C672,107,768,149,864,165.3C960,181,1056,171,1152,149.3C1248,128,1344,96,1392,80L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+          <path class="wave-path wave-path-2" d="M0,96L48,128C96,160,192,224,288,213.3C384,203,480,117,576,101.3C672,85,768,139,864,165.3C960,192,1056,192,1152,176C1248,160,1344,128,1392,112L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+        </svg>
+      </div>
+
+      <!-- 1. Top Bar -->
+      <header class="app-top-bar">
+        <div
+          class="user-profile-cluster"
+          (click)="userProfile.openProfilePicker()"
+          (keydown.enter)="userProfile.openProfilePicker()"
+          role="button"
+          tabindex="0"
+          aria-label="Switch User Profile"
+          title="Click to switch member profile"
+        >
+          <app-avatar [name]="userProfile.currentMemberName()" [avatarUrl]="userProfile.currentMemberAvatar()" [size]="44" [circular]="true" />
+          <div class="profile-text-wrap">
+            <span class="profile-greeting">System &amp; Loan Control</span>
+            <div class="profile-name-row">
+              <h1 class="profile-user-name">App Settings</h1>
+              <span class="profile-switch-indicator">▾</span>
+            </div>
+          </div>
         </div>
+
+        <a
+          routerLink="/home"
+          class="top-circle-action-btn"
+          aria-label="Back to Home"
+          title="Back to Home"
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 10.5 12 3l9 7.5V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </a>
       </header>
+
+      <!-- 2. Matte Black Obsidian Hero Card (Living Video UI) -->
+      <div class="matte-hero-banner" role="region" aria-label="Device Profile & Active Member">
+        <div class="hero-laser-border" aria-hidden="true"></div>
+        <div class="hero-nebula-glow nebula-1" aria-hidden="true"></div>
+        <div class="hero-nebula-glow nebula-2" aria-hidden="true"></div>
+        <div class="hero-particles-field" aria-hidden="true">
+          <span class="particle p-1"></span>
+          <span class="particle p-2"></span>
+          <span class="particle p-3"></span>
+          <span class="particle p-4"></span>
+          <span class="particle p-5"></span>
+        </div>
+        <div class="hero-shimmer-sweep" aria-hidden="true"></div>
+
+        <div class="hero-left-content">
+          <div class="hero-badge-pill">
+            <span class="lightning-bolt">⚡</span>
+            <span>Active on this Device · Auto-Saved</span>
+          </div>
+          <div class="hero-profile-cluster">
+            <app-avatar [name]="userProfile.currentMemberName()" [avatarUrl]="userProfile.currentMemberAvatar()" [size]="52" [circular]="true" />
+            <div class="hero-profile-meta">
+              <h2 class="hero-member-name">{{ userProfile.currentMemberName() }}</h2>
+              <span class="hero-member-phone">{{ userProfile.currentMember()?.phone || 'No phone set' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-right-action">
+          <button
+            type="button"
+            class="hero-switch-btn"
+            (click)="userProfile.openProfilePicker()"
+          >
+            <span>🔄</span>
+            <span>Switch Member</span>
+          </button>
+        </div>
+      </div>
 
       <!-- Storage Quota / Degradation Warning Alert -->
       @if (ledgerStore.storageWarning()) {
@@ -59,31 +140,16 @@ import {
         </div>
       }
 
-      <!-- 0. Active Device Profile Card -->
-      <app-glass-card [staggerIndex]="0">
-        <div class="device-profile-card">
-          <div class="device-profile-main">
-            <app-avatar [name]="userProfile.currentMemberName()" [avatarUrl]="userProfile.currentMemberAvatar()" [size]="52" [circular]="true" />
-            <div class="device-profile-info">
-              <span class="device-profile-pill">Active on this Phone</span>
-              <h2 class="device-profile-name">{{ userProfile.currentMemberName() }}</h2>
-              <span class="device-profile-sub">{{ userProfile.currentMember()?.phone || 'No phone set' }}</span>
-            </div>
-          </div>
-          <button
-            type="button"
-            class="switch-profile-btn"
-            (click)="userProfile.openProfilePicker()"
-          >
-            <span>🔄</span> Switch Member
-          </button>
-        </div>
-      </app-glass-card>
-
       <!-- 1. Loan Parameters Editor -->
       <app-glass-card [staggerIndex]="0">
-        <h2 class="card-title">Loan Details</h2>
-        <p class="section-sub">Your loan account number, approved limit, outstanding balance, and monthly target.</p>
+        <div class="card-glow-strip strip-indigo"></div>
+        <div class="card-title-row">
+          <div>
+            <h2 class="card-title">Loan Parameters</h2>
+            <p class="section-sub">Bank account details, sanctioned limit, outstanding principal, and monthly target.</p>
+          </div>
+          <span class="card-status-badge">Live Ledger</span>
+        </div>
 
         <div class="settings-form-grid">
           <div class="setting-item">
@@ -99,7 +165,7 @@ import {
 
           <div class="setting-item">
             <label class="setting-label" for="loan-account">
-              Bank Account Number
+              <span>Bank Account Number</span>
               <button
                 type="button"
                 class="eye-btn"
@@ -111,7 +177,7 @@ import {
             <input
               id="loan-account"
               [type]="settings.maskAccountNumber() ? 'password' : 'text'"
-              class="setting-input"
+              class="setting-input font-mono"
               [ngModel]="loan().accountNumber"
               (ngModelChange)="updateLoanParam('accountNumber', $event)"
             />
@@ -119,7 +185,7 @@ import {
 
           <div class="setting-item">
             <label class="setting-label" for="loan-limit">
-              <span>Total Loan Approved by Bank (₹)</span>
+              <span>Total Sanctioned Limit (₹)</span>
               <span class="compact-hint">{{ formatCompactPaise(loan().sanctionedLimit) }}</span>
             </label>
             <input
@@ -136,7 +202,7 @@ import {
 
           <div class="setting-item">
             <label class="setting-label" for="loan-outstanding">
-              <span>Outstanding Amount (₹)</span>
+              <span>Current Outstanding Amount (₹)</span>
               <span class="compact-hint">{{ formatCompactPaise(ledgerStore.currentOutstanding()) }}</span>
             </label>
             <input
@@ -151,7 +217,7 @@ import {
             />
           </div>
 
-          <div class="setting-item">
+          <div class="setting-item full-span">
             <label class="setting-label" for="loan-target">
               <span>Total Monthly Target to Collect (₹)</span>
               <span class="compact-hint">{{ formatCompactPaise(loan().monthlyTarget) }}</span>
@@ -170,12 +236,18 @@ import {
         </div>
       </app-glass-card>
 
-      <!-- 2. Classic Interest Rate Update Section -->
+      <!-- 2. Interest Rate Revision Section -->
       <app-glass-card [staggerIndex]="1">
-        <h2 class="card-title">Change Interest Rate</h2>
-        <p class="section-sub">Bank revisions update current and future interest without altering historical records.</p>
+        <div class="card-glow-strip strip-violet"></div>
+        <div class="card-title-row">
+          <div>
+            <h2 class="card-title">Change Interest Rate</h2>
+            <p class="section-sub">Bank revisions update current and future interest without altering historical records.</p>
+          </div>
+          <span class="current-rate-tag tabular-nums">{{ (loan().currentRateBps / 100).toFixed(2) }}% Active</span>
+        </div>
 
-        <!-- Rate Revision Form (Clean - No Suggestions, No Reason) -->
+        <!-- Rate Revision Form -->
         <form class="rate-change-form" (ngSubmit)="applyRateChange()">
           <div class="rate-form-grid">
             <div class="setting-item">
@@ -211,14 +283,14 @@ import {
           </div>
 
           <button type="submit" class="apply-rate-btn">
-            Apply
+            <span>⚡ Apply Rate Revision</span>
           </button>
         </form>
 
         <!-- Rate Revisions Timeline -->
         @if (rateHistory().length > 0) {
           <div class="rate-history-section">
-            <div class="history-section-title">Rate History ({{ rateHistory().length }})</div>
+            <div class="history-section-title">Rate Revisions Log ({{ rateHistory().length }})</div>
             <div class="rate-timeline">
               @for (r of rateHistory(); track r.id) {
                 <div class="timeline-entry" [class.current]="$first">
@@ -232,7 +304,7 @@ import {
                     <div class="timeline-top">
                       <strong class="timeline-rate tabular-nums">{{ (r.rateBps / 100).toFixed(2) }}% p.a.</strong>
                       @if ($first) {
-                        <span class="timeline-active-tag">Active</span>
+                        <span class="timeline-active-tag">Active in Force</span>
                       }
                     </div>
                   </div>
@@ -243,10 +315,14 @@ import {
         }
       </app-glass-card>
 
-      <!-- 3. Minimal Family Members Section -->
+      <!-- 3. Family Members Roster -->
       <app-glass-card [staggerIndex]="2">
+        <div class="card-glow-strip strip-pink"></div>
         <div class="card-title-row">
-          <h2 class="card-title">Family Members</h2>
+          <div>
+            <h2 class="card-title">Family Members</h2>
+            <p class="section-sub">Co-borrowers contributing to monthly EMI pool.</p>
+          </div>
           <button
             type="button"
             class="add-m-btn"
@@ -254,7 +330,7 @@ import {
             aria-label="Add family member"
             title="Add person"
           >
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
@@ -268,7 +344,7 @@ import {
                 <app-avatar
                   [name]="m.name"
                   [colorIndex]="m.colorIndex"
-                  [size]="36"
+                  [size]="38"
                   [circular]="true"
                   [avatarUrl]="m.avatarUrl"
                 />
@@ -301,6 +377,7 @@ import {
 
       <!-- 4. Family Alerts & Notifications Hub -->
       <app-glass-card [staggerIndex]="3">
+        <div class="card-glow-strip strip-emerald"></div>
         <div class="card-title-row">
           <div>
             <h2 class="card-title">Family Alerts &amp; Notifications Hub</h2>
@@ -316,7 +393,6 @@ import {
             class="settings-pill-tab"
             [class.active]="alertsTab() === 'daily'"
             (click)="selectAlertsTab('daily')"
-            (pointerdown)="selectAlertsTab('daily')"
           >
             ☀️ Daily 9 AM Interest
           </button>
@@ -325,7 +401,6 @@ import {
             class="settings-pill-tab"
             [class.active]="alertsTab() === 'monthly'"
             (click)="selectAlertsTab('monthly')"
-            (pointerdown)="selectAlertsTab('monthly')"
           >
             🔔 1st of Month Reminders
           </button>
@@ -334,7 +409,6 @@ import {
             class="settings-pill-tab"
             [class.active]="alertsTab() === 'annual'"
             (click)="selectAlertsTab('annual')"
-            (pointerdown)="selectAlertsTab('annual')"
           >
             📊 Nov Excel &amp; Email
           </button>
@@ -412,61 +486,61 @@ import {
                       <a [href]="getMonthlyReminderWhatsApp(memberObj)" target="_blank" class="send-remind-pill-btn">
                         <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
                           <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2M12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15C10.56 20.15 9.11 19.76 7.85 19L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 14.99 3.8 13.47 3.8 11.91C3.81 7.37 7.5 3.67 12.05 3.67M9.53 7.37C9.36 7.37 9.09 7.43 8.85 7.69C8.61 7.95 7.94 8.58 7.94 9.87C7.94 11.15 8.88 12.39 9.01 12.56C9.14 12.73 10.84 15.36 13.45 16.49C14.07 16.76 14.56 16.92 14.94 17.04C15.56 17.24 16.13 17.21 16.57 17.15C17.07 17.07 18.09 16.53 18.3 15.93C18.52 15.34 18.52 14.83 18.45 14.73C18.39 14.62 18.21 14.56 17.95 14.43C17.69 14.3 16.42 13.67 16.18 13.59C15.95 13.5 15.78 13.46 15.6 13.72C15.43 13.97 14.95 14.56 14.8 14.73C14.66 14.9 14.51 14.92 14.25 14.79C14 14.66 12.92 14.31 11.64 13.17C10.65 12.28 9.98 11.19 9.79 10.85C9.59 10.51 9.77 10.33 9.9 10.2C10.02 10.08 10.16 9.89 10.29 9.74C10.42 9.59 10.46 9.49 10.55 9.32C10.64 9.15 10.59 9 10.53 8.87C10.46 8.74 9.95 7.48 9.73 6.97C9.52 6.47 9.31 6.54 9.15 6.53C9 6.52 8.83 6.52 8.65 6.52" />
-                        </svg>
-                        Remind
-                      </a>
-                    }
-                  </div>
-                </div>
-              }
-            </div>
-          </div>
-        }
-
-        <!-- TAB 3: NOVEMBER ANNUAL EXCEL & EMAIL -->
-        @if (alertsTab() === 'annual') {
-          <div class="alerts-tab-content">
-            <p class="section-sub" style="margin-bottom: 12px">
-              Maintains an Excel sheet of who paid how much, tracks all numbers, and emails the annual report on Nov 1st.
-            </p>
-
-            <div class="settings-excel-tile">
-              <div class="excel-tile-header">
-                <span class="excel-badge">Excel Ledger</span>
-                <span class="excel-filename">SBI-Home-Loan-Annual-Report.xls</span>
-              </div>
-              <div class="excel-table-snippet">
-                @for (m of ledgerStore.memberStats(); track m.memberId) {
-                  <div class="snippet-row">
-                    <span class="snip-name">{{ m.name }}</span>
-                    <span class="snip-phone tabular-nums">{{ getMember(m.memberId)?.phone || '-' }}</span>
-                    <span class="snip-paid tabular-nums font-bold">{{ formatPaise(m.lifetimeContribution) }}</span>
-                  </div>
-                }
-              </div>
-            </div>
-
-            <div class="excel-button-stack">
-              <button type="button" class="btn-download-excel" (click)="downloadExcel()">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="7 10 12 15 17 10"></polyline>
-                  <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
-                Download Annual Excel File (.xls)
-              </button>
-
-              <a [href]="annualEmailUrl()" class="btn-send-email">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                  <polyline points="22,6 12,13 2,6"></polyline>
-                </svg>
-                Send Email to Vishwas &amp; Vikas
+                Remind
               </a>
-            </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+}
+
+<!-- TAB 3: NOVEMBER ANNUAL EXCEL & EMAIL -->
+@if (alertsTab() === 'annual') {
+  <div class="alerts-tab-content">
+    <p class="section-sub" style="margin-bottom: 12px">
+      Maintains an Excel sheet of who paid how much, tracks all numbers, and emails the annual report on Nov 1st.
+    </p>
+
+    <div class="settings-excel-tile">
+      <div class="excel-tile-header">
+        <span class="excel-badge">Excel Ledger</span>
+        <span class="excel-filename">SBI-Home-Loan-Annual-Report.xls</span>
+      </div>
+      <div class="excel-table-snippet">
+        @for (m of ledgerStore.memberStats(); track m.memberId) {
+          <div class="snippet-row">
+            <span class="snip-name">{{ m.name }}</span>
+            <span class="snip-phone tabular-nums">{{ getMember(m.memberId)?.phone || '-' }}</span>
+            <span class="snip-paid tabular-nums font-bold">{{ formatPaise(m.lifetimeContribution) }}</span>
           </div>
         }
-      </app-glass-card>
+      </div>
+    </div>
+
+    <div class="excel-button-stack">
+      <button type="button" class="btn-download-excel" (click)="downloadExcel()">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Download Annual Excel File (.xls)
+      </button>
+
+      <a [href]="annualEmailUrl()" class="btn-send-email">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+          <polyline points="22,6 12,13 2,6"></polyline>
+        </svg>
+        Send Email to Vishwas &amp; Vikas
+      </a>
+    </div>
+  </div>
+}
+</app-glass-card>
 
       <!-- Delete Member Confirmation Sheet -->
       <app-confirm-sheet
@@ -490,247 +564,539 @@ import {
       box-sizing: border-box;
       overflow-x: hidden;
       padding-bottom: 114px;
+      position: relative;
     }
 
-    .settings-header {
-      margin: 8px 4px 18px;
+    /* Living Video-feel Background Ambient Mesh */
+    .video-ambient-mesh {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
     }
 
-    .header-sub {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+    .mesh-orb {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0.35;
     }
 
-    /* Active Device Profile Card */
-    .device-profile-card {
+    .orb-violet {
+      width: 380px;
+      height: 380px;
+      background: radial-gradient(circle, rgba(108, 76, 255, 0.4) 0%, rgba(155, 77, 255, 0.12) 50%, transparent 70%);
+      top: -80px;
+      left: -80px;
+      animation: orbDrift1 20s ease-in-out infinite alternate;
+    }
+
+    .orb-pink {
+      width: 340px;
+      height: 340px;
+      background: radial-gradient(circle, rgba(255, 95, 158, 0.35) 0%, rgba(255, 140, 185, 0.1) 50%, transparent 70%);
+      top: 25%;
+      right: -80px;
+      animation: orbDrift2 24s ease-in-out infinite alternate;
+    }
+
+    .orb-emerald {
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(15, 178, 124, 0.3) 0%, rgba(52, 211, 153, 0.08) 50%, transparent 70%);
+      bottom: 12%;
+      left: -40px;
+      animation: orbDrift3 22s ease-in-out infinite alternate;
+    }
+
+    .orb-cyan {
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.3) 0%, rgba(129, 140, 248, 0.08) 50%, transparent 70%);
+      top: 62%;
+      right: -50px;
+      animation: orbDrift4 26s ease-in-out infinite alternate;
+    }
+
+    .mesh-wave-svg {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 200%;
+      height: 280px;
+      opacity: 0.07;
+      animation: waveFloat 16s linear infinite alternate;
+    }
+
+    .wave-path-1 { fill: #6c4cff; }
+    .wave-path-2 { fill: #ff5f9e; }
+
+    /* 1. Top Bar */
+    .app-top-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
+      margin: 8px 0 20px;
+      padding: 0 4px;
+      width: 100%;
+      box-sizing: border-box;
+      position: relative;
+      z-index: 2;
+      animation: cinematicSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
-    .device-profile-main {
+    .user-profile-cluster {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      user-select: none;
+      padding: 4px 8px 4px 4px;
+      margin: -4px -8px -4px -4px;
+      border-radius: 99px;
+      transition: background 0.15s ease, transform 0.15s ease;
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.04);
+        transform: translateY(-1px);
+      }
+    }
+
+    .profile-text-wrap {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .profile-greeting {
+      font-size: 11px;
+      font-weight: 500;
+      color: #8e8e93;
+      letter-spacing: -0.01em;
+    }
+
+    .profile-name-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .profile-user-name {
+      font-size: 18px;
+      font-weight: 800;
+      color: #111216;
+      letter-spacing: -0.02em;
+      margin: 0;
+    }
+
+    .profile-switch-indicator {
+      font-size: 11px;
+      color: #8e8e93;
+      transition: transform 0.15s ease;
+    }
+
+    .user-profile-cluster:hover .profile-switch-indicator {
+      color: #6c4cff;
+      transform: translateY(1px);
+    }
+
+    .top-circle-action-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      color: #111216;
+      text-decoration: none;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &:hover {
+        background: #f7f8fa;
+        transform: scale(1.06);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+      }
+
+      &:active {
+        transform: scale(0.94);
+      }
+    }
+
+    /* 2. Matte Black Hero Card (Living Cyber-Card) */
+    .matte-hero-banner {
+      background: #0f1118;
+      color: #ffffff;
+      border-radius: 28px;
+      padding: 24px;
+      margin-bottom: 26px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 20px 48px -10px rgba(10, 12, 20, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+      animation: heroCardEntrance 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      flex-wrap: wrap;
+      gap: 16px;
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 1.5px;
+        border-radius: 26.5px;
+        background: linear-gradient(150deg, #10121a 0%, #171a26 60%, #0d0f17 100%);
+        z-index: 1;
+        pointer-events: none;
+      }
+
+      &:hover {
+        transform: translateY(-2px);
+      }
+    }
+
+    .hero-laser-border {
+      position: absolute;
+      top: -60%;
+      left: -60%;
+      width: 220%;
+      height: 220%;
+      background: conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        transparent 70deg,
+        rgba(108, 76, 255, 0.95) 110deg,
+        rgba(255, 95, 158, 0.95) 140deg,
+        rgba(15, 178, 124, 0.95) 170deg,
+        transparent 210deg,
+        transparent 360deg
+      );
+      animation: laserSpin 7.5s linear infinite;
+      pointer-events: none;
+      z-index: 0;
+      will-change: transform;
+    }
+
+    .hero-nebula-glow {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 2;
+      opacity: 0.36;
+    }
+
+    .nebula-1 {
+      width: 220px;
+      height: 220px;
+      background: radial-gradient(circle, rgba(108, 76, 255, 0.6) 0%, transparent 70%);
+      top: -40px;
+      right: -30px;
+      animation: nebulaMorph1 9s ease-in-out infinite alternate;
+    }
+
+    .nebula-2 {
+      width: 240px;
+      height: 240px;
+      background: radial-gradient(circle, rgba(255, 95, 158, 0.5) 0%, transparent 70%);
+      bottom: -60px;
+      left: 15%;
+      animation: nebulaMorph2 11s ease-in-out infinite alternate;
+    }
+
+    .hero-particles-field {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+      overflow: hidden;
+    }
+
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 0 6px #6c4cff;
+      bottom: -10px;
+      animation: particleRise 6s ease-in infinite;
+    }
+
+    .p-1 { left: 15%; animation-duration: 5.5s; animation-delay: 0s; width: 3px; height: 3px; }
+    .p-2 { left: 38%; animation-duration: 7.5s; animation-delay: 1.5s; width: 4px; height: 4px; }
+    .p-3 { left: 62%; animation-duration: 6.2s; animation-delay: 3s; width: 2.5px; height: 2.5px; }
+    .p-4 { left: 82%; animation-duration: 8.2s; animation-delay: 0.8s; width: 3.5px; height: 3.5px; }
+    .p-5 { left: 93%; animation-duration: 6.8s; animation-delay: 2.2s; width: 3px; height: 3px; }
+
+    .hero-shimmer-sweep {
+      position: absolute;
+      top: -100%;
+      left: -100%;
+      width: 300%;
+      height: 300%;
+      background: linear-gradient(
+        115deg,
+        transparent 35%,
+        rgba(255, 255, 255, 0.12) 50%,
+        transparent 65%
+      );
+      pointer-events: none;
+      z-index: 2;
+      animation: shimmerSweep 5.5s ease-in-out infinite;
+    }
+
+    .hero-left-content {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 0;
+      position: relative;
+      z-index: 3;
+    }
+
+    .hero-badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.9);
+      background: rgba(255, 255, 255, 0.08);
+      padding: 4px 10px;
+      border-radius: 99px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      width: fit-content;
+    }
+
+    .lightning-bolt {
+      color: #ffb800;
+      filter: drop-shadow(0 0 6px #ffb800);
+    }
+
+    .hero-profile-cluster {
       display: flex;
       align-items: center;
       gap: 14px;
+      margin-top: 4px;
     }
 
-    .device-profile-info {
+    .hero-profile-meta {
       display: flex;
       flex-direction: column;
       gap: 2px;
     }
 
-    .device-profile-pill {
-      font-size: 10.5px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: #0fb27c;
-      background: rgba(15, 178, 124, 0.12);
-      padding: 2px 8px;
-      border-radius: 99px;
-      width: fit-content;
-    }
-
-    .device-profile-name {
-      font-size: 19px;
+    .hero-member-name {
+      font-size: 20px;
       font-weight: 800;
-      color: var(--ink);
-      margin: 2px 0 0 0;
+      color: #ffffff;
+      margin: 0;
       letter-spacing: -0.02em;
     }
 
-    .device-profile-sub {
+    .hero-member-phone {
       font-size: 12px;
-      color: var(--muted);
+      color: rgba(255, 255, 255, 0.65);
     }
 
-    .switch-profile-btn {
+    .hero-right-action {
+      position: relative;
+      z-index: 3;
+    }
+
+    .hero-switch-btn {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 9px 16px;
+      gap: 8px;
+      padding: 10px 18px;
       border-radius: 99px;
-      border: 1px solid rgba(108, 76, 255, 0.25);
-      background: rgba(108, 76, 255, 0.08);
-      color: #6c4cff;
-      font-size: 12.5px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1.5px solid rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+      font-size: 13px;
       font-weight: 700;
       cursor: pointer;
-      transition: all 0.15s ease;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(108, 76, 255, 0.3);
+      }
+
+      &:active {
+        transform: scale(0.96);
+      }
     }
 
-    .switch-profile-btn:hover {
-      background: rgba(108, 76, 255, 0.16);
-      transform: translateY(-1px);
+    /* Luminous Card Glow Strips */
+    .card-glow-strip {
+      position: absolute;
+      top: 0;
+      left: 24px;
+      right: 24px;
+      height: 3px;
+      border-radius: 99px;
+      z-index: 2;
     }
 
-    .switch-profile-btn:active {
-      transform: scale(0.96);
-    }
+    .strip-indigo { background: linear-gradient(90deg, #6c4cff, #9b4dff); }
+    .strip-violet { background: linear-gradient(90deg, #9b4dff, #ff5f9e); }
+    .strip-pink { background: linear-gradient(90deg, #ff5f9e, #ff8cb9); }
+    .strip-emerald { background: linear-gradient(90deg, #0fb27c, #34d399); }
 
-    .header-title {
-      font-size: 26px;
-      font-weight: 800;
-      letter-spacing: -0.025em;
-      margin: 2px 0 0;
-    }
-
-    .alert-warning-card {
-      background: rgba(245, 159, 0, 0.12);
-      border: 1px solid #f59f00;
-      border-radius: var(--radius-tile, 16px);
-      padding: 14px;
-      display: flex;
-      gap: 12px;
-      margin-bottom: 16px;
-      color: var(--ink);
-    }
-
-    .alert-icon {
-      font-size: 24px;
-    }
-
-    .alert-content p {
-      font-size: 12px;
-      margin-top: 4px;
-      line-height: 1.4;
-    }
-
-    .card-title {
-      font-size: 16px;
-      font-weight: 800;
-      margin: 0;
-      letter-spacing: -0.015em;
-    }
-
+    /* Card Titles & Subtitles */
     .card-title-row {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
+      align-items: flex-start;
+      margin-bottom: 18px;
+      gap: 12px;
+    }
+
+    .card-title {
+      font-size: 19px;
+      font-weight: 800;
+      color: var(--ink);
+      letter-spacing: -0.02em;
+      margin: 0;
     }
 
     .section-sub {
-      font-size: 13px;
+      font-size: 12.5px;
       color: var(--muted);
-      margin: 4px 0 16px;
-      line-height: 1.4;
+      line-height: 1.45;
+      margin: 4px 0 0;
     }
 
+    .card-status-badge {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 99px;
+      background: rgba(108, 76, 255, 0.1);
+      color: #6c4cff;
+      border: 1px solid rgba(108, 76, 255, 0.2);
+      white-space: nowrap;
+    }
+
+    .current-rate-tag {
+      font-size: 12px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 99px;
+      background: rgba(15, 178, 124, 0.12);
+      color: #0fb27c;
+      border: 1px solid rgba(15, 178, 124, 0.25);
+      white-space: nowrap;
+    }
+
+    /* Form Fields Grid */
     .settings-form-grid {
       display: grid;
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(2, 1fr);
       gap: 14px;
+
+      @media (max-width: 600px) {
+        grid-template-columns: 1fr;
+      }
     }
 
     .setting-item {
       display: flex;
       flex-direction: column;
       gap: 6px;
-      min-width: 0;
-      width: 100%;
-      box-sizing: border-box;
+    }
+
+    .setting-item.full-span {
+      grid-column: 1 / -1;
     }
 
     .setting-label {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
       font-size: 12px;
       font-weight: 700;
       color: var(--muted);
       text-transform: uppercase;
       letter-spacing: 0.04em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .setting-input {
+      width: 100%;
+      height: 48px;
+      padding: 0 16px;
+      border-radius: 14px;
+      border: 1.5px solid var(--border);
+      background: var(--card-inner, rgba(0, 0, 0, 0.02));
+      color: var(--ink);
+      font-size: 15px;
+      font-weight: 600;
+      outline: none;
+      box-sizing: border-box;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &:focus {
+        border-color: #6c4cff;
+        background: #ffffff;
+        box-shadow: 0 0 0 4px rgba(108, 76, 255, 0.12);
+      }
+    }
+
+    .font-mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
 
     .eye-btn {
       background: transparent;
       border: none;
-      color: var(--brand-a);
+      color: #6c4cff;
       font-size: 11px;
       font-weight: 700;
       cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 6px;
+
+      &:hover {
+        background: rgba(108, 76, 255, 0.08);
+      }
     }
 
     .compact-hint {
       font-size: 11px;
       font-weight: 700;
-      color: var(--brand-a);
-      background: rgba(108, 76, 255, 0.08);
-      padding: 1px 8px;
-      border-radius: var(--radius-pill, 99px);
-      text-transform: none;
-      letter-spacing: normal;
+      color: #0fb27c;
+      background: rgba(15, 178, 124, 0.1);
+      padding: 2px 7px;
+      border-radius: 6px;
     }
 
-    .setting-input {
-      width: 100%;
-      max-width: 100%;
-      min-width: 0;
-      height: 46px;
-      border-radius: var(--radius-tile, 16px);
-      border: 1px solid var(--line);
-      background: var(--bg);
-      color: var(--ink);
-      padding: 0 14px;
-      font-size: 14px;
-      font-weight: 700;
-      outline: none;
-      font-family: inherit;
-      transition: border-color 0.2s ease, background 0.2s ease;
-      box-sizing: border-box;
-    }
-
-    input[type='date'].setting-input {
-      box-sizing: border-box;
-      width: 100%;
-      max-width: 100%;
-      min-width: 0;
-      display: block;
-      -webkit-appearance: none;
-      appearance: none;
-    }
-
-    input[type='date']::-webkit-date-and-time-value {
-      text-align: left;
-    }
-
-    .setting-input:focus {
-      border-color: var(--brand-a);
-      background: var(--card);
-    }
-
-    /* ----------------------------------------------------
-       Rate Revision Form (Clean Grid)
-       ---------------------------------------------------- */
+    /* Rate Revision Form */
     .rate-change-form {
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      background: var(--bg-subtle, #f5f5f7);
-      padding: 16px;
-      border-radius: var(--radius-tile, 18px);
-      border: 1px solid var(--line);
-      width: 100%;
-      box-sizing: border-box;
+      gap: 14px;
+      margin-bottom: 20px;
     }
 
     .rate-form-grid {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 12px;
-      width: 100%;
-      box-sizing: border-box;
-    }
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
 
-    @media (max-width: 480px) {
-      .rate-form-grid {
+      @media (max-width: 500px) {
         grid-template-columns: 1fr;
       }
     }
@@ -748,58 +1114,57 @@ import {
     .percent-adornment {
       position: absolute;
       right: 14px;
-      font-size: 15px;
-      font-weight: 800;
+      font-weight: 700;
       color: var(--muted);
+      font-size: 15px;
       pointer-events: none;
     }
 
     .apply-rate-btn {
       width: 100%;
-      height: 44px;
-      border-radius: var(--radius-pill, 99px);
-      background: var(--ink);
-      color: var(--card);
+      height: 48px;
+      border-radius: 14px;
       border: none;
-      font-size: 13px;
+      background: linear-gradient(135deg, #6c4cff 0%, #ff5f9e 100%);
+      color: #ffffff;
+      font-size: 14px;
       font-weight: 700;
       cursor: pointer;
-      margin-top: 4px;
-      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 22px -4px rgba(108, 76, 255, 0.4);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 26px -4px rgba(108, 76, 255, 0.5);
+      }
+
+      &:active {
+        transform: scale(0.98);
+      }
     }
 
-    .apply-rate-btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 18px rgba(17, 18, 22, 0.24);
-    }
-
-    .apply-rate-btn:active {
-      transform: scale(0.97);
-    }
-
-    /* ----------------------------------------------------
-       Rate Timeline
-       ---------------------------------------------------- */
+    /* Rate Timeline */
     .rate-history-section {
-      margin-top: 20px;
+      border-top: 1px solid var(--border);
       padding-top: 16px;
-      border-top: 1px solid var(--line);
+      margin-top: 8px;
     }
 
     .history-section-title {
       font-size: 12px;
-      font-weight: 800;
-      color: var(--muted);
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.04em;
+      color: var(--muted);
       margin-bottom: 12px;
     }
 
     .rate-timeline {
       display: flex;
       flex-direction: column;
-      gap: 0;
     }
 
     .timeline-entry {
@@ -824,14 +1189,14 @@ import {
     }
 
     .timeline-entry.current .timeline-bullet {
-      background: #10b981;
-      box-shadow: 0 0 6px #10b981;
+      background: #0fb27c;
+      box-shadow: 0 0 8px #0fb27c;
     }
 
     .timeline-line {
       flex: 1;
       width: 2px;
-      background: var(--line);
+      background: var(--border);
       margin: 4px 0;
     }
 
@@ -855,62 +1220,58 @@ import {
     .timeline-active-tag {
       font-size: 10px;
       font-weight: 800;
-      padding: 1px 6px;
-      border-radius: var(--radius-pill, 99px);
-      background: rgba(16, 185, 129, 0.15);
-      color: #10b981;
+      padding: 2px 7px;
+      border-radius: 99px;
+      background: rgba(15, 178, 124, 0.15);
+      color: #0fb27c;
     }
 
-    /* ----------------------------------------------------
-       Family Members Section (Minimal & Clean)
-       ---------------------------------------------------- */
+    /* Family Members List */
     .add-m-btn {
-      width: 32px;
-      height: 32px;
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
-      background: var(--ink);
-      color: var(--card);
+      background: #111216;
+      color: #ffffff;
       border: none;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       flex-shrink: 0;
-    }
 
-    .add-m-btn:hover {
-      opacity: 0.9;
-      transform: scale(1.06);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
+      &:hover {
+        transform: scale(1.08);
+        box-shadow: 0 6px 16px rgba(108, 76, 255, 0.3);
+      }
 
-    .add-m-btn:active {
-      transform: scale(0.92);
+      &:active {
+        transform: scale(0.92);
+      }
     }
 
     .members-luxury-list {
       display: flex;
       flex-direction: column;
+      gap: 10px;
     }
 
     .member-row {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 12px 0;
-      border-bottom: 1px solid var(--line);
-      transition: opacity 0.2s ease;
-    }
+      padding: 10px 14px;
+      border-radius: 14px;
+      background: var(--card-inner, rgba(0, 0, 0, 0.02));
+      border: 1px solid var(--border);
+      transition: all 0.2s ease;
 
-    .member-row:last-child {
-      border-bottom: none;
-      padding-bottom: 2px;
-    }
-
-    .member-row:first-child {
-      padding-top: 4px;
+      &:hover {
+        border-color: rgba(108, 76, 255, 0.3);
+        background: rgba(255, 255, 255, 0.8);
+      }
     }
 
     .member-avatar-wrap {
@@ -923,21 +1284,15 @@ import {
       flex: 1;
       min-width: 0;
       font-size: 15px;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--ink);
       border: none;
       background: transparent;
       outline: none;
       padding: 4px 0;
       letter-spacing: -0.01em;
-      transition: border-color 0.2s ease;
     }
 
-    .member-name-input:focus {
-      border-bottom: 1.5px solid var(--ink);
-    }
-
-    /* Modern SVG Trash Button */
     .member-del-btn {
       width: 32px;
       height: 32px;
@@ -951,26 +1306,18 @@ import {
       cursor: pointer;
       transition: all 0.2s ease;
       flex-shrink: 0;
+
+      &:hover {
+        background: rgba(238, 77, 107, 0.12);
+        color: #ee4d6b;
+      }
+
+      &:active {
+        transform: scale(0.92);
+      }
     }
 
-    .member-del-btn:hover {
-      background: rgba(238, 77, 107, 0.12);
-      color: #ee4d6b;
-    }
-
-    .member-del-btn:active {
-      transform: scale(0.92);
-    }
-
-    /* Family Alerts & Notifications Hub Styles */
-    .card-title-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 14px;
-      gap: 12px;
-    }
-
+    /* Alerts Hub */
     .alerts-badge-pill {
       font-size: 11px;
       font-weight: 700;
@@ -986,9 +1333,9 @@ import {
 
     .settings-pill-tab-bar {
       display: flex;
-      background: var(--bg-alt, rgba(0, 0, 0, 0.04));
+      background: var(--card-inner, rgba(0, 0, 0, 0.04));
       padding: 4px;
-      border-radius: 12px;
+      border-radius: 14px;
       gap: 4px;
       margin-bottom: 18px;
       overflow-x: auto;
@@ -999,20 +1346,24 @@ import {
       min-width: fit-content;
       border: none;
       background: transparent;
-      padding: 8px 12px;
-      border-radius: 8px;
+      padding: 9px 14px;
+      border-radius: 10px;
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--muted);
       cursor: pointer;
       transition: all 0.2s ease;
       white-space: nowrap;
+
+      &:hover {
+        color: var(--ink);
+      }
     }
 
     .settings-pill-tab.active {
-      background: var(--card);
-      color: var(--ink);
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+      background: #ffffff;
+      color: #111216;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
 
     .alerts-tab-content {
@@ -1045,11 +1396,11 @@ import {
 
     .tile-stat-label {
       color: var(--muted);
-      font-weight: 500;
+      font-weight: 600;
     }
 
     .tile-stat-val {
-      font-weight: 700;
+      font-weight: 800;
       color: var(--ink);
     }
 
@@ -1061,25 +1412,25 @@ import {
       background: var(--card-inner, rgba(0, 0, 0, 0.02));
       border: 1px dashed var(--border);
       border-radius: 14px;
-      padding: 12px 14px;
+      padding: 14px;
       font-size: 12px;
     }
 
     .preview-header-tag {
-      font-size: 10px;
+      font-size: 10.5px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: var(--muted);
       display: block;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
 
     .preview-msg-text {
       white-space: pre-wrap;
       font-family: inherit;
       margin: 0;
-      line-height: 1.45;
+      line-height: 1.5;
       color: var(--ink);
       font-size: 12px;
     }
@@ -1095,24 +1446,25 @@ import {
       align-items: center;
       justify-content: center;
       gap: 8px;
-      padding: 11px 16px;
-      border-radius: 12px;
+      padding: 13px 18px;
+      border-radius: 14px;
       background: #25d366;
       color: #ffffff;
-      font-size: 13px;
-      font-weight: 600;
+      font-size: 13.5px;
+      font-weight: 700;
       text-decoration: none;
-      transition: transform 0.15s ease, filter 0.15s ease;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       cursor: pointer;
-    }
+      box-shadow: 0 8px 20px -4px rgba(37, 211, 102, 0.4);
 
-    .settings-whatsapp-action-btn:hover {
-      filter: brightness(1.05);
-      transform: translateY(-1px);
-    }
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 24px -4px rgba(37, 211, 102, 0.5);
+      }
 
-    .settings-whatsapp-action-btn:active {
-      transform: scale(0.98);
+      &:active {
+        transform: scale(0.98);
+      }
     }
 
     .direct-chips-container {
@@ -1125,7 +1477,7 @@ import {
     .direct-label {
       font-size: 11px;
       color: var(--muted);
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.04em;
     }
@@ -1139,33 +1491,33 @@ import {
     .direct-phone-chip {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 5px;
       background: rgba(37, 211, 102, 0.1);
       color: #128c7e;
       border: 1px solid rgba(37, 211, 102, 0.25);
-      padding: 5px 10px;
+      padding: 6px 12px;
       border-radius: 99px;
-      font-size: 11px;
-      font-weight: 600;
+      font-size: 11.5px;
+      font-weight: 700;
       text-decoration: none;
       transition: all 0.15s ease;
-    }
 
-    .direct-phone-chip small {
-      opacity: 0.8;
-      font-size: 10px;
-    }
+      small {
+        opacity: 0.75;
+        font-size: 10px;
+      }
 
-    .direct-phone-chip:hover {
-      background: rgba(37, 211, 102, 0.2);
-      transform: translateY(-1px);
+      &:hover {
+        background: rgba(37, 211, 102, 0.2);
+        transform: translateY(-1px);
+      }
     }
 
     /* Reminders List */
     .reminders-members-list {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
     }
 
     .settings-reminder-row {
@@ -1174,8 +1526,8 @@ import {
       align-items: center;
       background: var(--card-inner, rgba(0, 0, 0, 0.02));
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 10px 14px;
+      border-radius: 14px;
+      padding: 12px 16px;
     }
 
     .reminder-left {
@@ -1185,8 +1537,8 @@ import {
     }
 
     .reminder-member-name {
-      font-size: 13px;
-      font-weight: 600;
+      font-size: 14px;
+      font-weight: 700;
       color: var(--ink);
     }
 
@@ -1196,7 +1548,7 @@ import {
     }
 
     .reminder-target-text {
-      font-size: 11px;
+      font-size: 11.5px;
       color: var(--ink);
       margin-top: 2px;
     }
@@ -1204,55 +1556,59 @@ import {
     .paid-check-badge {
       display: inline-flex;
       align-items: center;
-      padding: 4px 10px;
+      padding: 5px 12px;
       border-radius: 99px;
       background: rgba(15, 178, 124, 0.12);
       color: #0fb27c;
-      font-size: 11px;
-      font-weight: 700;
+      font-size: 11.5px;
+      font-weight: 800;
     }
 
     .send-remind-pill-btn {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      padding: 6px 12px;
+      gap: 6px;
+      padding: 7px 14px;
       border-radius: 99px;
       background: #25d366;
       color: #ffffff;
-      font-size: 11px;
-      font-weight: 600;
+      font-size: 12px;
+      font-weight: 700;
       text-decoration: none;
       transition: all 0.15s ease;
-    }
+      box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
 
-    .send-remind-pill-btn:hover {
-      filter: brightness(1.05);
-      transform: translateY(-1px);
+      &:hover {
+        transform: translateY(-1px);
+      }
+
+      &:active {
+        transform: scale(0.96);
+      }
     }
 
     /* Excel Section */
     .settings-excel-tile {
       background: var(--card-inner, rgba(0, 0, 0, 0.02));
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 12px 14px;
+      border-radius: 16px;
+      padding: 14px 16px;
     }
 
     .excel-tile-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
 
     .excel-badge {
       font-size: 10px;
-      font-weight: 700;
+      font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      padding: 2px 6px;
-      border-radius: 4px;
+      padding: 3px 8px;
+      border-radius: 6px;
       background: rgba(15, 178, 124, 0.15);
       color: #0fb27c;
     }
@@ -1260,7 +1616,7 @@ import {
     .excel-filename {
       font-size: 11px;
       color: var(--muted);
-      font-family: monospace;
+      font-family: ui-monospace, monospace;
     }
 
     .excel-table-snippet {
@@ -1273,16 +1629,16 @@ import {
       display: flex;
       justify-content: space-between;
       font-size: 12px;
-      padding: 4px 0;
+      padding: 5px 0;
       border-bottom: 1px dashed var(--border);
-    }
 
-    .snippet-row:last-child {
-      border-bottom: none;
+      &:last-child {
+        border-bottom: none;
+      }
     }
 
     .snip-name {
-      font-weight: 600;
+      font-weight: 700;
       color: var(--ink);
     }
 
@@ -1293,12 +1649,13 @@ import {
 
     .snip-paid {
       color: #0fb27c;
+      font-weight: 800;
     }
 
     .excel-button-stack {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
     }
 
     .btn-download-excel,
@@ -1307,35 +1664,125 @@ import {
       align-items: center;
       justify-content: center;
       gap: 8px;
-      padding: 11px 16px;
-      border-radius: 12px;
-      font-size: 13px;
-      font-weight: 600;
+      padding: 13px 18px;
+      border-radius: 14px;
+      font-size: 13.5px;
+      font-weight: 700;
       text-decoration: none;
       cursor: pointer;
-      transition: all 0.15s ease;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       border: none;
     }
 
     .btn-download-excel {
       background: #0fb27c;
       color: #ffffff;
-    }
+      box-shadow: 0 8px 20px -4px rgba(15, 178, 124, 0.4);
 
-    .btn-download-excel:hover {
-      filter: brightness(1.05);
-      transform: translateY(-1px);
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 24px -4px rgba(15, 178, 124, 0.5);
+      }
+
+      &:active {
+        transform: scale(0.98);
+      }
     }
 
     .btn-send-email {
-      background: var(--card-inner, rgba(0, 0, 0, 0.05));
-      border: 1px solid var(--border);
+      background: var(--card-inner, rgba(0, 0, 0, 0.04));
+      border: 1.5px solid var(--border);
+      color: var(--ink);
+
+      &:hover {
+        background: var(--border);
+        transform: translateY(-1px);
+      }
+
+      &:active {
+        transform: scale(0.98);
+      }
+    }
+
+    /* Warning Card */
+    .alert-warning-card {
+      background: rgba(245, 159, 0, 0.12);
+      border: 1px solid #f59f00;
+      border-radius: var(--radius-tile, 16px);
+      padding: 14px;
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
       color: var(--ink);
     }
 
-    .btn-send-email:hover {
-      background: var(--border);
-      transform: translateY(-1px);
+    .alert-icon { font-size: 24px; }
+    .alert-content p { font-size: 12px; margin: 4px 0 0; }
+
+    /* Keyframes */
+    @keyframes laserSpin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes nebulaMorph1 {
+      0% { transform: scale(1) translate(0, 0); opacity: 0.3; }
+      50% { transform: scale(1.15) translate(-10px, 15px); opacity: 0.45; }
+      100% { transform: scale(0.95) translate(15px, -10px); opacity: 0.3; }
+    }
+
+    @keyframes nebulaMorph2 {
+      0% { transform: scale(1) translate(0, 0); opacity: 0.25; }
+      50% { transform: scale(1.2) translate(15px, -12px); opacity: 0.42; }
+      100% { transform: scale(0.9) translate(-10px, 8px); opacity: 0.25; }
+    }
+
+    @keyframes particleRise {
+      0% { transform: translateY(0) scale(0.8); opacity: 0; }
+      20% { opacity: 0.8; }
+      80% { opacity: 0.6; }
+      100% { transform: translateY(-160px) scale(1.4); opacity: 0; }
+    }
+
+    @keyframes shimmerSweep {
+      0% { transform: translate(-30%, -30%); }
+      50% { transform: translate(15%, 15%); }
+      100% { transform: translate(-30%, -30%); }
+    }
+
+    @keyframes heroCardEntrance {
+      0% { opacity: 0; transform: translateY(12px) scale(0.98); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes cinematicSlideDown {
+      0% { opacity: 0; transform: translateY(-8px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes orbDrift1 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(30px, 40px) scale(1.1); }
+    }
+
+    @keyframes orbDrift2 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(-35px, 25px) scale(1.08); }
+    }
+
+    @keyframes orbDrift3 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(25px, -30px) scale(1.12); }
+    }
+
+    @keyframes orbDrift4 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(-20px, -25px) scale(1.06); }
+    }
+
+    @keyframes waveFloat {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-40px); }
     }
   `,
 })
