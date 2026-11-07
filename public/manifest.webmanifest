@@ -2,9 +2,9 @@
   "name": "Loan EMI Tracker",
   "short_name": "LoanTracker",
   "description": "Group Loan Tracker & EMI Ledger with mathematical precision",
-  "start_url": "/",
-  "id": "/",
-  "scope": "/",
+  "start_url": "./",
+  "id": "sbi-home-loan",
+  "scope": "./",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui", "window-controls-overlay"],
   "orientation": "portrait",
@@ -16,61 +16,53 @@
       "name": "Members",
       "short_name": "Members",
       "description": "View family members collection status",
-      "url": "/members",
-      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+      "url": "./members",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Payment History",
       "short_name": "History",
       "description": "See who paid how much",
-      "url": "/members/history",
-      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Insights",
-      "short_name": "Insights",
-      "description": "View loan projections and forecasts",
-      "url": "/insights",
-      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+      "url": "./history",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
     }
   ],
   "icons": [
     {
-      "src": "/icons/icon-192.png",
+      "src": "icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-512.png",
+      "src": "icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-maskable-192.png",
+      "src": "icons/icon-maskable-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/icons/icon-maskable-512.png",
+      "src": "icons/icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/icons/icon-192.svg",
+      "src": "icons/icon-192.svg",
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-512.svg",
+      "src": "icons/icon-512.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any"
     }
   ]
 }
-

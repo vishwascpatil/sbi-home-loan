@@ -4,6 +4,26 @@
     <meta charset="utf-8" />
     <title>Loan EMI Tracker</title>
     <base href="/" />
+    <script>
+      // Single Page Apps for GitHub Pages SPA redirect decoder
+      // MIT License - https://github.com/rafgraph/spa-github-pages
+      (function (l) {
+        if (l.search[1] === '/') {
+          var decoded = l.search
+            .slice(1)
+            .split('&')
+            .map(function (s) {
+              return s.replace(/~and~/g, '&');
+            })
+            .join('?');
+          window.history.replaceState(
+            null,
+            null,
+            l.pathname.slice(0, -1) + decoded + l.hash
+          );
+        }
+      })(window.location);
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
     <meta name="description" content="Group Loan Tracker & EMI Ledger with mathematical precision" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -15,9 +35,9 @@
     <meta name="theme-color" content="#f2f3f6" />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f2f3f6" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#111216" />
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-    <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <script>
       // Disable pinch-to-zoom gestures (iOS Safari, Android Chrome, and trackpads)
