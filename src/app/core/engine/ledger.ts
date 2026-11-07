@@ -126,7 +126,7 @@ export function bankPaymentSplit(
 /**
  * Calculate the outstanding loan principal at a specific date or month.
  * Derived deterministically from opening balance and historical ledger transactions.
- * Contributions NEVER decrease outstanding; only bank payment principal portions do.
+ * Member deposits into the OD loan directly reduce the outstanding principal.
  */
 export function outstandingAt(dateOrMonth: string, ledger: LedgerState): Paise {
   const targetDate = dateOrMonth.length === 7 ? `${dateOrMonth}-31` : dateOrMonth;
@@ -139,6 +139,10 @@ export function outstandingAt(dateOrMonth: string, ledger: LedgerState): Paise {
 
   for (const tx of activeTx) {
     switch (tx.type) {
+      case 'contribution':
+        // Member deposits directly reduce the OD loan outstanding balance
+        currentBalance = subPaise(currentBalance, tx.amount);
+        break;
       case 'bankPayment':
         currentBalance = subPaise(currentBalance, tx.principalPortion);
         break;
@@ -152,9 +156,9 @@ export function outstandingAt(dateOrMonth: string, ledger: LedgerState): Paise {
       case 'interestCharge':
         currentBalance = addPaise(currentBalance, tx.amount);
         break;
-      case 'contribution':
       case 'withdrawal':
-        // Contributions and withdrawals strictly affect group cash, NOT the loan principal!
+        // Overdraft withdrawals increase outstanding principal
+        currentBalance = addPaise(currentBalance, tx.amount);
         break;
     }
   }
@@ -203,6 +207,8 @@ export function monthlySummary(
   for (const tx of activeTx) {
     if (tx.type === 'contribution') {
       memberContributions = addPaise(memberContributions, tx.amount);
+      paidToBank = addPaise(paidToBank, tx.amount);
+      principalReduced = addPaise(principalReduced, tx.amount);
     } else if (tx.type === 'bankPayment') {
       paidToBank = addPaise(paidToBank, tx.amount);
       principalReduced = addPaise(principalReduced, tx.principalPortion);

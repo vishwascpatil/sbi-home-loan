@@ -76,7 +76,10 @@ export class DailyReducingBalanceEngine implements InterestEngine {
       const dayTxs = activeTxs.filter((t) => (t.valueDate || t.date) === dateStr);
 
       for (const tx of dayTxs) {
-        if (tx.type === 'bankPayment') {
+        if (tx.type === 'contribution') {
+          // Member deposit into OD loan reduces principal from this day forward
+          dayMovements -= BigInt(tx.amount);
+        } else if (tx.type === 'bankPayment') {
           // Bank payment reduces principal by principalPortion
           dayMovements -= BigInt(tx.principalPortion);
         } else if (tx.type === 'principalAdjustment') {
@@ -84,8 +87,9 @@ export class DailyReducingBalanceEngine implements InterestEngine {
           dayMovements -= BigInt(tx.amount);
         } else if (tx.type === 'interestCharge') {
           dayMovements += BigInt(tx.amount);
+        } else if (tx.type === 'withdrawal') {
+          dayMovements += BigInt(tx.amount);
         }
-        // Contributions and withdrawals DO NOT affect loan principal
       }
 
       const dayClosingBigInt = currentBalance + dayMovements;

@@ -73,6 +73,13 @@ export class LocalStorageLedgerRepository implements LedgerRepository {
         return freshSeed;
       }
 
+      // Clean up legacy placeholder duplicate bank payments if present
+      if (Array.isArray(state.transactions)) {
+        state.transactions = state.transactions.filter(
+          (t) => t.id !== 'tx-nov-4-bank-payment' && t.id !== 'tx-nov-5-bank-payment'
+        );
+      }
+
       const avatarMap: Record<string, string> = {
         vishwas: 'profiles/vishwas.jpeg',
         vikas: 'profiles/vikas.jpeg',

@@ -83,9 +83,9 @@ export function getInitialSeedData(): LedgerState {
     },
   ];
 
-  // November payments totaling ₹2,18,900 added on Nov 4th & Nov 5th
+  // November member deposits totaling ₹2,18,900 added on Nov 4th & Nov 5th
   const transactions: Transaction[] = [
-    // Vishwas contribution on Nov 4
+    // Vishwas deposit on Nov 4
     {
       id: 'tx-nov-4-vishwas',
       type: 'contribution',
@@ -98,22 +98,7 @@ export function getInitialSeedData(): LedgerState {
       createdAt: '2026-11-04T10:00:00.000Z',
       updatedAt: '2026-11-04T10:00:00.000Z',
     },
-    // Loan payment on Nov 4
-    {
-      id: 'tx-nov-4-bank-payment',
-      type: 'bankPayment',
-      amount: toPaise(105000),
-      principalPortion: toPaise(105000),
-      interestPortion: toPaise(0),
-      isEstimatedSplit: false,
-      date: '2026-11-04',
-      forMonth: '2026-11',
-      mode: 'Bank transfer',
-      notes: 'Payment to loan on Nov 4',
-      createdAt: '2026-11-04T10:30:00.000Z',
-      updatedAt: '2026-11-04T10:30:00.000Z',
-    },
-    // Vikas contribution on Nov 5
+    // Vikas deposit on Nov 5
     {
       id: 'tx-nov-5-vikas',
       type: 'contribution',
@@ -126,7 +111,7 @@ export function getInitialSeedData(): LedgerState {
       createdAt: '2026-11-05T09:00:00.000Z',
       updatedAt: '2026-11-05T09:00:00.000Z',
     },
-    // Bhavya contribution on Nov 5
+    // Bhavya deposit on Nov 5
     {
       id: 'tx-nov-5-bhavya',
       type: 'contribution',
@@ -138,21 +123,6 @@ export function getInitialSeedData(): LedgerState {
       notes: 'Bhavya deposit on Nov 5',
       createdAt: '2026-11-05T09:15:00.000Z',
       updatedAt: '2026-11-05T09:15:00.000Z',
-    },
-    // Loan payment on Nov 5
-    {
-      id: 'tx-nov-5-bank-payment',
-      type: 'bankPayment',
-      amount: toPaise(113900),
-      principalPortion: toPaise(113900),
-      interestPortion: toPaise(0),
-      isEstimatedSplit: false,
-      date: '2026-11-05',
-      forMonth: '2026-11',
-      mode: 'Bank transfer',
-      notes: 'Payment to loan on Nov 5',
-      createdAt: '2026-11-05T09:30:00.000Z',
-      updatedAt: '2026-11-05T09:30:00.000Z',
     },
   ];
 
