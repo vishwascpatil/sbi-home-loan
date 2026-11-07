@@ -83,48 +83,8 @@ export function getInitialSeedData(): LedgerState {
     },
   ];
 
-  // November member deposits totaling ₹2,18,900 added on Nov 4th & Nov 5th
-  const transactions: Transaction[] = [
-    // Vishwas deposit on Nov 4
-    {
-      id: 'tx-nov-4-vishwas',
-      type: 'contribution',
-      memberId: 'mem-vishwas',
-      amount: toPaise(105000),
-      date: '2026-11-04',
-      forMonth: '2026-11',
-      mode: 'Bank transfer',
-      notes: 'Vishwas deposit on Nov 4',
-      createdAt: '2026-11-04T10:00:00.000Z',
-      updatedAt: '2026-11-04T10:00:00.000Z',
-    },
-    // Vikas deposit on Nov 5
-    {
-      id: 'tx-nov-5-vikas',
-      type: 'contribution',
-      memberId: 'mem-vikas',
-      amount: toPaise(105000),
-      date: '2026-11-05',
-      forMonth: '2026-11',
-      mode: 'Bank transfer',
-      notes: 'Vikas deposit on Nov 5',
-      createdAt: '2026-11-05T09:00:00.000Z',
-      updatedAt: '2026-11-05T09:00:00.000Z',
-    },
-    // Bhavya deposit on Nov 5
-    {
-      id: 'tx-nov-5-bhavya',
-      type: 'contribution',
-      memberId: 'mem-bhavya',
-      amount: toPaise(8900),
-      date: '2026-11-05',
-      forMonth: '2026-11',
-      mode: 'Bank transfer',
-      notes: 'Bhavya deposit on Nov 5',
-      createdAt: '2026-11-05T09:15:00.000Z',
-      updatedAt: '2026-11-05T09:15:00.000Z',
-    },
-  ];
+  // Start with clean empty transactions; no default mock deposits
+  const transactions: Transaction[] = [];
 
   const rateChanges: RateChange[] = [
     {

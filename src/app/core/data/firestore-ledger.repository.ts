@@ -13,6 +13,7 @@ import {
   writeBatch,
   onSnapshot,
   Unsubscribe,
+  deleteDoc,
 } from 'firebase/firestore';
 import {
   AuditEntry,
@@ -103,8 +104,24 @@ export class FirestoreLedgerRepository implements LedgerRepository {
         getDocs(collection(this.db, 'loans', PRIMARY_LOAN_ID, 'auditLog')),
       ]);
 
+      const mockIds = new Set([
+        'tx-nov-4-vishwas',
+        'tx-nov-5-vikas',
+        'tx-nov-5-bhavya',
+        'tx-nov-4-bank-payment',
+        'tx-nov-5-bank-payment',
+      ]);
       const members = membersSnap.docs.map((d) => d.data() as Member);
-      const transactions = transactionsSnap.docs.map((d) => d.data() as Transaction);
+      const transactions = transactionsSnap.docs
+        .map((d) => d.data() as Transaction)
+        .filter((t) => !mockIds.has(t.id) && !t.id.startsWith('tx-nov-'));
+
+      // Automatically purge any stale mock transactions from Firestore so they never persist or reappear
+      for (const d of transactionsSnap.docs) {
+        if (mockIds.has(d.id) || d.id.startsWith('tx-nov-')) {
+          void deleteDoc(doc(this.db, 'loans', PRIMARY_LOAN_ID, 'transactions', d.id));
+        }
+      }
       const rateChanges = rateChangesSnap.docs.map((d) => d.data() as RateChange);
       const snapshots = snapshotsSnap.docs.map((d) => d.data() as BalanceSnapshot);
       const statements = statementsSnap.docs.map((d) => d.data() as StatementSnapshot);
@@ -172,6 +189,9 @@ export class FirestoreLedgerRepository implements LedgerRepository {
 
       // 3. Save transactions
       for (const tx of state.transactions) {
+        if (tx.id.startsWith('tx-nov-') || tx.id === 'tx-nov-4-vishwas' || tx.id === 'tx-nov-5-vikas' || tx.id === 'tx-nov-5-bhavya') {
+          continue;
+        }
         const txRef = doc(this.db, 'loans', PRIMARY_LOAN_ID, 'transactions', tx.id);
         batch.set(txRef, tx, { merge: true });
       }
