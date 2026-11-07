@@ -224,7 +224,10 @@ async function dispatchMessage(phone: string, text: string): Promise<void> {
   try {
     const cfgSnap = await db.doc(`loans/${PRIMARY_LOAN_ID}/settings/sms_gateway`).get();
     const config = cfgSnap.exists ? cfgSnap.data() : {};
-    const fast2smsKey = process.env.FAST2SMS_API_KEY || config?.fast2smsApiKey;
+    const fast2smsKey =
+      process.env.FAST2SMS_API_KEY ||
+      config?.fast2smsApiKey ||
+      'ifP2O75vmoqxcxZ4L7XvQTDUhQBYEz9upwlR69z7nDIRaM0mD0Ne7S9IZd8R3YTpGzOkJhtoOCUK0my2';
 
     if (fast2smsKey) {
       const response = await fetch('https://www.fast2sms.com/dev/bulkV2', {

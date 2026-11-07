@@ -23,18 +23,27 @@ export interface SmsDispatchResult {
 
 const SMS_CONFIG_STORAGE_KEY = 'loan_tracker_sms_config_v1';
 
+export const DEFAULT_FAST2SMS_KEY =
+  'ifP2O75vmoqxcxZ4L7XvQTDUhQBYEz9upwlR69z7nDIRaM0mD0Ne7S9IZd8R3YTpGzOkJhtoOCUK0my2';
+
 export function loadLocalSmsConfig(): SmsGatewayConfig {
   try {
     if (typeof localStorage !== 'undefined') {
       const raw = localStorage.getItem(SMS_CONFIG_STORAGE_KEY);
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (!parsed.fast2smsApiKey) {
+          parsed.fast2smsApiKey = DEFAULT_FAST2SMS_KEY;
+        }
+        return parsed;
+      }
     }
   } catch {
     // Fallback
   }
   return {
     provider: 'fast2sms',
-    fast2smsApiKey: '',
+    fast2smsApiKey: DEFAULT_FAST2SMS_KEY,
   };
 }
 
