@@ -6,8 +6,9 @@ import {
   SideRailComponent,
   TabBarComponent,
 } from './shared/ui';
-import { LedgerStore } from './core/state';
+import { LedgerStore, UserProfileStore } from './core/state';
 import { AddEditTransactionSheetComponent } from './features/transaction-sheet/add-edit-transaction-sheet.component';
+import { WelcomeBoardComponent } from './features/welcome/welcome-board.component';
 
 @Component({
   selector: 'app-root',
@@ -17,6 +18,7 @@ import { AddEditTransactionSheetComponent } from './features/transaction-sheet/a
     SideRailComponent,
     NotificationCenterComponent,
     AddEditTransactionSheetComponent,
+    WelcomeBoardComponent,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',
@@ -24,6 +26,7 @@ import { AddEditTransactionSheetComponent } from './features/transaction-sheet/a
 })
 export class App {
   readonly ledgerStore = inject(LedgerStore);
+  readonly userProfile = inject(UserProfileStore);
   private readonly swUpdate = inject(SwUpdate, { optional: true });
 
   readonly isAddSheetOpen = signal<boolean>(false);

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { LedgerStore, SettingsStore } from '../../core/state';
+import { LedgerStore, SettingsStore, UserProfileStore } from '../../core/state';
 import {
   AvatarComponent,
   BarChartComponent,
@@ -41,11 +41,22 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
     <div class="home-page-container">
       <!-- 1. Top User Profile Bar (Screenshot Matched) -->
       <header class="app-top-bar">
-        <div class="user-profile-cluster">
-          <app-avatar name="Vishwas" [size]="44" [circular]="true" />
+        <div
+          class="user-profile-cluster"
+          (click)="userProfile.openProfilePicker()"
+          (keydown.enter)="userProfile.openProfilePicker()"
+          role="button"
+          tabindex="0"
+          aria-label="Switch User Profile"
+          title="Click to switch member profile"
+        >
+          <app-avatar [name]="userProfile.currentMemberName()" [avatarUrl]="userProfile.currentMemberAvatar()" [size]="44" [circular]="true" />
           <div class="profile-text-wrap">
             <span class="profile-greeting">Welcome back</span>
-            <h1 class="profile-user-name">Vishwas</h1>
+            <div class="profile-name-row">
+              <h1 class="profile-user-name">{{ userProfile.currentMemberName() }}</h1>
+              <span class="profile-switch-indicator">▾</span>
+            </div>
           </div>
         </div>
 
@@ -357,6 +368,34 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       display: flex;
       align-items: center;
       gap: 12px;
+      cursor: pointer;
+      user-select: none;
+      padding: 4px 8px 4px 4px;
+      margin: -4px -8px -4px -4px;
+      border-radius: 99px;
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+
+    .user-profile-cluster:hover {
+      background: rgba(0, 0, 0, 0.04);
+      transform: translateY(-1px);
+    }
+
+    .profile-name-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .profile-switch-indicator {
+      font-size: 11px;
+      color: #8e8e93;
+      transition: transform 0.15s ease;
+    }
+
+    .user-profile-cluster:hover .profile-switch-indicator {
+      color: #6c4cff;
+      transform: translateY(1px);
     }
 
     .profile-avatar-circle {
@@ -964,6 +1003,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
 })
 export class HomeComponent {
   readonly ledgerStore = inject(LedgerStore);
+  readonly userProfile = inject(UserProfileStore);
   readonly settings = inject(SettingsStore);
   readonly router = inject(Router);
 

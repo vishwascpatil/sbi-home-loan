@@ -15,7 +15,7 @@ import {
   BottomSheetComponent,
   ConfirmSheetComponent,
 } from '../../shared/ui';
-import { LedgerStore } from '../../core/state';
+import { LedgerStore, UserProfileStore } from '../../core/state';
 import {
   getTransactionAmount,
   Member,
@@ -507,6 +507,7 @@ const PAYMENT_MODES: PaymentMode[] = [
 })
 export class AddEditTransactionSheetComponent implements OnChanges {
   readonly ledgerStore = inject(LedgerStore);
+  readonly userProfile = inject(UserProfileStore);
 
   readonly isOpen = input<boolean>(false);
   readonly editTransaction = input<Transaction | null>(null);
@@ -672,7 +673,10 @@ export class AddEditTransactionSheetComponent implements OnChanges {
   private resetForm(): void {
     this.selectedType.set(this.initialType() || 'contribution');
     const firstMember = this.ledgerStore.activeMembers()[0];
-    const targetMemberId = this.initialMemberId() || (firstMember ? firstMember.id : '');
+    const targetMemberId =
+      this.initialMemberId() ||
+      this.userProfile.currentMemberId() ||
+      (firstMember ? firstMember.id : '');
     this.selectedMemberId.set(targetMemberId);
 
     if (targetMemberId) {

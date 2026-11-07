@@ -19,6 +19,11 @@
     (dismissed)="isAddSheetOpen.set(false)"
   />
 
+  <!-- Welcome Board / Device Profile Onboarding -->
+  @if (userProfile.isWelcomeBoardOpen()) {
+    <app-welcome-board />
+  }
+
   <!-- Offline Service Worker Update Prompt -->
   @if (updateAvailable()) {
     <aside class="sw-update-banner" role="status" aria-live="polite">

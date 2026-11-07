@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { LedgerStore } from '../../core/state';
+import { LedgerStore, UserProfileStore } from '../../core/state';
 import {
   addPaise,
   buildMonthlyDueReminder,
@@ -32,7 +32,7 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       <!-- 1. Top Bar (Matching Home Top Bar) -->
       <header class="app-top-bar">
         <div class="user-profile-cluster">
-          <app-avatar name="Vishwas" [size]="44" [circular]="true" />
+          <app-avatar [name]="userProfile.currentMemberName()" [avatarUrl]="userProfile.currentMemberAvatar()" [size]="44" [circular]="true" />
           <div class="profile-text-wrap">
             <span class="profile-greeting">Due by 5th every month</span>
             <h1 class="profile-user-name">Family Members</h1>
@@ -746,6 +746,7 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
 })
 export class MembersComponent {
   readonly ledgerStore = inject(LedgerStore);
+  readonly userProfile = inject(UserProfileStore);
   readonly router = inject(Router);
 
   readonly isAddTxOpen = signal(false);

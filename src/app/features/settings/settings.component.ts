@@ -6,7 +6,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { LedgerStore, SettingsStore } from '../../core/state';
+import { LedgerStore, SettingsStore, UserProfileStore } from '../../core/state';
 import {
   AvatarComponent,
   ConfirmSheetComponent,
@@ -57,6 +57,27 @@ import {
           </div>
         </div>
       }
+
+      <!-- 0. Active Device Profile Card -->
+      <app-glass-card [staggerIndex]="0">
+        <div class="device-profile-card">
+          <div class="device-profile-main">
+            <app-avatar [name]="userProfile.currentMemberName()" [avatarUrl]="userProfile.currentMemberAvatar()" [size]="52" [circular]="true" />
+            <div class="device-profile-info">
+              <span class="device-profile-pill">Active on this Phone</span>
+              <h2 class="device-profile-name">{{ userProfile.currentMemberName() }}</h2>
+              <span class="device-profile-sub">{{ userProfile.currentMember()?.phone || 'No phone set' }}</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="switch-profile-btn"
+            (click)="userProfile.openProfilePicker()"
+          >
+            <span>🔄</span> Switch Member
+          </button>
+        </div>
+      </app-glass-card>
 
       <!-- 1. Loan Parameters Editor -->
       <app-glass-card [staggerIndex]="0">
@@ -477,6 +498,76 @@ import {
       color: var(--muted);
       text-transform: uppercase;
       letter-spacing: 0.05em;
+    }
+
+    /* Active Device Profile Card */
+    .device-profile-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .device-profile-main {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .device-profile-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .device-profile-pill {
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #0fb27c;
+      background: rgba(15, 178, 124, 0.12);
+      padding: 2px 8px;
+      border-radius: 99px;
+      width: fit-content;
+    }
+
+    .device-profile-name {
+      font-size: 19px;
+      font-weight: 800;
+      color: var(--ink);
+      margin: 2px 0 0 0;
+      letter-spacing: -0.02em;
+    }
+
+    .device-profile-sub {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .switch-profile-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 16px;
+      border-radius: 99px;
+      border: 1px solid rgba(108, 76, 255, 0.25);
+      background: rgba(108, 76, 255, 0.08);
+      color: #6c4cff;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .switch-profile-btn:hover {
+      background: rgba(108, 76, 255, 0.16);
+      transform: translateY(-1px);
+    }
+
+    .switch-profile-btn:active {
+      transform: scale(0.96);
     }
 
     .header-title {
@@ -1246,6 +1337,7 @@ import {
 })
 export class SettingsComponent {
   readonly ledgerStore = inject(LedgerStore);
+  readonly userProfile = inject(UserProfileStore);
   readonly settings = inject(SettingsStore);
 
   readonly formatPaise = formatPaise;
