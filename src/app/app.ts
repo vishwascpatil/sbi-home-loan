@@ -5,7 +5,6 @@ import {
   NotificationCenterComponent,
   SideRailComponent,
   TabBarComponent,
-  ToastComponent,
 } from './shared/ui';
 import { LedgerStore } from './core/state';
 import { AddEditTransactionSheetComponent } from './features/transaction-sheet/add-edit-transaction-sheet.component';
@@ -16,7 +15,6 @@ import { AddEditTransactionSheetComponent } from './features/transaction-sheet/a
     RouterOutlet,
     TabBarComponent,
     SideRailComponent,
-    ToastComponent,
     NotificationCenterComponent,
     AddEditTransactionSheetComponent,
   ],

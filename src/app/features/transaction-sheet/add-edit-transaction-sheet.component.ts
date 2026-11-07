@@ -14,7 +14,6 @@ import {
   AvatarComponent,
   BottomSheetComponent,
   ConfirmSheetComponent,
-  ToastService,
 } from '../../shared/ui';
 import { LedgerStore } from '../../core/state';
 import {
@@ -508,7 +507,6 @@ const PAYMENT_MODES: PaymentMode[] = [
 })
 export class AddEditTransactionSheetComponent implements OnChanges {
   readonly ledgerStore = inject(LedgerStore);
-  readonly toast = inject(ToastService);
 
   readonly isOpen = input<boolean>(false);
   readonly editTransaction = input<Transaction | null>(null);
@@ -577,13 +575,11 @@ export class AddEditTransactionSheetComponent implements OnChanges {
 
   async saveTransaction(): Promise<void> {
     if (this.isLocked()) {
-      this.toast.show('This month is locked. Please unlock it to make changes.', 'danger');
       return;
     }
 
     const amt = this.numericAmount();
     if (amt <= 0) {
-      this.toast.show('Please enter a valid amount', 'danger');
       return;
     }
 
@@ -591,7 +587,6 @@ export class AddEditTransactionSheetComponent implements OnChanges {
       const memberId =
         this.selectedMemberId() || this.ledgerStore.activeMembers()[0]?.id;
       if (!memberId) {
-        this.toast.show('Please select who paid', 'danger');
         return;
       }
     }
@@ -626,7 +621,6 @@ export class AddEditTransactionSheetComponent implements OnChanges {
             notes: this.notesInput,
           });
         }
-        this.toast.show('Payment updated successfully', 'success');
       } else if (this.selectedType() === 'bankPayment') {
         const actualInterest = this.customInterestInput() ? toPaise(this.customInterestInput()) : undefined;
         await this.ledgerStore.recordBankPayment({
@@ -638,7 +632,6 @@ export class AddEditTransactionSheetComponent implements OnChanges {
           reference: this.referenceInput,
           notes: this.notesInput,
         });
-        this.toast.show('Bank payment recorded', 'success');
       } else {
         await this.ledgerStore.addContribution({
           memberId,
@@ -647,23 +640,20 @@ export class AddEditTransactionSheetComponent implements OnChanges {
           forMonth,
           mode,
         });
-        this.toast.show('Payment saved', 'success');
       }
 
       this.dismissed.emit();
     } catch {
-      this.toast.show('Failed to save payment', 'danger');
+      // Ignore or log error silently
     }
   }
 
   async confirmUnlockPeriod(): Promise<void> {
     const reason = this.unlockReasonInput.trim();
     if (!reason) {
-      this.toast.show('Please provide a reason for unlocking', 'danger');
       return;
     }
     await this.ledgerStore.unlockPeriod(this.forMonthInput, reason);
-    this.toast.show(`Month ${this.forMonthInput} unlocked`, 'info');
     this.isUnlockPromptOpen.set(false);
     this.unlockReasonInput = '';
   }
@@ -672,7 +662,6 @@ export class AddEditTransactionSheetComponent implements OnChanges {
     if (!this.editTransaction() || this.isLocked()) return;
     await this.ledgerStore.deleteTransaction(this.editTransaction()!.id);
     this.isConfirmDeleteOpen.set(false);
-    this.toast.show('Payment deleted', 'danger');
     this.dismissed.emit();
   }
 

@@ -55,18 +55,6 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
             </span>
           </div>
         </div>
-
-        <button
-          type="button"
-          class="hero-circle-cta"
-          (click)="openAddContribution()"
-          aria-label="Add Member Money"
-          title="Add Member Money"
-        >
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#111216" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="9 18 15 12 9 6"></polyline>
-          </svg>
-        </button>
       </div>
 
       <!-- 3. Section: Member Cards List ("Past Activities" style in screenshot) -->
@@ -321,30 +309,6 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       font-weight: 500;
       color: rgba(255, 255, 255, 0.6);
       word-break: break-word;
-    }
-
-    .hero-circle-cta {
-      width: 44px;
-      height: 44px;
-      min-width: 44px;
-      min-height: 44px;
-      border-radius: 50%;
-      background: #ffffff;
-      border: none;
-      display: grid;
-      place-items: center;
-      cursor: pointer;
-      flex-shrink: 0;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
-      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-
-      &:hover {
-        transform: scale(1.08);
-      }
-
-      &:active {
-        transform: scale(0.92);
-      }
     }
 
     /* 3. Section Containers */

@@ -5,7 +5,6 @@ import {
   AvatarComponent,
   BarChartComponent,
   ConfirmSheetComponent,
-  ToastService,
 } from '../../shared/ui';
 import { CountUpDirective } from '../../shared/ui/count-up/count-up.directive';
 import {
@@ -922,7 +921,6 @@ export class HomeComponent {
   readonly ledgerStore = inject(LedgerStore);
   readonly settings = inject(SettingsStore);
   readonly router = inject(Router);
-  readonly toast = inject(ToastService);
 
   readonly formatPaise = formatPaise;
   readonly formatCompactPaise = formatCompactPaise;
@@ -1123,9 +1121,9 @@ export class HomeComponent {
       await this.ledgerStore.deleteTransaction(tx.id);
       this.isDeleteModalOpen.set(false);
       this.txToDelete.set(null);
-      this.toast.show('Payment deleted successfully', 'danger');
     } catch {
-      this.toast.show('Failed to delete payment', 'danger');
+      this.isDeleteModalOpen.set(false);
+      this.txToDelete.set(null);
     }
   }
 

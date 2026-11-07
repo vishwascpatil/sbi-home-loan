@@ -34,10 +34,10 @@ import {
                 type="button"
                 class="close-btn"
                 (click)="dismissed.emit()"
-                aria-label="Close dialog"
+                aria-label="Close"
                 title="Close"
               >
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
@@ -111,28 +111,37 @@ import {
     }
 
     .close-btn {
-      width: 32px;
-      height: 32px;
-      min-width: 32px;
+      width: 30px;
+      height: 30px;
+      min-width: 30px;
+      min-height: 30px;
       border-radius: 50%;
       border: none;
-      background: rgba(0, 0, 0, 0.06);
-      color: #636779;
+      background: #ededf2;
+      color: #6a6a75;
       cursor: pointer;
-      display: grid;
-      place-items: center;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       padding: 0;
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       -webkit-tap-highlight-color: transparent;
 
+      svg {
+        width: 12px;
+        height: 12px;
+        display: block;
+      }
+
       &:hover {
-        background: rgba(0, 0, 0, 0.12);
+        background: #e2e2e8;
         color: #111216;
         transform: scale(1.06);
       }
 
       &:active {
         transform: scale(0.92);
+        background: #d5d5dc;
       }
     }
 

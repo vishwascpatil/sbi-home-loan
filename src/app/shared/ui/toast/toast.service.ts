@@ -12,19 +12,12 @@ export interface ToastMessage {
 export class ToastService {
   readonly toasts = signal<ToastMessage[]>([]);
 
-  show(message: string, type: ToastMessage['type'] = 'info', duration = 3000): void {
-    const id = crypto.randomUUID();
-    const item: ToastMessage = { id, message, type };
-
-    this.toasts.update((prev) => [...prev, item]);
-
-    setTimeout(() => {
-      this.dismiss(id);
-    }, duration);
+  show(_message: string, _type: ToastMessage['type'] = 'info', _duration = 3000): void {
+    // All toast notifications are completely disabled across the application per user request
   }
 
-  dismiss(id: string): void {
-    this.toasts.update((prev) => prev.filter((t) => t.id !== id));
+  dismiss(_id: string): void {
+    this.toasts.set([]);
   }
 }
 

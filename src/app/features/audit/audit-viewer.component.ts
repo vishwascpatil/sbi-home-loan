@@ -15,7 +15,7 @@ import {
   HashChainVerificationResult,
   verifyAuditHashChain,
 } from '../../core/engine';
-import { GlassCardComponent, ToastService } from '../../shared/ui';
+import { GlassCardComponent } from '../../shared/ui';
 
 @Component({
   selector: 'app-audit-viewer',
@@ -460,7 +460,6 @@ import { GlassCardComponent, ToastService } from '../../shared/ui';
 })
 export class AuditViewerComponent implements OnInit {
   readonly ledgerStore = inject(LedgerStore);
-  private readonly toast = inject(ToastService);
 
   readonly selectedAction = signal<string>('all');
   readonly selectedEntity = signal<string>('all');
@@ -494,10 +493,6 @@ export class AuditViewerComponent implements OnInit {
   async verifyChain(): Promise<void> {
     const res = await verifyAuditHashChain(this.ledgerStore.auditLog());
     this.verificationResult.set(res);
-    this.toast.show(
-      `Audit hash chain verified (${res.verifiedCount} records tamper-evident)`,
-      'success'
-    );
   }
 
   toggleExpand(id: string): void {
@@ -522,6 +517,5 @@ export class AuditViewerComponent implements OnInit {
     a.download = `loan-tracker-audit-log-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    this.toast.show('Audit log exported to CSV', 'success');
   }
 }

@@ -14,7 +14,6 @@ import {
   ChipComponent,
   ConfirmSheetComponent,
   GlassCardComponent,
-  ToastService,
 } from '../../shared/ui';
 import {
   formatPaise,
@@ -519,7 +518,6 @@ import { BankImportSheetComponent } from '../bank-import/bank-import-sheet.compo
 export class HistoryComponent implements OnInit {
   readonly ledgerStore = inject(LedgerStore);
   private readonly route = inject(ActivatedRoute);
-  readonly toast = inject(ToastService);
 
   readonly formatPaise = formatPaise;
   readonly getTransactionAmount = getTransactionAmount;
@@ -594,9 +592,8 @@ export class HistoryComponent implements OnInit {
       await this.ledgerStore.deleteTransaction(tx.id);
       this.isDeleteConfirmOpen.set(false);
       this.txToDelete.set(null);
-      this.toast.show('Payment deleted successfully', 'danger');
     } catch {
-      this.toast.show('Failed to delete payment', 'danger');
+      // Ignore or log error
     }
   }
 

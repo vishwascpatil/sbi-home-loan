@@ -18,7 +18,6 @@ import {
   parseCsvToRecords,
   ParsedStatementRow,
 } from '../../core/engine';
-import { ToastService } from '../../shared/ui';
 
 @Component({
   selector: 'app-bank-import-sheet',
@@ -675,7 +674,6 @@ export class BankImportSheetComponent {
   readonly closed = output<void>();
 
   readonly ledgerStore = inject(LedgerStore);
-  private readonly toast = inject(ToastService);
 
   readonly profiles = DEFAULT_BANK_PROFILES;
   readonly selectedProfile = signal<ImportMappingProfile>(DEFAULT_BANK_PROFILES[0]);
@@ -763,7 +761,6 @@ export class BankImportSheetComponent {
     try {
       const records = parseCsvToRecords(csvContent);
       if (records.length === 0) {
-        this.toast.show('No tabular records found in uploaded file', 'danger');
         return;
       }
 
@@ -774,12 +771,8 @@ export class BankImportSheetComponent {
       );
 
       this.parsedRows.set(rows);
-      this.toast.show(
-        `Parsed ${rows.length} records (${this.matchedCount()} matched, ${this.importReadyCount()} ready)`,
-        'info'
-      );
     } catch {
-      this.toast.show('Failed to parse bank statement file', 'danger');
+      // Ignore or log error
     }
   }
 
@@ -825,23 +818,18 @@ export class BankImportSheetComponent {
   async commitImport(): Promise<void> {
     const batchId = `batch-${Date.now().toString(36)}`;
     try {
-      const count = await this.ledgerStore.commitImportBatch(batchId, this.parsedRows());
-      this.toast.show(
-        `Successfully imported ${count} transactions from bank statement (Batch ${batchId})`,
-        'success'
-      );
+      await this.ledgerStore.commitImportBatch(batchId, this.parsedRows());
       this.closed.emit();
     } catch {
-      this.toast.show('Failed to commit imported transactions', 'danger');
+      // Ignore or log error
     }
   }
 
   async rollbackBatch(batchId: string): Promise<void> {
     try {
-      const rolledBack = await this.ledgerStore.rollbackImportBatch(batchId);
-      this.toast.show(`Rolled back ${rolledBack} transactions from ${batchId}`, 'info');
+      await this.ledgerStore.rollbackImportBatch(batchId);
     } catch {
-      this.toast.show(`Failed to rollback ${batchId}`, 'danger');
+      // Ignore or log error
     }
   }
 

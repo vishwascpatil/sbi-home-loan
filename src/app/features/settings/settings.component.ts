@@ -11,7 +11,6 @@ import {
   AvatarComponent,
   ConfirmSheetComponent,
   GlassCardComponent,
-  ToastService,
 } from '../../shared/ui';
 import {
   formatCompactPaise,
@@ -366,6 +365,9 @@ import {
       display: flex;
       flex-direction: column;
       gap: 6px;
+      min-width: 0;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .setting-label {
@@ -401,6 +403,8 @@ import {
 
     .setting-input {
       width: 100%;
+      max-width: 100%;
+      min-width: 0;
       height: 46px;
       border-radius: var(--radius-tile, 16px);
       border: 1px solid var(--line);
@@ -410,8 +414,23 @@ import {
       font-size: 14px;
       font-weight: 700;
       outline: none;
+      font-family: inherit;
       transition: border-color 0.2s ease, background 0.2s ease;
       box-sizing: border-box;
+    }
+
+    input[type='date'].setting-input {
+      box-sizing: border-box;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      display: block;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    input[type='date']::-webkit-date-and-time-value {
+      text-align: left;
     }
 
     .setting-input:focus {
@@ -430,12 +449,16 @@ import {
       padding: 16px;
       border-radius: var(--radius-tile, 18px);
       border: 1px solid var(--line);
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .rate-form-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 12px;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     @media (max-width: 480px) {
@@ -675,7 +698,6 @@ import {
 export class SettingsComponent {
   readonly ledgerStore = inject(LedgerStore);
   readonly settings = inject(SettingsStore);
-  readonly toast = inject(ToastService);
 
   readonly formatPaise = formatPaise;
   readonly formatCompactPaise = formatCompactPaise;
@@ -748,8 +770,6 @@ export class SettingsComponent {
 
     this.saveTimeout = setTimeout(async () => {
       await this.ledgerStore.updateLoanDetails({ [key]: toPaise(clean) });
-      const label = key === 'openingOutstanding' ? 'Outstanding amount' : 'Loan details';
-      this.toast.show(`${label} updated & recalculated`, 'success');
     }, 450);
   }
 
@@ -770,8 +790,6 @@ export class SettingsComponent {
           this.saveTimeout = null;
         }
         void this.ledgerStore.updateLoanDetails({ [key]: toPaise(clean) }).then(() => {
-          const label = key === 'openingOutstanding' ? 'Outstanding amount' : 'Loan details';
-          this.toast.show(`${label} updated & recalculated`, 'success');
           input.value = this.formatRupeesWithCommas(this.loan()[key]);
         });
         return;
@@ -782,24 +800,20 @@ export class SettingsComponent {
 
   async updateLoanParam(key: string, value: unknown): Promise<void> {
     await this.ledgerStore.updateLoanDetails({ [key]: value });
-    this.toast.show('Loan details saved', 'success');
   }
 
   async applyRateChange(): Promise<void> {
     if (!this.newRateInput || this.newRateInput <= 0) {
-      this.toast.show('Please enter a valid interest rate', 'danger');
       return;
     }
     const rateBps = Math.round(this.newRateInput * 100);
     await this.ledgerStore.updateRate(rateBps, this.rateEffectiveDate, 'Bank interest rate revision');
-    this.toast.show(`Interest rate updated to ${this.newRateInput.toFixed(2)}%`, 'success');
     this.newRateInput = null;
   }
 
   async addNewMemberPrompt(): Promise<void> {
     const count = this.nonDeletedMembers().length + 1;
     await this.ledgerStore.addMember(`Member ${count}`, toPaise(10000));
-    this.toast.show(`New member added`, 'success');
   }
 
   renameMember(id: string, name: string): void {
@@ -823,7 +837,6 @@ export class SettingsComponent {
     const m = this.memberToDelete();
     if (!m) return;
     await this.ledgerStore.deleteMember(m.id);
-    this.toast.show(`${m.name} removed`, 'info');
     this.isDeleteConfirmOpen.set(false);
     this.memberToDelete.set(null);
   }

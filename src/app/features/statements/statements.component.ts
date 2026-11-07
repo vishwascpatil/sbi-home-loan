@@ -17,7 +17,6 @@ import {
 } from '../../core/engine';
 import {
   AvatarComponent,
-  ToastService,
 } from '../../shared/ui';
 
 @Component({
@@ -823,7 +822,6 @@ import {
 })
 export class StatementsComponent {
   readonly ledgerStore = inject(LedgerStore);
-  private readonly toast = inject(ToastService);
 
   readonly activeTab = signal<'monthly' | 'annual'>('monthly');
 
@@ -869,12 +867,8 @@ export class StatementsComponent {
   async archiveStatement(): Promise<void> {
     try {
       await this.ledgerStore.archiveStatement(this.selectedPeriod());
-      this.toast.show(
-        `Statement for ${this.selectedPeriod()} archived successfully`,
-        'success'
-      );
     } catch {
-      this.toast.show('Failed to archive statement', 'danger');
+      // Ignore or log error
     }
   }
 
@@ -898,7 +892,6 @@ export class StatementsComponent {
 
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       await navigator.clipboard.writeText(`${title}\n\n${text}`);
-      this.toast.show('Statement summary copied to clipboard', 'info');
     }
   }
 

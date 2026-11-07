@@ -21,7 +21,6 @@ import {
   AvatarComponent,
   ConfirmSheetComponent,
   CountUpDirective,
-  ToastService,
 } from '../../shared/ui';
 import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-transaction-sheet.component';
 
@@ -614,7 +613,6 @@ export class MemberHistoryComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   readonly router = inject(Router);
   readonly ledgerStore = inject(LedgerStore);
-  readonly toast = inject(ToastService);
 
   readonly selectedMemberId = signal<string | null>(null);
 
@@ -726,9 +724,9 @@ export class MemberHistoryComponent implements OnInit {
       await this.ledgerStore.deleteTransaction(tx.id);
       this.isDeleteConfirmOpen.set(false);
       this.txToDelete.set(null);
-      this.toast.show('Payment deleted successfully', 'danger');
     } catch {
-      this.toast.show('Failed to delete payment', 'danger');
+      this.isDeleteConfirmOpen.set(false);
+      this.txToDelete.set(null);
     }
   }
 
