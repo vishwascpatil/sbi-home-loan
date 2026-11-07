@@ -213,9 +213,8 @@ const PAYMENT_MODES: PaymentMode[] = [
       right: 0;
       height: 3px;
       border-radius: 24px 24px 0 0;
-      background: linear-gradient(90deg, #6c4cff, #ff5f9e, #0fb27c, #6c4cff);
-      background-size: 200% 100%;
-      animation: edgeGradientFlow 4s linear infinite;
+      background: linear-gradient(90deg, #6c4cff 0%, #ff5f9e 50%, #0fb27c 100%);
+      opacity: 0.9;
       z-index: 10;
       pointer-events: none;
     }
@@ -224,9 +223,8 @@ const PAYMENT_MODES: PaymentMode[] = [
       position: absolute;
       border-radius: 50%;
       pointer-events: none;
-      filter: blur(44px);
       z-index: 0;
-      opacity: 0.22;
+      opacity: 0.3;
     }
 
     .orb-sheet-1 {
@@ -234,8 +232,8 @@ const PAYMENT_MODES: PaymentMode[] = [
       right: -20px;
       width: 140px;
       height: 140px;
-      background: radial-gradient(circle, #ff5f9e 0%, rgba(108, 76, 255, 0.4) 60%, transparent 80%);
-      animation: orbDrift1 7s ease-in-out infinite alternate;
+      background: radial-gradient(circle, rgba(255, 95, 158, 0.45) 0%, rgba(108, 76, 255, 0.15) 50%, transparent 70%);
+      animation: orbDrift1 8s ease-in-out infinite alternate;
     }
 
     .orb-sheet-2 {
@@ -243,8 +241,8 @@ const PAYMENT_MODES: PaymentMode[] = [
       left: -20px;
       width: 130px;
       height: 130px;
-      background: radial-gradient(circle, #0fb27c 0%, rgba(108, 76, 255, 0.3) 60%, transparent 80%);
-      animation: orbDrift2 9s ease-in-out infinite alternate;
+      background: radial-gradient(circle, rgba(15, 178, 124, 0.4) 0%, rgba(108, 76, 255, 0.12) 50%, transparent 70%);
+      animation: orbDrift2 10s ease-in-out infinite alternate;
     }
 
     .tx-form {
@@ -262,12 +260,8 @@ const PAYMENT_MODES: PaymentMode[] = [
       gap: 6px;
       width: 100%;
       box-sizing: border-box;
-      animation: fieldCascade 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation: fieldCascade 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
-
-    .form-group:nth-of-type(1) { animation-delay: 0.04s; }
-    .form-group:nth-of-type(2) { animation-delay: 0.10s; }
-    .form-group:nth-of-type(3) { animation-delay: 0.16s; }
 
     .field-label {
       font-size: 12px;
@@ -480,7 +474,7 @@ const PAYMENT_MODES: PaymentMode[] = [
       flex-direction: column;
       gap: 10px;
       margin-top: 10px;
-      animation: fieldCascade 0.4s 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation: fieldCascade 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
     .submit-btn {
@@ -652,7 +646,7 @@ const PAYMENT_MODES: PaymentMode[] = [
     }
 
     @keyframes fieldCascade {
-      from { opacity: 0; transform: translateY(10px); }
+      from { opacity: 0.85; transform: translateY(6px); }
       to { opacity: 1; transform: translateY(0); }
     }
 

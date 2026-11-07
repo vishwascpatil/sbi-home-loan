@@ -268,45 +268,45 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
     .mesh-orb {
       position: absolute;
       border-radius: 50%;
-      filter: blur(85px);
-      opacity: 0.22;
+      pointer-events: none;
+      opacity: 0.35;
       will-change: transform;
     }
 
     .orb-violet {
-      width: 380px;
-      height: 380px;
-      background: radial-gradient(circle, #6c4cff 0%, #4f35ff 70%, transparent 100%);
-      top: -80px;
-      left: -90px;
-      animation: orbDrift1 18s ease-in-out infinite alternate;
+      width: 320px;
+      height: 320px;
+      background: radial-gradient(circle, rgba(108, 76, 255, 0.4) 0%, rgba(79, 53, 255, 0.12) 50%, transparent 70%);
+      top: -40px;
+      left: -60px;
+      animation: orbDrift1 20s ease-in-out infinite alternate;
     }
 
     .orb-pink {
-      width: 420px;
-      height: 420px;
-      background: radial-gradient(circle, #ff5f9e 0%, #ff8cb9 70%, transparent 100%);
+      width: 340px;
+      height: 340px;
+      background: radial-gradient(circle, rgba(255, 95, 158, 0.35) 0%, rgba(255, 140, 185, 0.1) 50%, transparent 70%);
       top: 25%;
-      right: -110px;
-      animation: orbDrift2 22s ease-in-out infinite alternate;
+      right: -80px;
+      animation: orbDrift2 24s ease-in-out infinite alternate;
     }
 
     .orb-emerald {
-      width: 340px;
-      height: 340px;
-      background: radial-gradient(circle, #0fb27c 0%, #34d399 70%, transparent 100%);
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(15, 178, 124, 0.3) 0%, rgba(52, 211, 153, 0.08) 50%, transparent 70%);
       bottom: 12%;
-      left: -60px;
-      animation: orbDrift3 20s ease-in-out infinite alternate;
+      left: -40px;
+      animation: orbDrift3 22s ease-in-out infinite alternate;
     }
 
     .orb-cyan {
-      width: 360px;
-      height: 360px;
-      background: radial-gradient(circle, #38bdf8 0%, #818cf8 70%, transparent 100%);
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.3) 0%, rgba(129, 140, 248, 0.08) 50%, transparent 70%);
       top: 62%;
-      right: -70px;
-      animation: orbDrift4 24s ease-in-out infinite alternate;
+      right: -50px;
+      animation: orbDrift4 26s ease-in-out infinite alternate;
     }
 
     .mesh-wave-svg {
@@ -338,7 +338,7 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       box-sizing: border-box;
       position: relative;
       z-index: 2;
-      animation: cinematicSlideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation: cinematicSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
     .user-profile-cluster {
@@ -412,7 +412,7 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       width: 100%;
       min-width: 0;
       box-sizing: border-box;
-      animation: heroCardEntrance 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation: heroCardEntrance 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 
       &::after {
@@ -437,40 +437,39 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
     /* Living Conic Laser Border Sweep */
     .hero-laser-border {
       position: absolute;
-      top: -150%;
-      left: -150%;
-      width: 400%;
-      height: 400%;
+      top: -60%;
+      left: -60%;
+      width: 220%;
+      height: 220%;
       background: conic-gradient(
         from 0deg,
         transparent 0deg,
-        transparent 50deg,
-        rgba(108, 76, 255, 0.95) 95deg,
-        rgba(255, 95, 158, 0.95) 135deg,
-        rgba(15, 178, 124, 0.95) 175deg,
-        transparent 215deg,
+        transparent 70deg,
+        rgba(108, 76, 255, 0.95) 110deg,
+        rgba(255, 95, 158, 0.95) 140deg,
+        rgba(15, 178, 124, 0.95) 170deg,
+        transparent 210deg,
         transparent 360deg
       );
-      animation: laserSpin 6.5s linear infinite;
+      animation: laserSpin 7.5s linear infinite;
       pointer-events: none;
       z-index: 0;
+      will-change: transform;
     }
 
     /* Internal Living Nebula Blooms */
     .hero-nebula-glow {
       position: absolute;
       border-radius: 50%;
-      filter: blur(48px);
       pointer-events: none;
       z-index: 2;
       opacity: 0.36;
-      mix-blend-mode: screen;
     }
 
     .nebula-1 {
       width: 220px;
       height: 220px;
-      background: radial-gradient(circle, #6c4cff 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(108, 76, 255, 0.6) 0%, transparent 70%);
       top: -40px;
       right: -30px;
       animation: nebulaMorph1 9s ease-in-out infinite alternate;
@@ -479,7 +478,7 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
     .nebula-2 {
       width: 240px;
       height: 240px;
-      background: radial-gradient(circle, #ff5f9e 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(255, 95, 158, 0.5) 0%, transparent 70%);
       bottom: -60px;
       left: 15%;
       animation: nebulaMorph2 11s ease-in-out infinite alternate;
@@ -497,8 +496,8 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
     .particle {
       position: absolute;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.85);
-      box-shadow: 0 0 8px rgba(255, 255, 255, 0.95), 0 0 16px rgba(108, 76, 255, 0.7);
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 0 6px #6c4cff;
       bottom: -10px;
       animation: particleRise 6s ease-in infinite;
     }
@@ -668,15 +667,8 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       box-sizing: border-box;
       position: relative;
       overflow: hidden;
-      animation: memberCardWaterfall 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation: cardQuickEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.2s ease;
-
-      &:nth-child(1) { animation-delay: 0.12s; }
-      &:nth-child(2) { animation-delay: 0.19s; }
-      &:nth-child(3) { animation-delay: 0.26s; }
-      &:nth-child(4) { animation-delay: 0.33s; }
-      &:nth-child(5) { animation-delay: 0.40s; }
-      &:nth-child(n+6) { animation-delay: 0.47s; }
 
       &:hover {
         transform: translateY(-4px) scale(1.01);
@@ -691,10 +683,9 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
       left: 0;
       right: 0;
       height: 3px;
-      background: linear-gradient(90deg, #6c4cff, #ff5f9e, #0fb27c, #6c4cff);
-      background-size: 300% 100%;
+      background: linear-gradient(90deg, #6c4cff 0%, #ff5f9e 50%, #0fb27c 100%);
       border-radius: 26px 26px 0 0;
-      animation: edgeGradientFlow 4.5s linear infinite;
+      opacity: 0.9;
     }
 
     /* Member Top Row */
@@ -1097,28 +1088,18 @@ import { AddEditTransactionSheetComponent } from '../transaction-sheet/add-edit-
     }
 
     @keyframes cinematicSlideDown {
-      from { opacity: 0; transform: translateY(-16px); }
+      from { opacity: 0.85; transform: translateY(-8px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
     @keyframes heroCardEntrance {
-      from { opacity: 0; transform: translateY(28px) scale(0.96); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
-    }
-
-    @keyframes cardPopUp {
-      from { opacity: 0; transform: translateY(24px); }
+      from { opacity: 0.85; transform: translateY(8px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    @keyframes memberCardWaterfall {
-      from { opacity: 0; transform: translateY(20px) scale(0.97); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
-    }
-
-    @keyframes edgeGradientFlow {
-      0% { background-position: 0% 50%; }
-      100% { background-position: 300% 50%; }
+    @keyframes cardQuickEnter {
+      from { opacity: 0.85; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     @keyframes liveBlink {
