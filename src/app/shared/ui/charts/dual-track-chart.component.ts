@@ -27,7 +27,7 @@ export interface XAxisTick {
       <div class="chart-title-row">
         <div class="title-cluster">
           <span class="chart-eyebrow">Balance Trajectory</span>
-          <h2 class="chart-headline">Drawing Power vs Current Debt</h2>
+          <h2 class="chart-headline">Debt vs Sanction Limit</h2>
         </div>
         <div class="buffer-live-pill">
           <span class="pulse-dot"></span>
@@ -35,7 +35,7 @@ export interface XAxisTick {
         </div>
       </div>
 
-      <!-- 3 Big Metric Telemetry Tiles -->
+      <!-- 3 Metric Telemetry Tiles -->
       <div class="dual-stats-header">
         <div class="stat-cluster stat-limit">
           <div class="stat-lbl-row">
@@ -45,7 +45,6 @@ export interface XAxisTick {
           <span class="stat-num text-purple tabular-nums">
             {{ formatCompactPaise(currentDrawingPower()) }}
           </span>
-          <span class="stat-sub tabular-nums">{{ formatPaise(currentDrawingPower()) }}</span>
         </div>
 
         <div class="stat-cluster stat-buffer center">
@@ -56,7 +55,6 @@ export interface XAxisTick {
           <span class="stat-num text-emerald tabular-nums">
             +{{ formatCompactPaise(currentBuffer()) }}
           </span>
-          <span class="stat-sub text-emerald tabular-nums">Surplus Headroom</span>
         </div>
 
         <div class="stat-cluster stat-debt right">
@@ -67,7 +65,6 @@ export interface XAxisTick {
           <span class="stat-num text-ink tabular-nums">
             {{ formatCompactPaise(currentOutstanding()) }}
           </span>
-          <span class="stat-sub tabular-nums">{{ formatPaise(currentOutstanding()) }}</span>
         </div>
       </div>
 

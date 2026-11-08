@@ -26,7 +26,7 @@ import {
       <div class="pace-header">
         <div class="pace-tag-cluster">
           <span class="pace-badge">REPAYMENT PACE</span>
-          <span class="pace-timeline-chip">{{ pace().monthsElapsed }} Months Elapsed (Jun '24 – Nov '26)</span>
+          <span class="pace-timeline-chip">{{ pace().monthsElapsed }} Mos (Jun '24 – Nov '26)</span>
         </div>
 
         <!-- Mode Toggle: vs Bank Mandatory EMI vs vs Family Target -->
@@ -54,13 +54,13 @@ import {
         </div>
       </div>
 
-      <!-- 2 Big WOW Numbers Side by Side -->
+      <!-- 2 Big Numbers Side by Side -->
       <div class="big-numbers-grid">
         <!-- Number 1: Net Injected in OD (Default) or Gross -->
         <div class="big-num-card card-paid">
           <div class="num-top-row">
             <span class="num-label">
-              {{ isNet() ? 'Net Injected in OD' : 'Gross Paid In' }}
+              {{ isNet() ? 'Net Injected' : 'Gross Deposits' }}
             </span>
             <button
               type="button"
@@ -75,52 +75,73 @@ import {
             {{ formatCompactPaise(currentPaidAmount()) }}
           </div>
           <span class="num-subtext tabular-nums">
-            {{ formatPaise(currentPaidAmount()) }}
-            {{ isNet() ? '(after ₹10.48L withdrawals)' : '(all cumulative deposits)' }}
+            {{ isNet() ? 'Net of withdrawals' : 'All deposits' }}
           </span>
         </div>
 
         <!-- Number 2: Interest Added Till Now -->
         <div class="big-num-card card-supposed">
-          <span class="num-label">Interest Added Till Now</span>
+          <span class="num-label">Interest Debited</span>
           <div class="num-value text-muted tabular-nums">
             {{ formatCompactPaise(pace().totalInterestAddedSoFar) }}
           </div>
           <span class="num-subtext tabular-nums">
-            {{ formatPaise(pace().totalInterestAddedSoFar) }} (29 Mos SBI Debits)
+            29 SBI debits
           </span>
         </div>
       </div>
 
-      <!-- Hero Expression / WOW Verdict Banner -->
+      <!-- Hero Expression / Verdict Banner -->
       <div class="verdict-banner" [class.banner-ahead]="isAhead()" [class.banner-behind]="!isAhead()">
         <div class="verdict-icon">{{ isAhead() ? '🚀' : '🎯' }}</div>
         <div class="verdict-content">
           <div class="verdict-title">
             @if (compareMode() === 'bank') {
               <span class="tabular-nums font-bold">
-                +{{ formatCompactPaise(varianceAmount()) }} Ahead of Bank Schedule
+                +{{ formatCompactPaise(varianceAmount()) }} Ahead
               </span>
               <span class="verdict-pct-pill">+{{ variancePercent() }}%</span>
             } @else {
               <span class="tabular-nums font-bold">
-                {{ targetAttainmentPct() }}% of Family Goal Achieved
+                {{ targetAttainmentPct() }}% of Goal
               </span>
             }
           </div>
-          <div class="verdict-subtext">
+          <div class="verdict-sub-row">
             @if (compareMode() === 'bank') {
-              @if (isNet()) {
-                Net injected exceeds bank schedule by <strong>+{{ formatCompactPaise(varianceAmount()) }}</strong> — equivalent to <strong>~{{ pace().netEquivalentEmisPrepaid }} months</strong> of advance EMIs paid ahead of time!
-              } @else {
-                Gross deposits exceed bank schedule by <strong>+{{ formatCompactPaise(varianceAmount()) }}</strong> — equivalent to <strong>~{{ pace().grossEquivalentEmisPrepaid }} months</strong> of advance EMIs prepaid (total deposited: <strong>~{{ pace().totalEmisCount }} EMIs</strong>).
-              }
+              <span class="sub-pill">
+                ~{{ isNet() ? pace().netEquivalentEmisPrepaid : pace().grossEquivalentEmisPrepaid }} Advance EMIs
+              </span>
+              <button type="button" class="proof-info-btn" (click)="toggleProof()" title="View math proof">
+                <span>{{ isProofOpen() ? 'Hide Proof ▴' : 'Proof ⓘ' }}</span>
+              </button>
             } @else {
-              <strong>{{ formatCompactPaise(currentPaidAmount()) }}</strong> deposited toward accelerated ₹2.40L/month payoff goal.
+              <span class="sub-pill">Accelerated Target</span>
             }
           </div>
         </div>
       </div>
+
+      @if (isProofOpen() && compareMode() === 'bank') {
+        <div class="proof-drawer">
+          <div class="proof-step">
+            <span class="step-lbl">1. {{ isNet() ? 'Net Injected' : 'Gross Deposits' }}</span>
+            <strong class="tabular-nums">{{ formatPaise(currentPaidAmount()) }}</strong>
+          </div>
+          <div class="proof-step">
+            <span class="step-lbl">2. Bank Scheduled Base (29 mos)</span>
+            <strong class="tabular-nums">−{{ formatPaise(pace().bankSupposedToPay) }}</strong>
+          </div>
+          <div class="proof-step">
+            <span class="step-lbl">3. Net Headroom Surplus</span>
+            <strong class="text-emerald tabular-nums">+{{ formatPaise(varianceAmount()) }}</strong>
+          </div>
+          <div class="proof-step highlight">
+            <span class="step-lbl">4. Advance EMIs (Surplus ÷ avg net EMI)</span>
+            <strong class="text-purple tabular-nums">~{{ isNet() ? pace().netEquivalentEmisPrepaid : pace().grossEquivalentEmisPrepaid }} EMIs ahead of time</strong>
+          </div>
+        </div>
+      }
 
       <!-- Visual Over-Pacing Bar -->
       <div class="progress-wrap">
@@ -332,15 +353,68 @@ import {
       border-radius: 99px;
     }
 
-    .verdict-subtext {
+    .verdict-sub-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 2px;
+    }
+
+    .sub-pill {
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: #0fb27c;
+    }
+
+    .proof-info-btn {
+      background: none;
+      border: none;
+      color: #6c4cff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 6px;
+      transition: background 0.15s ease;
+
+      &:hover {
+        background: rgba(108, 76, 255, 0.08);
+      }
+    }
+
+    .proof-drawer {
+      background: #f8f9fc;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .proof-step {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       font-size: 0.78rem;
       color: #767a90;
-      line-height: 1.3;
 
       strong {
         color: #15172b;
-        font-weight: 700;
       }
+
+      &.highlight {
+        border-top: 1px dashed rgba(0, 0, 0, 0.1);
+        padding-top: 6px;
+        margin-top: 2px;
+      }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .progress-wrap {
@@ -403,9 +477,15 @@ export class RepaymentPaceCardComponent {
 
   readonly compareMode = signal<'bank' | 'family'>('bank');
   readonly isNet = signal<boolean>(true); // Show net injected in OD by default
+  readonly isProofOpen = signal<boolean>(false);
 
   readonly formatPaise = formatPaise;
   readonly formatCompactPaise = formatCompactPaise;
+
+  toggleProof(): void {
+    triggerHaptic('light');
+    this.isProofOpen.update((v) => !v);
+  }
 
   setMode(mode: 'bank' | 'family'): void {
     triggerHaptic('light');

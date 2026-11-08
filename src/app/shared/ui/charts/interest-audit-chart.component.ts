@@ -25,11 +25,8 @@ import {
       <!-- Header -->
       <div class="interest-header">
         <div class="header-cluster">
-          <span class="interest-badge">INTEREST ACCRUAL AUDIT</span>
-          <h2 class="interest-title">How Interest Got Added So Far</h2>
-          <span class="interest-subtitle">
-            Debited by SBI on the last day of each month based on actual/365 daily balance
-          </span>
+          <span class="interest-badge">INTEREST AUDIT</span>
+          <h2 class="interest-title">SBI Interest Trajectory</h2>
         </div>
       </div>
 
@@ -37,34 +34,34 @@ import {
       <div class="wow-stats-grid">
         <!-- 1. Total Cumulative Interest -->
         <div class="wow-stat-tile tile-danger">
-          <span class="wow-stat-lbl">Total Interest Debited</span>
+          <span class="wow-stat-lbl">Total Debited</span>
           <div class="wow-stat-val text-danger tabular-nums">
             {{ formatCompactPaise(auditData.totalInterestPaid) }}
           </div>
           <span class="wow-stat-sub tabular-nums">
-            {{ formatPaise(auditData.totalInterestPaid) }} across 29 mos
+            29 Months Debits
           </span>
         </div>
 
         <!-- 2. Monthly Drop / Relief -->
         <div class="wow-stat-tile tile-emerald">
-          <span class="wow-stat-lbl">Monthly Interest Drop</span>
+          <span class="wow-stat-lbl">Monthly Drop</span>
           <div class="wow-stat-val text-emerald tabular-nums">
             −₹22.5K <span class="val-unit">/mo</span>
           </div>
           <span class="wow-stat-sub tabular-nums">
-            Peak ₹98.9K (Jul '24) → ₹76.5K (Sep '26)
+            Peak ₹98.9K → ₹76.5K
           </span>
         </div>
 
         <!-- 3. Rate Reduction -->
         <div class="wow-stat-tile tile-purple">
-          <span class="wow-stat-lbl">Rate Drop Impact</span>
+          <span class="wow-stat-lbl">Rate Relief</span>
           <div class="wow-stat-val text-purple tabular-nums">
-            8.90% → 7.65%
+            −125 bps
           </div>
           <span class="wow-stat-sub">
-            −125 bps total SBI rate relief
+            8.90% → 7.65%
           </span>
         </div>
       </div>
@@ -131,27 +128,21 @@ import {
         </div>
       </div>
 
-      <!-- Selected Month Math Inspector Pill / Bottom Card -->
+      <!-- Selected Month Math Inspector Pill -->
       @if (activeDetails(); as det) {
         <div class="inspector-card">
           <div class="inspector-header">
-            <span class="inspector-title">🧮 {{ det.month }} Interest Math</span>
-            <span class="inspector-badge">{{ det.rateEra }}</span>
+            <span class="inspector-title">🧮 {{ det.month }} Formula</span>
+            <span class="inspector-badge">{{ det.rateEra }} · {{ det.effectiveRate.toFixed(2) }}%</span>
           </div>
-
-          <div class="inspector-body">
-            <div class="formula-box">
-              <span class="formula-math">
-                ({{ formatCompactPaise(det.avgBalance) }} avg balance × {{ det.effectiveRate.toFixed(2) }}% × {{ det.days }} days) ÷ 365
-              </span>
-              <span class="formula-equals">=</span>
-              <span class="formula-result text-danger tabular-nums">
-                {{ formatPaise(det.sbiInterest) }}
-              </span>
-            </div>
-            <p class="formula-caption">
-              Debited on month close to SBI OD account <strong>43054757071</strong>. Discrepancy vs theoretical: <strong>₹0.00</strong>.
-            </p>
+          <div class="formula-box">
+            <span class="formula-math">
+              ({{ formatCompactPaise(det.avgBalance) }} × {{ det.effectiveRate.toFixed(2) }}% × {{ det.days }}d) ÷ 365
+            </span>
+            <span class="formula-equals">=</span>
+            <span class="formula-result text-danger tabular-nums">
+              {{ formatPaise(det.sbiInterest) }}
+            </span>
           </div>
         </div>
       }

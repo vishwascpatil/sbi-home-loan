@@ -32,10 +32,7 @@ import {
               <span>Jun '24 – Nov '26</span>
             </span>
           </div>
-          <h2 class="payments-title">How Much Money We Have Paid So Far</h2>
-          <span class="payments-subtitle">
-            Every rupee deposited into SBI OD across all 30 months since loan opening
-          </span>
+          <h2 class="payments-title">Repayment Inflows</h2>
         </div>
       </div>
 
@@ -43,34 +40,34 @@ import {
       <div class="wow-stats-grid">
         <!-- 1. Total Cumulative Deposited -->
         <div class="wow-stat-tile tile-emerald">
-          <span class="wow-stat-lbl">Total Paid So Far</span>
+          <span class="wow-stat-lbl">Total Inflow</span>
           <div class="wow-stat-val text-emerald tabular-nums">
             {{ formatCompactPaise(summary().totalPaidSoFar) }}
           </div>
           <span class="wow-stat-sub tabular-nums">
-            {{ formatPaise(summary().totalPaidSoFar) }} across 29 mos
+            30 Months Total
           </span>
         </div>
 
         <!-- 2. Regular Bank EMIs -->
         <div class="wow-stat-tile tile-blue">
-          <span class="wow-stat-lbl">Regular Bank EMIs</span>
+          <span class="wow-stat-lbl">Regular EMIs</span>
           <div class="wow-stat-val text-blue tabular-nums">
             {{ formatCompactPaise(summary().totalEmiPaid) }}
           </div>
           <span class="wow-stat-sub tabular-nums">
-            29 bank debits of ₹1.19L
+            29 Bank Debits
           </span>
         </div>
 
         <!-- 3. Extra Lump-Sum Prepayments -->
         <div class="wow-stat-tile tile-purple">
-          <span class="wow-stat-lbl">Extra Prepayments</span>
+          <span class="wow-stat-lbl">Prepayments</span>
           <div class="wow-stat-val text-purple tabular-nums">
             +{{ formatCompactPaise(summary().totalPrepaymentsPaid) }}
           </div>
-          <span class="wow-stat-sub">
-            21 ad-hoc principal cuts
+          <span class="wow-stat-sub tabular-nums">
+            21 Ad-hoc Deposits
           </span>
         </div>
       </div>

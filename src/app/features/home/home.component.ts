@@ -66,12 +66,9 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
           title="Click to switch member profile"
         >
           <app-avatar [name]="userProfile.currentMemberName()" [avatarUrl]="userProfile.currentMemberAvatar()" [size]="40" [circular]="true" />
-          <div class="profile-text-wrap">
-            <span class="profile-greeting">Welcome back</span>
-            <div class="profile-name-row">
-              <h1 class="profile-user-name">{{ userProfile.currentMemberName() }}</h1>
-              <span class="profile-switch-indicator">▾</span>
-            </div>
+          <div class="profile-name-row">
+            <h1 class="profile-user-name">{{ userProfile.currentMemberName() }}</h1>
+            <span class="profile-switch-indicator">▾</span>
           </div>
         </div>
       </header>
@@ -111,7 +108,6 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
             title="Open Daily Ledger breakdown"
           >
             <span class="pill-main tabular-nums">{{ repaidPercent().toFixed(1) }}% Cleared</span>
-            <span class="pill-sub">({{ formatCompactPaise(repaidAmount()) }})</span>
           </button>
 
           <button
@@ -120,8 +116,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
             (click)="scrollToDualTrack()"
             title="View OD Surplus Buffer on Chart"
           >
-            <span class="pill-main tabular-nums text-emerald">{{ formatCompactPaise(odAvailableBuffer()) }}</span>
-            <span class="pill-sub">OD Surplus Buffer</span>
+            <span class="pill-main tabular-nums text-emerald">{{ formatCompactPaise(odAvailableBuffer()) }} Buffer</span>
           </button>
         </div>
       </div>
@@ -146,7 +141,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
               +{{ formatCompactPaise(odDailyInterestSaved()) }}<span class="unit-sub">/day</span>
             </div>
             <span class="card-metric-sub">
-              +{{ formatCompactPaise(odMonthlyInterestSaved()) }}/mo saved by buffer
+              +{{ formatCompactPaise(odMonthlyInterestSaved()) }}/mo interest saved
             </span>
           </div>
 
@@ -167,7 +162,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
               −{{ formatCompactPaise(odWithdrawalSummary().currentMonthlyBleed) }}<span class="unit-sub">/mo</span>
             </div>
             <span class="card-metric-sub">
-              {{ formatCompactPaise(odWithdrawalSummary().totalInterestLost) }} lost on {{ formatCompactPaise(odWithdrawalSummary().netWithdrawn) }}
+              {{ formatCompactPaise(odWithdrawalSummary().totalInterestLost) }} penalty (21 draws)
             </span>
           </div>
         </div>
@@ -178,13 +173,13 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
         <app-repayment-pace-card [pace]="ledgerStore.repaymentPace()" />
       </section>
 
-      <!-- 5. Section: Payback Simulation Accelerator ("What if we return money to OD?") -->
+      <!-- 5. Section: Payback Simulation Accelerator -->
       <section class="home-section">
         <div class="minimal-panel-card">
           <div class="panel-header-row">
             <div class="panel-header-left">
-              <span class="card-tag tag-amber">⚡ Instant Simulation</span>
-              <h2 class="panel-title">What if we return money to OD?</h2>
+              <span class="card-tag tag-amber">⚡ Live Simulator</span>
+              <h2 class="panel-title">OD Payback Simulator</h2>
             </div>
             <span class="panel-amount-badge tabular-nums">
               {{ formatPaise(paybackSliderPaise()) }}
@@ -265,7 +260,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
               {{ formatCompactPaise(monthlyCutCalculation().totalCut) }}
             </div>
             <span class="card-metric-sub">
-              {{ monthlyCutCalculation().isRecorded ? 'Paid to SBI this month' : 'Target monthly reduction' }}
+              {{ monthlyCutCalculation().isRecorded ? 'Paid to SBI this month' : 'Target monthly cut' }}
             </span>
             <div class="metric-split-row">
               <div class="split-side">
@@ -293,7 +288,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
               {{ ((baselineSimResult()?.months || 62) / 12).toFixed(1) }} yrs
             </div>
             <span class="card-metric-sub">
-              {{ baselineSimResult()?.months || 62 }} months left
+              {{ baselineSimResult()?.months || 62 }} mos remaining
             </span>
             <div class="metric-split-row">
               <div class="split-side">
@@ -332,7 +327,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
             <div class="stmt-icon-box">📄</div>
             <div class="stmt-text-box">
               <h3 class="stmt-heading">Account Statements & Passbook</h3>
-              <p class="stmt-sub">View forensic ledger, monthly statement, and tax certs</p>
+              <span class="badge-mini">Passbook · Monthly · Tax ›</span>
             </div>
           </div>
           <span class="stmt-arrow">›</span>
