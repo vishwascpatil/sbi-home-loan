@@ -18,4 +18,5 @@ export * from './push-notification.service';
 export * from './od-withdrawals';
 export * from './sbi-interest-audit';
 export * from './pdf-statement-parser';
+export * from './repayment-pace';
 

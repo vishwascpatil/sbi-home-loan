@@ -297,3 +297,4 @@ export class DualTrackChartComponent {
   formatCompactPaise = formatCompactPaise;
   formatPaise = formatPaise;
 }
+

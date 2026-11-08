@@ -7,6 +7,7 @@ import {
   BottomSheetComponent,
   ConfirmSheetComponent,
   DualTrackChartComponent,
+  RepaymentPaceCardComponent,
 } from '../../shared/ui';
 import { CountUpDirective } from '../../shared/ui/count-up/count-up.directive';
 import {
@@ -43,6 +44,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
     AddEditTransactionSheetComponent,
     DailyLedgerSheetComponent,
     DualTrackChartComponent,
+    RepaymentPaceCardComponent,
   ],
   template: `
     <div class="home-page-container">
@@ -212,7 +214,12 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
         </div>
       </section>
 
-      <!-- 4. Section: Interactive Payback Accelerator (WOW Feature) -->
+      <!-- 4. Section: Repayment Pace Tracker (Paid vs Supposed to Pay) -->
+      <section class="home-section">
+        <app-repayment-pace-card [pace]="ledgerStore.repaymentPace()" />
+      </section>
+
+      <!-- 5. Section: Interactive Payback Accelerator (WOW Feature) -->
       <section class="home-section">
         <div class="payback-feature-card">
           <div class="payback-header">

@@ -94,6 +94,7 @@ export interface Loan extends BaseEntity {
   accountNumber: string;
   sanctionedLimit: Paise;
   initialDisbursed?: Paise;
+  regularEmi?: Paise; // Scheduled monthly bank EMI (e.g. ₹1,18,900)
   openingOutstanding: Paise;
   openingDate: string; // YYYY-MM-DD
   maturityDate: string; // YYYY-MM-DD

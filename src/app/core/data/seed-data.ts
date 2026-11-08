@@ -15,6 +15,7 @@ export function getInitialSeedData(): LedgerState {
     accountNumber: '43054757071',
     initialDisbursed: toPaise(13300000), // ₹1,33,00,000.00 initial disbursement
     sanctionedLimit: toPaise(12612930), // ₹1,26,12,930.00 current drawing power limit
+    regularEmi: toPaise(118900), // ₹1,18,900.00 scheduled bank monthly EMI
     openingOutstanding: toPaise(11886289), // ₹1,18,86,289.00 current book balance (Nov 5, 2026)
     openingDate: '2024-06-12',
     maturityDate: '2044-06-12',

@@ -32,6 +32,8 @@ import {
   RateChange,
   reconcile,
   ReconciliationResult,
+  RepaymentPaceAnalysis,
+  getRepaymentPaceAnalysis,
   SavedScenario,
   StatementSnapshot,
   Transaction,
@@ -136,6 +138,10 @@ export class LedgerStore {
   readonly thisMonthSummary = computed<MonthlySummary>(() => {
     const currentMonth = new Date().toISOString().slice(0, 7);
     return monthlySummary(currentMonth, this.ledgerState());
+  });
+
+  readonly repaymentPace = computed<RepaymentPaceAnalysis>(() => {
+    return getRepaymentPaceAnalysis(this.ledgerState());
   });
 
   readonly groupFunds = computed<GroupFundsSummary>(() => {
