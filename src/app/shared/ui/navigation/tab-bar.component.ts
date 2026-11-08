@@ -26,7 +26,25 @@ import { triggerHaptic } from '../../../core/engine';
         <span class="dock-label">Home</span>
       </a>
 
-      <!-- 2. Center Action Button (Matte Black Pill) -->
+      <!-- 2. Statement Tab (After Home) -->
+      <a
+        routerLink="/statements"
+        routerLinkActive="active"
+        class="dock-item"
+        aria-label="Statement"
+        (click)="triggerFeedback()"
+      >
+        <svg class="dock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10 9 9 9 8 9"/>
+        </svg>
+        <span class="dock-label">Statement</span>
+      </a>
+
+      <!-- 3. Center Action Button (Matte Black Pill) -->
       <button
         type="button"
         class="dock-action-btn"
@@ -40,7 +58,7 @@ import { triggerHaptic } from '../../../core/engine';
         </svg>
       </button>
 
-      <!-- 3. Members / Family Tab -->
+      <!-- 4. Members / Family Tab -->
       <a
         routerLink="/members"
         routerLinkActive="active"
@@ -57,7 +75,7 @@ import { triggerHaptic } from '../../../core/engine';
         <span class="dock-label">Family</span>
       </a>
 
-      <!-- 4. Settings Tab (Next to Family Right Side) -->
+      <!-- 5. Settings Tab (Next to Family Right Side) -->
       <a
         routerLink="/settings"
         routerLinkActive="active"
@@ -82,10 +100,10 @@ import { triggerHaptic } from '../../../core/engine';
       z-index: 1000;
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 7px 10px;
+      gap: clamp(4px, 1.2vw, 8px);
+      padding: 6px clamp(8px, 2vw, 12px);
       border-radius: var(--radius-pill, 9999px);
-      background: rgba(255, 255, 255, 0.9);
+      background: rgba(255, 255, 255, 0.92);
       backdrop-filter: var(--blur-dock);
       -webkit-backdrop-filter: var(--blur-dock);
       border: 1.5px solid rgba(255, 255, 255, 0.95);
@@ -115,9 +133,9 @@ import { triggerHaptic } from '../../../core/engine';
       justify-content: center;
       text-decoration: none;
       color: #9ca3af;
-      padding: 8px clamp(18px, 4.5vw, 24px);
+      padding: 6px clamp(10px, 2.8vw, 18px);
       border-radius: var(--radius-pill, 9999px);
-      min-height: 52px;
+      min-height: 48px;
       touch-action: manipulation;
       user-select: none;
       -webkit-user-select: none;
