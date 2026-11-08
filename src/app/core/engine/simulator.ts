@@ -228,6 +228,7 @@ export function simulateV2(options: SimulatorV2Options): SimulationResult | null
     const yearStr = String(year);
     const monthStr = String(month).padStart(2, '0');
     let monthAccruedAccumulator = 0n;
+    let closedThisMonth = false;
 
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = `${yearStr}-${monthStr}-${String(day).padStart(2, '0')}`;
@@ -252,13 +253,16 @@ export function simulateV2(options: SimulatorV2Options): SimulationResult | null
       // 3. Regular monthly payment on paymentDayOfMonth
       const isPayDay = day === Math.min(paymentDayOfMonth, daysInMonth);
       if (isPayDay && currentPrincipalBigInt > 0n) {
-        const estHalfInterest = divideHalfUp(monthAccruedAccumulator, 1_000_000n);
-        const netPrincipalReduction = BigInt(monthlyPayment) > estHalfInterest
-          ? BigInt(monthlyPayment) - estHalfInterest
-          : 0n;
-        currentPrincipalBigInt = currentPrincipalBigInt > netPrincipalReduction
-          ? currentPrincipalBigInt - netPrincipalReduction
-          : 0n;
+        const estAccruedInterest = divideHalfUp(monthAccruedAccumulator, 1_000_000n);
+        // If remaining balance plus accrued interest is <= monthlyPayment, loan completes this month
+        if (currentPrincipalBigInt + estAccruedInterest <= BigInt(monthlyPayment)) {
+          totalInterestBigInt += estAccruedInterest;
+          currentPrincipalBigInt = 0n;
+          closedThisMonth = true;
+          break;
+        } else {
+          currentPrincipalBigInt -= BigInt(monthlyPayment);
+        }
       }
 
       // 4. Daily interest accrual on closing balance
@@ -269,8 +273,16 @@ export function simulateV2(options: SimulatorV2Options): SimulationResult | null
       }
     }
 
+    if (closedThisMonth) {
+      months++;
+      schedule.push(ZERO_PAISE);
+      break;
+    }
+
+    // Capitalise month-end interest onto principal
     const monthInterestPaise = divideHalfUp(monthAccruedAccumulator, 1_000_000n);
     totalInterestBigInt += monthInterestPaise;
+    currentPrincipalBigInt += monthInterestPaise;
 
     if (BigInt(monthlyPayment) <= monthInterestPaise && prepayments.length === 0) {
       return null;

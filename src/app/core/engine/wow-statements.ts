@@ -189,3 +189,4 @@ export const WOW_STATEMENTS: WowStatement[] = [
     tag: 'Ultimate Flex',
   },
 ];
+
