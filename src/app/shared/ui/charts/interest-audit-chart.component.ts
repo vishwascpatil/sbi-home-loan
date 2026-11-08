@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  input,
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -9,6 +10,7 @@ import {
   formatCompactPaise,
   formatPaise,
   getSbiAuditSummary,
+  SbiAuditSummary,
   SbiMonthlyAuditRecord,
   triggerHaptic,
 } from '../../../core/engine';
@@ -36,7 +38,7 @@ import {
         <div class="wow-stat-tile tile-danger">
           <span class="wow-stat-lbl">Total Debited</span>
           <div class="wow-stat-val text-danger tabular-nums">
-            {{ formatCompactPaise(auditData.totalInterestPaid) }}
+            {{ formatCompactPaise(auditData().totalInterestPaid) }}
           </div>
           <span class="wow-stat-sub tabular-nums">
             29 Months Debits
@@ -92,7 +94,7 @@ import {
           <line x1="0" y1="130" x2="580" y2="130" stroke="rgba(0,0,0,0.08)" />
 
           <!-- Bars -->
-          @for (rec of auditData.records; track rec.period; let idx = $index) {
+          @for (rec of auditData().records; track rec.period; let idx = $index) {
             <g
               class="bar-group"
               [class.active]="selectedRecord()?.period === rec.period"
@@ -404,10 +406,16 @@ import {
   `],
 })
 export class InterestAuditChartComponent {
-  readonly auditData = getSbiAuditSummary();
-  readonly selectedRecord = signal<SbiMonthlyAuditRecord | null>(
-    this.auditData.records[this.auditData.records.length - 1] // Default to latest Oct 2026
-  );
+  readonly auditSummary = input<SbiAuditSummary>();
+  readonly auditData = computed<SbiAuditSummary>(() => this.auditSummary() ?? getSbiAuditSummary());
+  readonly selectedRecord = signal<SbiMonthlyAuditRecord | null>(null);
+
+  constructor() {
+    const recs = this.auditData().records;
+    if (recs && recs.length > 0) {
+      this.selectedRecord.set(recs[recs.length - 1]);
+    }
+  }
 
   readonly formatPaise = formatPaise;
   readonly formatCompactPaise = formatCompactPaise;

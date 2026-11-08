@@ -13,7 +13,6 @@ import {
   FinancialYearSummary,
   formatCompactPaise,
   formatPaise,
-  getSbiAuditSummary,
   outstandingAt,
   Paise,
   paise,
@@ -21,7 +20,6 @@ import {
   triggerHaptic,
 } from '../../core/engine';
 import {
-  SBI_AUTHENTIC_STATEMENT_ROWS,
   SbiPassbookRow,
 } from '../../core/data';
 
@@ -1140,18 +1138,17 @@ export class StatementsComponent {
   readonly ledgerStore = inject(LedgerStore);
 
   readonly activeTab = signal<'passbook' | 'monthly' | 'annual' | 'audit'>('passbook');
-  readonly auditSummary = computed(() => getSbiAuditSummary());
+  readonly auditSummary = this.ledgerStore.sbiAuditSummary;
 
   // 1. Passbook Explorer State (Cloud Firestore statement records + user-recorded direct statement deposits)
   readonly allStatementRows = computed<SbiPassbookRow[]>(() => {
     const cloudRows = this.ledgerStore.statementRecords();
-    const staticRows = cloudRows && cloudRows.length > 0 ? cloudRows : SBI_AUTHENTIC_STATEMENT_ROWS;
     const liveTxs = this.ledgerStore
       .transactions()
       .filter((t): t is BankPaymentTransaction => !t.deletedAt && t.type === 'bankPayment' && !t.id.startsWith('tx-sbi-'));
 
     if (liveTxs.length === 0) {
-      return staticRows;
+      return cloudRows;
     }
 
     const dynamicRows: SbiPassbookRow[] = liveTxs.map((t) => {
@@ -1180,7 +1177,7 @@ export class StatementsComponent {
       };
     });
 
-    return [...dynamicRows, ...staticRows].sort((a, b) => b.isoDate.localeCompare(a.isoDate));
+    return [...dynamicRows, ...cloudRows].sort((a, b) => b.isoDate.localeCompare(a.isoDate));
   });
 
   readonly selectedCategory = signal<string>('all');

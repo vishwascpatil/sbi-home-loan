@@ -1,6 +1,6 @@
 import { divideHalfUp, Paise, paise } from './money';
 import { DailyLedgerRecord, Transaction } from './models';
-import { SBI_AUTHENTIC_STATEMENT_ROWS, SbiPassbookRow } from '../data/sbi-statement-records';
+import { SbiPassbookRow } from '../data/sbi-statement-records';
 
 export interface SbiDailyRecord extends DailyLedgerRecord {
   txDetails?: { desc: string; type: 'credit' | 'debit'; amount: string; category: string }[];
@@ -68,13 +68,18 @@ export const SBI_RATE_ERAS: Record<string, number> = {
   '2026-11': 790,
 };
 
-// Chronologically ordered statement entries (12-Jun-2024 to 07-Nov-2026)
-const CHRONO_STATEMENT_ROWS: SbiPassbookRow[] = [...SBI_AUTHENTIC_STATEMENT_ROWS].reverse();
+function getChronoRows(statementRows?: SbiPassbookRow[]): SbiPassbookRow[] {
+  if (statementRows && statementRows.length > 0) {
+    return [...statementRows].reverse();
+  }
+  return [];
+}
 
 /**
  * Returns all 30 available months starting from June 2024 to November 2026 (descending).
  */
-export function getSbiAvailableMonths(): SbiAvailableMonth[] {
+export function getSbiAvailableMonths(statementRows?: SbiPassbookRow[]): SbiAvailableMonth[] {
+  const chronoRows = getChronoRows(statementRows);
   const months: SbiAvailableMonth[] = [];
   const start = new Date(2024, 5, 1); // Jun 2024
   const end = new Date(2026, 10, 1);  // Nov 2026
@@ -94,7 +99,7 @@ export function getSbiAvailableMonths(): SbiAvailableMonth[] {
     const period = `${y}-${String(m).padStart(2, '0')}`;
     const label = `${monthNames[m - 1]} ${y}`;
     const shortLabel = `${shortNames[m - 1]} '${String(y).slice(2)}`;
-    const hasTransactions = CHRONO_STATEMENT_ROWS.some((r) => r.isoDate.startsWith(period));
+    const hasTransactions = chronoRows.length > 0 ? chronoRows.some((r) => r.isoDate.startsWith(period)) : true;
 
     months.push({
       period,
@@ -119,8 +124,10 @@ export function getSbiAvailableMonths(): SbiAvailableMonth[] {
  */
 export function getSbiDailyLedger(
   period: string,
-  liveTransactions: Transaction[] = []
+  liveTransactions: Transaction[] = [],
+  statementRows?: SbiPassbookRow[]
 ): SbiDailyMonthSummary {
+  const chronoRows = getChronoRows(statementRows);
   const [yStr, mStr] = period.slice(0, 7).split('-');
   const y = parseInt(yStr || '2026', 10);
   const m = parseInt(mStr || '11', 10);
@@ -140,7 +147,7 @@ export function getSbiDailyLedger(
   const shortLabel = `${shortNames[m - 1]} '${String(y).slice(2)}`;
 
   // 1. Determine opening balance from chronological transactions before period-01
-  const priorStatementTxs = CHRONO_STATEMENT_ROWS.filter((t) => t.isoDate < `${period}-01`);
+  const priorStatementTxs = chronoRows.filter((t) => t.isoDate < `${period}-01`);
   let currentBalance: Paise = paise(0);
 
   if (priorStatementTxs.length > 0) {
@@ -162,7 +169,7 @@ export function getSbiDailyLedger(
     const dayOpening = currentBalance;
 
     // A. Passbook authentic transactions on this day
-    const dayStatementTxs = CHRONO_STATEMENT_ROWS.filter((t) => t.isoDate === dStr);
+    const dayStatementTxs = chronoRows.filter((t) => t.isoDate === dStr);
 
     // B. Live newly recorded transactions in LedgerStore (for current/future active period)
     const dayLiveTxs = liveTransactions.filter(

@@ -14,12 +14,16 @@ import {
   StatementSnapshot,
 } from './models';
 import { addPaise, Paise, paise, subPaise, ZERO_PAISE } from './money';
-import { SBI_30_MONTH_PAYMENTS } from './sbi-payments-audit';
-import { SBI_29_MONTH_AUDIT } from './sbi-interest-audit';
+import { SbiMonthlyPaymentRecord } from './sbi-payments-audit';
+import { SbiMonthlyAuditRecord } from './sbi-interest-audit';
 import { getSbiDailyLedger } from './sbi-daily-ledger';
-import { SBI_AUTHENTIC_STATEMENT_ROWS, SbiPassbookRow } from '../data/sbi-statement-records';
+import { SbiPassbookRow } from '../data/sbi-statement-records';
 
-const CHRONO_STATEMENT_ROWS: SbiPassbookRow[] = [...SBI_AUTHENTIC_STATEMENT_ROWS].reverse();
+export interface MonthlySummaryContext {
+  paymentsAudit?: SbiMonthlyPaymentRecord[];
+  interestAudit?: SbiMonthlyAuditRecord[];
+  statementRows?: SbiPassbookRow[];
+}
 
 export interface BankPaymentSplit {
   interestPortion: Paise;
@@ -135,17 +139,22 @@ export function bankPaymentSplit(
  * All November 2026 deposits (₹2,18,900) are fully deducted, setting current loan debt to ₹1,18,86,289.00.
  * Member contributions NEVER reduce outstanding principal; only authentic bank payments do.
  */
-export function outstandingAt(dateOrMonth: string, ledger: LedgerState): Paise {
+export function outstandingAt(
+  dateOrMonth: string,
+  ledger: LedgerState,
+  statementRows?: SbiPassbookRow[]
+): Paise {
   const targetDate = dateOrMonth.length === 7 ? `${dateOrMonth}-31` : dateOrMonth;
+  const chronoRows = statementRows && statementRows.length > 0 ? [...statementRows].reverse() : [];
 
-  // 1. For authentic loan tracking, ground balance directly in authentic bank statement PDF data
-  if (ledger.loan.id === 'loan-primary' && CHRONO_STATEMENT_ROWS.length > 0) {
-    const earliestDate = CHRONO_STATEMENT_ROWS[0].isoDate;
+  // 1. For authentic loan tracking, ground balance directly in authentic bank statement records
+  if (ledger.loan.id === 'loan-primary' && chronoRows.length > 0) {
+    const earliestDate = chronoRows[0].isoDate;
     if (targetDate < earliestDate) {
       return ZERO_PAISE;
     }
 
-    const rowsUpToTarget = CHRONO_STATEMENT_ROWS.filter((r) => r.isoDate <= targetDate);
+    const rowsUpToTarget = chronoRows.filter((r) => r.isoDate <= targetDate);
     let currentBalance: Paise;
 
     if (rowsUpToTarget.length > 0) {
@@ -230,7 +239,8 @@ export function outstandingAt(dateOrMonth: string, ledger: LedgerState): Paise {
 export function monthlySummary(
   month: string,
   ledger: LedgerState,
-  engine?: InterestEngine
+  engine?: InterestEngine,
+  context?: MonthlySummaryContext
 ): MonthlySummary {
   const activeTx = activeOnly(ledger.transactions).filter((tx) => tx.forMonth === month);
 
@@ -248,11 +258,18 @@ export function monthlySummary(
     }
   }
 
-  // 1. Check if month is covered by authentic bank statement PDF (Jun '24 - Nov '26)
-  const stmtPayment = SBI_30_MONTH_PAYMENTS.find((r) => r.period === month);
+  // 1. Check if month is covered by authentic bank statement records from Firestore
+  const paymentsList = context?.paymentsAudit && context.paymentsAudit.length > 0
+    ? context.paymentsAudit
+    : [];
+  const auditList = context?.interestAudit && context.interestAudit.length > 0
+    ? context.interestAudit
+    : [];
+
+  const stmtPayment = paymentsList.find((r) => r.period === month);
   if (stmtPayment) {
-    const dailyData = getSbiDailyLedger(month, ledger.transactions);
-    const auditRecord = SBI_29_MONTH_AUDIT.find((r) => r.period === month);
+    const dailyData = getSbiDailyLedger(month, ledger.transactions, context?.statementRows);
+    const auditRecord = auditList.find((r) => r.period === month);
     const stmtPaidToBank = stmtPayment.totalPaid;
     const stmtInterest = auditRecord ? auditRecord.sbiInterest : dailyData.totalInterestAccrued;
     const stmtPrincipalReduced = paise(Math.max(0, stmtPaidToBank - stmtInterest));

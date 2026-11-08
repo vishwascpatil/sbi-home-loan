@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  input,
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -10,6 +11,7 @@ import {
   formatPaise,
   getSbiPaymentsSummary,
   SbiMonthlyPaymentRecord,
+  SbiPaymentsSummary,
   triggerHaptic,
 } from '../../../core/engine';
 
@@ -698,7 +700,8 @@ import {
   `],
 })
 export class MonthlyPaymentsAuditChartComponent {
-  readonly summary = computed(() => getSbiPaymentsSummary());
+  readonly paymentsSummary = input<SbiPaymentsSummary>();
+  readonly summary = computed(() => this.paymentsSummary() ?? getSbiPaymentsSummary());
   readonly selectedYearFilter = signal<'all' | '2026' | '2025' | '2024'>('all');
   readonly selectedRecord = signal<SbiMonthlyPaymentRecord | null>(null);
 

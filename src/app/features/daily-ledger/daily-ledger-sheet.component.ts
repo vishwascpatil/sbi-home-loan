@@ -483,7 +483,9 @@ export class DailyLedgerSheetComponent {
   readonly dismissed = output<void>();
 
   readonly ledgerStore = inject(LedgerStore);
-  readonly availableMonths: SbiAvailableMonth[] = getSbiAvailableMonths();
+  get availableMonths(): SbiAvailableMonth[] {
+    return getSbiAvailableMonths(this.ledgerStore.statementRecords());
+  }
   readonly selectedPeriod = signal<string>('2026-11');
 
   readonly monthSummary = computed<SbiDailyMonthSummary>(() => {

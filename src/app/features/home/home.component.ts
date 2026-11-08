@@ -15,7 +15,6 @@ import {
   divideHalfUp,
   formatCompactPaise,
   formatPaise,
-  getOdWithdrawalsSummary,
   getTransactionAmount,
   getTransactionMode,
   Paise,
@@ -234,12 +233,13 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
           [sanctionedLimit]="ledgerStore.loan().sanctionedLimit"
           [currentOutstanding]="ledgerStore.currentOutstanding()"
           [initialDisbursed]="initialDisbursedAmount()"
+          [points]="ledgerStore.balanceTrajectory()"
         />
       </section>
 
       <!-- 7. Section: Interest Audit Chart (SBI Interest Debited Each Month) -->
       <section class="home-section">
-        <app-interest-audit-chart />
+        <app-interest-audit-chart [auditSummary]="ledgerStore.sbiAuditSummary()" />
       </section>
 
       <!-- 8. Section: Monthly Impact & Payoff Target -->
@@ -310,7 +310,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
 
       <!-- 9. Section: Monthly Payments Audit Chart -->
       <section class="home-section">
-        <app-monthly-payments-audit-chart />
+        <app-monthly-payments-audit-chart [paymentsSummary]="ledgerStore.sbiPaymentsSummary()" />
       </section>
 
       <!-- 10. Direct Link to Statements & Passbook -->
@@ -1343,10 +1343,14 @@ export class HomeComponent {
   });
 
   readonly isWithdrawalSheetOpen = signal<boolean>(false);
-  readonly odWithdrawalSummary = computed(() => getOdWithdrawalsSummary());
+  readonly odWithdrawalSummary = this.ledgerStore.odWithdrawalsSummary;
   readonly paybackSliderPaise = signal<Paise>(toPaise(500000)); // Default ₹5 Lakhs simulation
   readonly paybackSim = computed(() =>
-    simulatePayback(this.paybackSliderPaise(), this.ledgerStore.loan().currentRateBps)
+    simulatePayback(
+      this.paybackSliderPaise(),
+      this.ledgerStore.loan().currentRateBps,
+      this.odWithdrawalSummary()
+    )
   );
 
   readonly odAvailableBuffer = computed<Paise>(() => {

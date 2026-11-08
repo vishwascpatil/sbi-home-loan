@@ -236,6 +236,14 @@ export interface AuditEntry {
   payloadAfter?: unknown;
 }
 
+export interface DualTrackPoint {
+  id?: string;
+  order?: number;
+  month: string;
+  drawingPowerPaise: Paise;
+  actualOutstandingPaise: Paise;
+}
+
 export interface Settings {
   theme: 'light';
   dateFormat: 'DD/MM/YYYY' | 'YYYY-MM-DD';

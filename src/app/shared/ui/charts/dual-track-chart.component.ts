@@ -1,11 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { formatCompactPaise, formatPaise, Paise, toPaise } from '../../../core/engine';
-
-export interface DualTrackPoint {
-  month: string; // e.g. "Jun '24", "Dec '24"
-  drawingPowerPaise: Paise;
-  actualOutstandingPaise: Paise;
-}
+import { DualTrackPoint, formatCompactPaise, formatPaise, Paise, toPaise } from '../../../core/engine';
 
 export interface YAxisTick {
   label: string;
@@ -463,19 +457,9 @@ export class DualTrackChartComponent {
     { label: "Nov '26", x: 520 },
   ];
 
-  // Key monthly milestone points from authentic bank statement history
-  readonly historyPoints: DualTrackPoint[] = [
-    { month: "Jun '24", drawingPowerPaise: toPaise(13300000), actualOutstandingPaise: toPaise(13300000) },
-    { month: "Sep '24", drawingPowerPaise: toPaise(13150000), actualOutstandingPaise: toPaise(12420482) }, // Sep ₹5.36L Prepayment
-    { month: "Dec '24", drawingPowerPaise: toPaise(13000000), actualOutstandingPaise: toPaise(12537032) },
-    { month: "Mar '25", drawingPowerPaise: toPaise(12880000), actualOutstandingPaise: toPaise(12568351) },
-    { month: "Jun '25", drawingPowerPaise: toPaise(12760000), actualOutstandingPaise: toPaise(12701009) },
-    { month: "Sep '25", drawingPowerPaise: toPaise(12690000), actualOutstandingPaise: toPaise(12754293) },
-    { month: "Dec '25", drawingPowerPaise: toPaise(12650000), actualOutstandingPaise: toPaise(12615588) },
-    { month: "Mar '26", drawingPowerPaise: toPaise(12630000), actualOutstandingPaise: toPaise(12457625) },
-    { month: "Jun '26", drawingPowerPaise: toPaise(12620000), actualOutstandingPaise: toPaise(12369947) },
-    { month: "Nov '26", drawingPowerPaise: toPaise(12612930), actualOutstandingPaise: toPaise(11886289) },
-  ];
+  // Trajectory points loaded dynamically from Cloud Firestore
+  readonly points = input<DualTrackPoint[]>([]);
+  readonly historyPoints = computed<DualTrackPoint[]>(() => this.points());
 
   // Map amount in Paise to SVG Y-coordinate (18 to 194)
   private scaleY(amountPaise: Paise): number {
@@ -494,7 +478,8 @@ export class DualTrackChartComponent {
   }
 
   readonly drawingPowerPath = computed<string>(() => {
-    const pts = this.historyPoints;
+    const pts = this.historyPoints();
+    if (pts.length === 0) return '';
     let d = '';
     pts.forEach((p, i) => {
       const x = this.scaleX(i, pts.length);
@@ -505,7 +490,8 @@ export class DualTrackChartComponent {
   });
 
   readonly actualOutstandingPath = computed<string>(() => {
-    const pts = this.historyPoints;
+    const pts = this.historyPoints();
+    if (pts.length === 0) return '';
     let d = '';
     pts.forEach((p, i) => {
       const x = this.scaleX(i, pts.length);
@@ -516,7 +502,8 @@ export class DualTrackChartComponent {
   });
 
   readonly cushionAreaPath = computed<string>(() => {
-    const pts = this.historyPoints;
+    const pts = this.historyPoints();
+    if (pts.length === 0) return '';
     let forward = '';
     let backward = '';
     pts.forEach((p, i) => {
@@ -531,7 +518,7 @@ export class DualTrackChartComponent {
   });
 
   readonly nodePoints = computed(() => {
-    const pts = this.historyPoints;
+    const pts = this.historyPoints();
     return pts.map((p, i) => ({
       x: this.scaleX(i, pts.length),
       dpY: this.scaleY(p.drawingPowerPaise),
@@ -540,7 +527,7 @@ export class DualTrackChartComponent {
   });
 
   readonly endPoints = computed(() => {
-    const pts = this.historyPoints;
+    const pts = this.historyPoints();
     const lastIdx = pts.length - 1;
     const lastPt = pts[lastIdx];
     if (!lastPt) return null;

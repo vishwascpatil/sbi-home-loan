@@ -1,6 +1,8 @@
 import { LedgerState } from './models';
 import { Paise, paise, toPaise } from './money';
-import { SBI_29_MONTH_AUDIT } from './sbi-interest-audit';
+import { OdWithdrawalRecord } from './od-withdrawals';
+import { SbiMonthlyAuditRecord } from './sbi-interest-audit';
+import { SbiMonthlyPaymentRecord } from './sbi-payments-audit';
 
 export interface RepaymentPaceAnalysis {
   monthsElapsed: number;
@@ -11,8 +13,8 @@ export interface RepaymentPaceAnalysis {
   bankMonthlyEmi: Paise;
   bankSupposedToPay: Paise;
 
-  // Bank Interest Debited Till Now (authentic 29-month passbook total)
-  totalInterestAddedSoFar: Paise; // ₹24,79,889
+  // Bank Interest Debited Till Now (authentic passbook total from Firestore)
+  totalInterestAddedSoFar: Paise;
 
   // Family Accelerated Target (₹2.4L / month pool)
   familyMonthlyTarget: Paise;
@@ -29,39 +31,49 @@ export interface RepaymentPaceAnalysis {
   netAheadOfBank: Paise;
   netAheadOfBankPct: number;
 
-  // High-Impact WOW Expressions & Proved Multipliers
-  totalEmisCount: number; // e.g. 41.4 (Total cumulative count of EMIs ever deposited: grossPaid / bankMonthlyEmi)
-  netEquivalentEmisPrepaid: number; // e.g. 3.6 months (netAheadOfBank / bankMonthlyEmi)
-  grossEquivalentEmisPrepaid: number; // e.g. 12.4 months (grossAheadOfBank / bankMonthlyEmi)
-  equivalentEmisPrepaid: number; // e.g. 3.6 months ahead on Net basis (default)
-  paceMultiplier: number; // e.g. 1.43x
-  statusMessage: string; // e.g. "+3.6 Months Ahead of Bank Schedule (Net)"
+  // High-Impact Multipliers
+  totalEmisCount: number;
+  netEquivalentEmisPrepaid: number;
+  grossEquivalentEmisPrepaid: number;
+  equivalentEmisPrepaid: number;
+  paceMultiplier: number;
+  statusMessage: string;
+}
+
+export interface RepaymentPaceOptions {
+  odWithdrawals?: OdWithdrawalRecord[];
+  interestAudit?: SbiMonthlyAuditRecord[];
+  paymentsAudit?: SbiMonthlyPaymentRecord[];
 }
 
 /**
  * Computes cumulative scheduled payments ("supposed to have paid") vs
- * actual cash pumped into the loan account.
+ * actual cash pumped into the loan account, completely dynamic from Cloud Firestore.
  */
-export function getRepaymentPaceAnalysis(ledger: LedgerState): RepaymentPaceAnalysis {
+export function getRepaymentPaceAnalysis(
+  ledger: LedgerState,
+  options?: RepaymentPaceOptions
+): RepaymentPaceAnalysis {
   const loan = ledger.loan;
   const startDate = loan.openingDate || '2024-06-12';
   const startYear = parseInt(startDate.slice(0, 4), 10);
   const startMonth = parseInt(startDate.slice(5, 7), 10);
 
-  // November 2026 current statement horizon
-  const currentYear = 2026;
-  const currentMonth = 11;
-  const monthsElapsed = Math.max(1, (currentYear - startYear) * 12 + (currentMonth - startMonth)); // 29 months
+  // Dynamic calendar horizon relative to start date
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+  const monthsElapsed = Math.max(1, (currentYear - startYear) * 12 + (currentMonth - startMonth));
 
-  // 1. Bank Scheduled EMI (SBI Statement page 1: ₹1,18,900)
+  // 1. Bank Scheduled EMI (SBI Statement: ₹1,18,900)
   const bankMonthlyEmi: Paise = loan.regularEmi || toPaise(118900);
-  const bankSupposedToPay = paise(monthsElapsed * bankMonthlyEmi); // ₹34,48,100
+  const bankSupposedToPay = paise(monthsElapsed * bankMonthlyEmi);
 
   // 2. Family Accelerated Target (₹2,40,000 / month)
   const familyMonthlyTarget: Paise = loan.monthlyTarget || toPaise(240000);
-  const familySupposedToPay = paise(monthsElapsed * familyMonthlyTarget); // ₹69,60,000
+  const familySupposedToPay = paise(monthsElapsed * familyMonthlyTarget);
 
-  // 3. Compute Actual Cash Deposits from Authentic Statement PDF (exclude member contributions from calculations)
+  // 3. Compute Live User Deposits & Withdrawals
   const activeTxs = ledger.transactions.filter((t) => !t.deletedAt);
   let liveBankDeposits = 0;
   let liveWithdrawals = 0;
@@ -76,33 +88,48 @@ export function getRepaymentPaceAnalysis(ledger: LedgerState): RepaymentPaceAnal
     }
   }
 
-  // Ground against authenticated SBI passbook total (₹49,20,539 Gross, ₹10,48,039 Withdrawn) + live deposits
-  const grossPaid = paise(toPaise(4920539) + liveBankDeposits);
-  const totalWithdrawn = paise(toPaise(1048039) + liveWithdrawals);
+  // Baseline from Cloud Firestore subcollections
+  const auditPaymentsTotal = options?.paymentsAudit?.length
+    ? options.paymentsAudit.reduce((acc, r) => acc + r.totalPaid, 0)
+    : 492053900; // fallback to ₹49,20,539.00 if empty
+
+  const auditWithdrawalsTotal = options?.odWithdrawals?.length
+    ? options.odWithdrawals.reduce((acc, r) => acc + r.amount, 0)
+    : 104803900; // fallback to ₹10,48,039.00 if empty
+
+  const grossPaid = paise(auditPaymentsTotal + liveBankDeposits);
+  const totalWithdrawn = paise(auditWithdrawalsTotal + liveWithdrawals);
   const netPaid = paise(grossPaid - totalWithdrawn);
 
-  // 4. Authentic Bank Interest Incurred So Far (sum of 29 passbook interest charges: ₹24,79,889)
-  const totalInterestAddedSoFar = SBI_29_MONTH_AUDIT.reduce(
-    (acc, r) => (acc + r.sbiInterest) as Paise,
-    toPaise(0)
-  );
+  // 4. Interest Added (sum from Firestore interestAudit)
+  const totalInterestAddedSoFar: Paise = options?.interestAudit?.length
+    ? (options.interestAudit.reduce((acc, r) => acc + r.sbiInterest, 0) as Paise)
+    : toPaise(2479889);
 
   // 5. Variances vs Bank Schedule
-  const grossAheadOfBank = paise(grossPaid - bankSupposedToPay); // +₹14,72,439
-  const grossAheadOfBankPct = Number(((grossAheadOfBank / bankSupposedToPay) * 100).toFixed(1)); // +42.7%
+  const grossAheadOfBank = paise(grossPaid - bankSupposedToPay);
+  const grossAheadOfBankPct = bankSupposedToPay > 0
+    ? Number(((grossAheadOfBank / bankSupposedToPay) * 100).toFixed(1))
+    : 0;
 
-  const netAheadOfBank = paise(netPaid - bankSupposedToPay); // +₹4,24,400
-  const netAheadOfBankPct = Number(((netAheadOfBank / bankSupposedToPay) * 100).toFixed(1)); // +12.3%
+  const netAheadOfBank = paise(netPaid - bankSupposedToPay);
+  const netAheadOfBankPct = bankSupposedToPay > 0
+    ? Number(((netAheadOfBank / bankSupposedToPay) * 100).toFixed(1))
+    : 0;
 
-  // Proven Metrics:
-  // - totalEmisCount: Cumulative count of monthly EMIs ever deposited (₹49,20,539 / ₹1,18,900 = 41.4 EMIs total)
-  // - netEquivalentEmisPrepaid: True prepaid advance EMIs ahead of the 29-month schedule after withdrawals (+₹4.24L / ₹1.189L = 3.6 months)
-  // - grossEquivalentEmisPrepaid: Gross advance EMIs ahead of schedule (+₹14.72L / ₹1.189L = 12.4 months)
-  const totalEmisCount = Number((grossPaid / bankMonthlyEmi).toFixed(1)); // 41.4 EMIs deposited in total
-  const netEquivalentEmisPrepaid = Number((netAheadOfBank / bankMonthlyEmi).toFixed(1)); // +3.6 months ahead
-  const grossEquivalentEmisPrepaid = Number((grossAheadOfBank / bankMonthlyEmi).toFixed(1)); // +12.4 months ahead
+  const totalEmisCount = bankMonthlyEmi > 0
+    ? Number((grossPaid / bankMonthlyEmi).toFixed(1))
+    : 0;
+  const netEquivalentEmisPrepaid = bankMonthlyEmi > 0
+    ? Number((netAheadOfBank / bankMonthlyEmi).toFixed(1))
+    : 0;
+  const grossEquivalentEmisPrepaid = bankMonthlyEmi > 0
+    ? Number((grossAheadOfBank / bankMonthlyEmi).toFixed(1))
+    : 0;
   const equivalentEmisPrepaid = netEquivalentEmisPrepaid;
-  const paceMultiplier = Number((grossPaid / bankSupposedToPay).toFixed(2)); // ~1.43x
+  const paceMultiplier = bankSupposedToPay > 0
+    ? Number((grossPaid / bankSupposedToPay).toFixed(2))
+    : 1;
 
   const statusMessage =
     netAheadOfBank >= 0

@@ -1,6 +1,8 @@
 /**
  * Admin provisioning script for Firebase Firestore.
- * Idempotently populates authentic loan records, rate changes, snapshots, and 101 statement records.
+ * Idempotently populates authentic loan records, rate changes, snapshots,
+ * statement records (101 rows), OD withdrawals (21 items), interest audit (29 months),
+ * monthly payments audit (30 months), and balance trajectory (10 points).
  * Run once via: node scripts/provision-firebase.cjs
  */
 const { initializeApp } = require('firebase/app');
@@ -13,6 +15,8 @@ const {
   writeBatch,
   getDocs,
 } = require('firebase/firestore');
+const fs = require('fs');
+const path = require('path');
 
 const firebaseConfig = {
   apiKey: 'AIzaSyAl0a5zXMutgIZkz8QVqzAFNkYoWUtYIDE',
@@ -29,23 +33,112 @@ const db = getFirestore(app);
 
 const PRIMARY_LOAN_ID = 'loan-primary';
 
-// Import statement rows from compile-safe data
-const fs = require('fs');
-const path = require('path');
-
 function getStatementRows() {
-  const fileContent = fs.readFileSync(
-    path.join(__dirname, '../src/app/core/data/sbi-statement-records.ts'),
-    'utf8'
-  );
-  const startIdx = fileContent.indexOf('= [') + 2;
-  const endIdx = fileContent.indexOf('] as unknown as');
-  if (startIdx === -1 || endIdx === -1) {
-    throw new Error('Failed to find array boundaries in sbi-statement-records.ts');
-  }
-  const jsonText = fileContent.slice(startIdx, endIdx + 1);
-  return JSON.parse(jsonText);
+  const jsonPath = path.join(__dirname, 'data/sbi-statement-records.json');
+  return JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
 }
+
+const OD_WITHDRAWALS = [
+  { id: 'od-1', numId: 1, date: '2024-09-13', amount: 5308700, category: 'bill', categoryLabel: 'Bill Payment', categoryIcon: '💳', destination: 'SBI BillDesk', description: 'Online utility / bill payment', daysActive: 785, monthlyCost: 34900, cumulativeInterestLost: 925600 },
+  { id: 'od-2', numId: 2, date: '2024-09-17', amount: 100000, category: 'fee', categoryLabel: 'Bank Fee', categoryIcon: '🏦', destination: 'SBI', description: 'SLOP statement charge (Reversed on 2024-09-20)', daysActive: 3, monthlyCost: 0, cumulativeInterestLost: 100 },
+  { id: 'od-3', numId: 3, date: '2024-10-13', amount: 8853400, category: 'personal', categoryLabel: 'Personal Draw', categoryIcon: '👤', destination: 'Personal A/C', description: 'Net Banking transfer marked "for self"', daysActive: 755, monthlyCost: 58300, cumulativeInterestLost: 1478900 },
+  { id: 'od-4', numId: 4, date: '2024-11-18', amount: 10564000, category: 'personal', categoryLabel: 'Personal Draw', categoryIcon: '👤', destination: 'Personal A/C', description: 'Net Banking transfer marked "expense"', daysActive: 719, monthlyCost: 69500, cumulativeInterestLost: 1672000 },
+  { id: 'od-5', numId: 5, date: '2025-02-04', amount: 10000000, category: 'bill', categoryLabel: 'Bill Payment', categoryIcon: '💳', destination: 'BillDesk', description: 'Online Bill Payment via Net Banking', daysActive: 641, monthlyCost: 65800, cumulativeInterestLost: 1392800 },
+  { id: 'od-6', numId: 6, date: '2025-02-04', amount: 2500000, category: 'transfer', categoryLabel: 'Loan Transfer', categoryIcon: '🔄', destination: 'External Loan', description: 'Outgoing transfer marked "Loan repayment"', daysActive: 641, monthlyCost: 16500, cumulativeInterestLost: 348200 },
+  { id: 'od-7', numId: 7, date: '2025-02-06', amount: 4527800, category: 'personal', categoryLabel: 'Personal Draw', categoryIcon: '👤', destination: 'Personal A/C', description: 'Net Banking transfer marked "na"', daysActive: 639, monthlyCost: 29800, cumulativeInterestLost: 628500 },
+  { id: 'od-8', numId: 8, date: '2025-02-28', amount: 10000000, category: 'creditCard', categoryLabel: 'Credit Cards', categoryIcon: '💳', destination: 'Credit Card', description: 'Bill settlement marked "credit cards"', daysActive: 617, monthlyCost: 65800, cumulativeInterestLost: 1336900 },
+  { id: 'od-9', numId: 9, date: '2025-03-28', amount: 4000000, category: 'investment', categoryLabel: 'Investment', categoryIcon: '📈', destination: 'Deposit / FD', description: 'Transfer marked "Deposit or Inv"', daysActive: 589, monthlyCost: 26300, cumulativeInterestLost: 508700 },
+  { id: 'od-10', numId: 10, date: '2025-05-04', amount: 7500000, category: 'transfer', categoryLabel: 'External EMI', categoryIcon: '💰', destination: 'EMI Account', description: 'Outgoing transfer marked "emi"', daysActive: 552, monthlyCost: 49400, cumulativeInterestLost: 889200 },
+  { id: 'od-11', numId: 11, date: '2025-05-15', amount: 4000000, category: 'investment', categoryLabel: 'Investment', categoryIcon: '📈', destination: 'Fund', description: 'Investment transfer marked "fund"', daysActive: 541, monthlyCost: 26300, cumulativeInterestLost: 464000 },
+  { id: 'od-12', numId: 12, date: '2025-06-04', amount: 10000000, category: 'transfer', categoryLabel: 'Bank Transfer', categoryIcon: '🏦', destination: 'HDFC Bank xx541', description: 'IMPS to Vikas HDFC account', daysActive: 521, monthlyCost: 65800, cumulativeInterestLost: 1113400 },
+  { id: 'od-13', numId: 13, date: '2025-08-24', amount: 3000000, category: 'personal', categoryLabel: 'Home / Living', categoryIcon: '🛋️', destination: 'Merchant', description: 'Furniture purchase marked "cot"', daysActive: 440, monthlyCost: 19800, cumulativeInterestLost: 280100 },
+  { id: 'od-14', numId: 14, date: '2025-09-05', amount: 12500000, category: 'transfer', categoryLabel: 'Loan Transfer', categoryIcon: '🔄', destination: 'External Loan', description: 'Largest single draw, marked "Loan repayment"', daysActive: 428, monthlyCost: 82300, cumulativeInterestLost: 1134600 },
+  { id: 'od-15', numId: 15, date: '2025-09-13', amount: 700000, category: 'creditCard', categoryLabel: 'Credit Cards', categoryIcon: '💳', destination: 'Credit Card', description: 'Card payment marked "credit card"', daysActive: 420, monthlyCost: 4600, cumulativeInterestLost: 62300 },
+  { id: 'od-16', numId: 16, date: '2025-09-15', amount: 1500000, category: 'investment', categoryLabel: 'Mutual Fund', categoryIcon: '📈', destination: 'AMC', description: 'Investment marked "mutual fund"', daysActive: 418, monthlyCost: 9900, cumulativeInterestLost: 132900 },
+  { id: 'od-17', numId: 17, date: '2025-10-09', amount: 2000000, category: 'personal', categoryLabel: 'Education', categoryIcon: '🎓', destination: 'Daycare / School', description: 'Fees marked "fee bunnies"', daysActive: 394, monthlyCost: 13200, cumulativeInterestLost: 166800 },
+  { id: 'od-18', numId: 18, date: '2026-02-16', amount: 1000000, category: 'investment', categoryLabel: 'Mutual Fund', categoryIcon: '📈', destination: 'SBI Mutual Fund', description: 'Investment marked "Magnum fund"', daysActive: 264, monthlyCost: 6600, cumulativeInterestLost: 55600 },
+  { id: 'od-19', numId: 19, date: '2026-03-07', amount: 4200000, category: 'bill', categoryLabel: 'Bill Payment', categoryIcon: '💳', destination: 'BillDesk', description: 'Online Bill Payment via Net Banking', daysActive: 245, monthlyCost: 27700, cumulativeInterestLost: 216700 },
+  { id: 'od-20', numId: 20, date: '2026-05-14', amount: 2500000, category: 'transfer', categoryLabel: 'OD Borrowing', categoryIcon: '🔄', destination: 'Personal A/C', description: 'Marked "Repay back to OD by 2"', daysActive: 177, monthlyCost: 16500, cumulativeInterestLost: 93400 },
+  { id: 'od-21', numId: 21, date: '2026-06-23', amount: 50000, category: 'transfer', categoryLabel: 'Bank Transfer', categoryIcon: '🏦', destination: 'HDFC Bank xx541', description: 'IMPS test to Vikas HDFC account', daysActive: 137, monthlyCost: 300, cumulativeInterestLost: 1400 },
+];
+
+const INTEREST_AUDIT = [
+  { id: 'audit-2024-06', month: 'Jun 2024', period: '2024-06', days: 19, sbiInterest: 6161700, avgBalance: 1330000000, effectiveRate: 8.90, rateEra: '8.90% Initial Sanction', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2024-07', month: 'Jul 2024', period: '2024-07', days: 31, sbiInterest: 9899700, avgBalance: 1309676900, effectiveRate: 8.90, rateEra: '8.90% Initial Era', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2024-08', month: 'Aug 2024', period: '2024-08', days: 31, sbiInterest: 9848100, avgBalance: 1302847900, effectiveRate: 8.90, rateEra: '8.90% Initial Era', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2024-09', month: 'Sep 2024', period: '2024-09', days: 30, sbiInterest: 9327100, avgBalance: 1275053400, effectiveRate: 8.90, rateEra: '8.90% Initial Era', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2024-10', month: 'Oct 2024', period: '2024-10', days: 31, sbiInterest: 9421800, avgBalance: 1246445800, effectiveRate: 8.90, rateEra: '8.90% Initial Era', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2024-11', month: 'Nov 2024', period: '2024-11', days: 30, sbiInterest: 9158700, avgBalance: 1252033600, effectiveRate: 8.90, rateEra: '8.90% Initial Era', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2024-12', month: 'Dec 2024', period: '2024-12', days: 31, sbiInterest: 9488200, avgBalance: 1255237400, effectiveRate: 8.90, rateEra: '8.90% Initial Era', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2025-01', month: 'Jan 2025', period: '2025-01', days: 31, sbiInterest: 9470100, avgBalance: 1252835600, effectiveRate: 8.90, rateEra: '8.90% Initial Era', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2025-02', month: 'Feb 2025', period: '2025-02', days: 28, sbiInterest: 8415800, avgBalance: 1250217200, effectiveRate: 8.77, rateEra: '8.77% EBLR Step', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2025-03', month: 'Mar 2025', period: '2025-03', days: 31, sbiInterest: 9239100, avgBalance: 1257608000, effectiveRate: 8.65, rateEra: '8.65% EBLR Step', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2025-04', month: 'Apr 2025', period: '2025-04', days: 30, sbiInterest: 8793400, avgBalance: 1256169500, effectiveRate: 8.52, rateEra: '8.52% EBLR Step', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2025-05', month: 'May 2025', period: '2025-05', days: 31, sbiInterest: 9003300, avgBalance: 1261989500, effectiveRate: 8.40, rateEra: '8.40% EBLR Step', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2025-06', month: 'Jun 2025', period: '2025-06', days: 30, sbiInterest: 8494600, avgBalance: 1270686200, effectiveRate: 8.13, rateEra: '8.13% EBLR Step', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2025-07', month: 'Jul 2025', period: '2025-07', days: 31, sbiInterest: 8509400, avgBalance: 1268239700, effectiveRate: 7.90, rateEra: '7.90% First Major Cut', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2025-08', month: 'Aug 2025', period: '2025-08', days: 31, sbiInterest: 8494400, avgBalance: 1266016800, effectiveRate: 7.90, rateEra: '7.90% Rate Era', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2025-09', month: 'Sep 2025', period: '2025-09', days: 30, sbiInterest: 8255300, avgBalance: 1271388000, effectiveRate: 7.90, rateEra: '7.90% Rate Era', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2025-10', month: 'Oct 2025', period: '2025-10', days: 31, sbiInterest: 8518600, avgBalance: 1269612700, effectiveRate: 7.90, rateEra: '7.90% Rate Era', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2025-11', month: 'Nov 2025', period: '2025-11', days: 30, sbiInterest: 8225600, avgBalance: 1266808500, effectiveRate: 7.90, rateEra: '7.90% Rate Era', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2025-12', month: 'Dec 2025', period: '2025-12', days: 31, sbiInterest: 8327900, avgBalance: 1263093000, effectiveRate: 7.76, rateEra: '7.76% Interim Step', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2026-01', month: 'Jan 2026', period: '2026-01', days: 31, sbiInterest: 8183500, avgBalance: 1259530900, effectiveRate: 7.65, rateEra: '7.65% Lowest Rate', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2026-02', month: 'Feb 2026', period: '2026-02', days: 28, sbiInterest: 7362300, avgBalance: 1254556300, effectiveRate: 7.65, rateEra: '7.65% Lowest Rate', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2026-03', month: 'Mar 2026', period: '2026-03', days: 31, sbiInterest: 8120400, avgBalance: 1249824600, effectiveRate: 7.65, rateEra: '7.65% Lowest Rate', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2026-04', month: 'Apr 2026', period: '2026-04', days: 30, sbiInterest: 7821700, avgBalance: 1243973200, effectiveRate: 7.65, rateEra: '7.65% Lowest Rate', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2026-05', month: 'May 2026', period: '2026-05', days: 31, sbiInterest: 8065100, avgBalance: 1241305400, effectiveRate: 7.65, rateEra: '7.65% Lowest Rate', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2026-06', month: 'Jun 2026', period: '2026-06', days: 30, sbiInterest: 7782600, avgBalance: 1237752700, effectiveRate: 7.65, rateEra: '7.65% Lowest Rate', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2026-07', month: 'Jul 2026', period: '2026-07', days: 31, sbiInterest: 7979700, avgBalance: 1228166500, effectiveRate: 7.65, rateEra: '7.65% Lowest Rate', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2026-08', month: 'Aug 2026', period: '2026-08', days: 31, sbiInterest: 7954300, avgBalance: 1224256200, effectiveRate: 7.65, rateEra: '7.65% Lowest Rate', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2026-09', month: 'Sep 2026', period: '2026-09', days: 30, sbiInterest: 7649400, avgBalance: 1216571600, effectiveRate: 7.65, rateEra: '7.65% Lowest Rate', isVerified: true, variancePaise: 0 },
+  { id: 'audit-2026-10', month: 'Oct 2026', period: '2026-10', days: 31, sbiInterest: 7973300, avgBalance: 1205628200, effectiveRate: 7.90, rateEra: '7.90% Current Rate', isVerified: true, variancePaise: 0 },
+];
+
+const PAYMENTS_AUDIT = [
+  { id: 'pay-2024-06', month: 'Jun 2024', period: '2024-06', totalPaid: 0, emiPaid: 0, prepayPaid: 0, txCount: 0, note: "Loan Disbursed 12-Jun (₹1.33 Cr). EMIs started Jul '24" },
+  { id: 'pay-2024-07', month: 'Jul 2024', period: '2024-07', totalPaid: 31890000, emiPaid: 11890000, prepayPaid: 20000000, txCount: 3, note: '1st EMI + ₹2.0L Prepayment' },
+  { id: 'pay-2024-08', month: 'Aug 2024', period: '2024-08', totalPaid: 21890000, emiPaid: 11890000, prepayPaid: 10000000, txCount: 2, note: 'EMI + ₹1.0L Prepayment' },
+  { id: 'pay-2024-09', month: 'Sep 2024', period: '2024-09', totalPaid: 65490000, emiPaid: 11890000, prepayPaid: 53600000, txCount: 4, isPeak: true, note: 'All-Time Peak Deposit Month (₹6.55L)' },
+  { id: 'pay-2024-10', month: 'Oct 2024', period: '2024-10', totalPaid: 11890000, emiPaid: 11890000, prepayPaid: 0, txCount: 1, note: 'Regular Bank Monthly EMI' },
+  { id: 'pay-2024-11', month: 'Nov 2024', period: '2024-11', totalPaid: 11890000, emiPaid: 11890000, prepayPaid: 0, txCount: 1, note: 'Regular Bank Monthly EMI' },
+  { id: 'pay-2024-12', month: 'Dec 2024', period: '2024-12', totalPaid: 11890000, emiPaid: 11890000, prepayPaid: 0, txCount: 1, note: 'Regular Bank Monthly EMI' },
+  { id: 'pay-2025-01', month: 'Jan 2025', period: '2025-01', totalPaid: 11890000, emiPaid: 11890000, prepayPaid: 0, txCount: 1, note: 'Regular Bank Monthly EMI' },
+  { id: 'pay-2025-02', month: 'Feb 2025', period: '2025-02', totalPaid: 27490000, emiPaid: 11890000, prepayPaid: 15600000, txCount: 2, note: 'EMI + ₹1.56L Prepayment' },
+  { id: 'pay-2025-03', month: 'Mar 2025', period: '2025-03', totalPaid: 15490000, emiPaid: 11890000, prepayPaid: 3600000, txCount: 2, note: 'EMI + ₹36K Prepayment' },
+  { id: 'pay-2025-04', month: 'Apr 2025', period: '2025-04', totalPaid: 11890000, emiPaid: 11890000, prepayPaid: 0, txCount: 1, note: 'Regular Bank Monthly EMI' },
+  { id: 'pay-2025-05', month: 'May 2025', period: '2025-05', totalPaid: 11890000, emiPaid: 11890000, prepayPaid: 0, txCount: 1, note: 'Regular Bank Monthly EMI' },
+  { id: 'pay-2025-06', month: 'Jun 2025', period: '2025-06', totalPaid: 11890000, emiPaid: 11890000, prepayPaid: 0, txCount: 1, note: 'Regular Bank Monthly EMI' },
+  { id: 'pay-2025-07', month: 'Jul 2025', period: '2025-07', totalPaid: 11890000, emiPaid: 11890000, prepayPaid: 0, txCount: 1, note: 'Regular Bank Monthly EMI' },
+  { id: 'pay-2025-08', month: 'Aug 2025', period: '2025-08', totalPaid: 11890000, emiPaid: 11890000, prepayPaid: 0, txCount: 1, note: 'Regular Bank Monthly EMI' },
+  { id: 'pay-2025-09', month: 'Sep 2025', period: '2025-09', totalPaid: 19290000, emiPaid: 11890000, prepayPaid: 7400000, txCount: 3, note: 'EMI + ₹74K Prepayment' },
+  { id: 'pay-2025-10', month: 'Oct 2025', period: '2025-10', totalPaid: 11890000, emiPaid: 11890000, prepayPaid: 0, txCount: 1, note: 'Regular Bank Monthly EMI' },
+  { id: 'pay-2025-11', month: 'Nov 2025', period: '2025-11', totalPaid: 11890000, emiPaid: 11890000, prepayPaid: 0, txCount: 1, note: 'Regular Bank Monthly EMI' },
+  { id: 'pay-2025-12', month: 'Dec 2025', period: '2025-12', totalPaid: 11890000, emiPaid: 11890000, prepayPaid: 0, txCount: 1, note: 'Regular Bank Monthly EMI' },
+  { id: 'pay-2026-01', month: 'Jan 2026', period: '2026-01', totalPaid: 11890000, emiPaid: 11890000, prepayPaid: 0, txCount: 1, note: 'Regular Bank Monthly EMI' },
+  { id: 'pay-2026-02', month: 'Feb 2026', period: '2026-02', totalPaid: 16890000, emiPaid: 11890000, prepayPaid: 5000000, txCount: 2, note: 'EMI + ₹50K Prepayment' },
+  { id: 'pay-2026-03', month: 'Mar 2026', period: '2026-03', totalPaid: 15695000, emiPaid: 11890000, prepayPaid: 3805000, txCount: 2, note: 'EMI + ₹38.05K Prepayment' },
+  { id: 'pay-2026-04', month: 'Apr 2026', period: '2026-04', totalPaid: 11890000, emiPaid: 11890000, prepayPaid: 0, txCount: 1, note: 'Regular Bank Monthly EMI' },
+  { id: 'pay-2026-05', month: 'May 2026', period: '2026-05', totalPaid: 11890000, emiPaid: 11890000, prepayPaid: 0, txCount: 1, note: 'Regular Bank Monthly EMI' },
+  { id: 'pay-2026-06', month: 'Jun 2026', period: '2026-06', totalPaid: 18195000, emiPaid: 11890000, prepayPaid: 6305000, txCount: 2, note: 'EMI + ₹63.05K Prepayment' },
+  { id: 'pay-2026-07', month: 'Jul 2026', period: '2026-07', totalPaid: 11890000, emiPaid: 11890000, prepayPaid: 0, txCount: 1, note: 'Regular Bank Monthly EMI' },
+  { id: 'pay-2026-08', month: 'Aug 2026', period: '2026-08', totalPaid: 11890000, emiPaid: 11890000, prepayPaid: 0, txCount: 1, note: 'Regular Bank Monthly EMI' },
+  { id: 'pay-2026-09', month: 'Sep 2026', period: '2026-09', totalPaid: 17890100, emiPaid: 11890000, prepayPaid: 6000100, txCount: 4, note: 'EMI + ₹60K Prepayment' },
+  { id: 'pay-2026-10', month: 'Oct 2026', period: '2026-10', totalPaid: 17890000, emiPaid: 11890000, prepayPaid: 6000000, txCount: 4, note: 'EMI + ₹60K Prepayment' },
+  { id: 'pay-2026-11', month: 'Nov 2026', period: '2026-11', totalPaid: 21890000, emiPaid: 11890000, prepayPaid: 10000000, txCount: 3, note: 'EMI + ₹1.0L Prepayment' },
+];
+
+const BALANCE_TRAJECTORY = [
+  { id: 'traj-01', order: 1, month: "Jun '24", drawingPowerPaise: 1330000000, actualOutstandingPaise: 1330000000 },
+  { id: 'traj-02', order: 2, month: "Sep '24", drawingPowerPaise: 1315000000, actualOutstandingPaise: 1242048200 },
+  { id: 'traj-03', order: 3, month: "Dec '24", drawingPowerPaise: 1300000000, actualOutstandingPaise: 1253703200 },
+  { id: 'traj-04', order: 4, month: "Mar '25", drawingPowerPaise: 1288000000, actualOutstandingPaise: 1256835100 },
+  { id: 'traj-05', order: 5, month: "Jun '25", drawingPowerPaise: 1276000000, actualOutstandingPaise: 1270100900 },
+  { id: 'traj-06', order: 6, month: "Sep '25", drawingPowerPaise: 1269000000, actualOutstandingPaise: 1275429300 },
+  { id: 'traj-07', order: 7, month: "Dec '25", drawingPowerPaise: 1265000000, actualOutstandingPaise: 1261558800 },
+  { id: 'traj-08', order: 8, month: "Mar '26", drawingPowerPaise: 1263000000, actualOutstandingPaise: 1245762500 },
+  { id: 'traj-09', order: 9, month: "Jun '26", drawingPowerPaise: 1262000000, actualOutstandingPaise: 1236994700 },
+  { id: 'traj-10', order: 10, month: "Nov '26", drawingPowerPaise: 1261293000, actualOutstandingPaise: 1188628900 },
+];
 
 async function provision() {
   console.log('🚀 Starting Firebase Firestore Provisioning for project:', firebaseConfig.projectId);
@@ -236,13 +329,11 @@ async function provision() {
 
   // 5. 101 Authentic Bank Passbook Statement Records
   const statementRows = getStatementRows();
-  console.log(`Importing ${statementRows.length} authentic statement records into Firestore in batches...`);
-
+  console.log(`Verifying ${statementRows.length} authentic statement records in Firestore...`);
   const existingRows = await getDocs(collection(db, 'loans', PRIMARY_LOAN_ID, 'statementRecords'));
   if (existingRows.size >= statementRows.length) {
     console.log(`ℹ️ statementRecords already populated (${existingRows.size} records present). Skipping batch write.`);
   } else {
-    // Write in batches of 50 (Firestore limit is 500 operations per batch)
     const BATCH_SIZE = 50;
     for (let i = 0; i < statementRows.length; i += BATCH_SIZE) {
       const chunk = statementRows.slice(i, i + BATCH_SIZE);
@@ -257,7 +348,47 @@ async function provision() {
     console.log(`✅ All ${statementRows.length} authentic statement records populated in Firestore!`);
   }
 
-  console.log('🎉 Firebase Firestore provisioning complete! Data is fully live in Cloud.');
+  // 6. OD Withdrawals (21 Records)
+  console.log(`Provisioning ${OD_WITHDRAWALS.length} OD withdrawal records into Firestore...`);
+  const odBatch = writeBatch(db);
+  for (const od of OD_WITHDRAWALS) {
+    const ref = doc(db, 'loans', PRIMARY_LOAN_ID, 'odWithdrawals', od.id);
+    odBatch.set(ref, od, { merge: true });
+  }
+  await odBatch.commit();
+  console.log(`✅ All ${OD_WITHDRAWALS.length} OD withdrawal records provisioned in Firestore!`);
+
+  // 7. Interest Audit (29 Monthly Records)
+  console.log(`Provisioning ${INTEREST_AUDIT.length} monthly interest audit records into Firestore...`);
+  const intBatch = writeBatch(db);
+  for (const item of INTEREST_AUDIT) {
+    const ref = doc(db, 'loans', PRIMARY_LOAN_ID, 'interestAudit', item.id);
+    intBatch.set(ref, item, { merge: true });
+  }
+  await intBatch.commit();
+  console.log(`✅ All ${INTEREST_AUDIT.length} interest audit records provisioned in Firestore!`);
+
+  // 8. Monthly Payments Audit (30 Monthly Records)
+  console.log(`Provisioning ${PAYMENTS_AUDIT.length} monthly payment audit records into Firestore...`);
+  const payBatch = writeBatch(db);
+  for (const item of PAYMENTS_AUDIT) {
+    const ref = doc(db, 'loans', PRIMARY_LOAN_ID, 'paymentsAudit', item.id);
+    payBatch.set(ref, item, { merge: true });
+  }
+  await payBatch.commit();
+  console.log(`✅ All ${PAYMENTS_AUDIT.length} monthly payment audit records provisioned in Firestore!`);
+
+  // 9. Balance Trajectory Coordinates (10 Points)
+  console.log(`Provisioning ${BALANCE_TRAJECTORY.length} balance trajectory coordinate points into Firestore...`);
+  const trajBatch = writeBatch(db);
+  for (const pt of BALANCE_TRAJECTORY) {
+    const ref = doc(db, 'loans', PRIMARY_LOAN_ID, 'balanceTrajectory', pt.id);
+    trajBatch.set(ref, pt, { merge: true });
+  }
+  await trajBatch.commit();
+  console.log(`✅ All ${BALANCE_TRAJECTORY.length} balance trajectory coordinate points provisioned in Firestore!`);
+
+  console.log('🎉 Firebase Firestore provisioning complete! ALL static data is now 100% in Cloud Firestore.');
   process.exit(0);
 }
 

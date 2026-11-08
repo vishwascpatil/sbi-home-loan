@@ -18,11 +18,15 @@ import {
 import {
   AuditEntry,
   BalanceSnapshot,
+  DualTrackPoint,
   InterestEntry,
   LedgerState,
   Loan,
   Member,
+  OdWithdrawalRecord,
   RateChange,
+  SbiMonthlyAuditRecord,
+  SbiMonthlyPaymentRecord,
   StatementSnapshot,
   toPaise,
   Transaction,
@@ -49,6 +53,10 @@ export class FirestoreLedgerRepository implements LedgerRepository {
   private db: Firestore;
   private inMemoryCache: LedgerState | null = null;
   private statementRecordsCache: SbiPassbookRow[] = [];
+  private odWithdrawalsCache: OdWithdrawalRecord[] = [];
+  private interestAuditCache: SbiMonthlyAuditRecord[] = [];
+  private paymentsAuditCache: SbiMonthlyPaymentRecord[] = [];
+  private balanceTrajectoryCache: DualTrackPoint[] = [];
   private readonly degradedSignal = signal<boolean>(false);
   private readonly errorSignal = signal<string | null>(null);
   private activeListeners: Unsubscribe[] = [];
@@ -121,6 +129,10 @@ export class FirestoreLedgerRepository implements LedgerRepository {
         statementsSnap,
         auditLogSnap,
         statementRecordsSnap,
+        odWithdrawalsSnap,
+        interestAuditSnap,
+        paymentsAuditSnap,
+        balanceTrajectorySnap,
       ] = await Promise.all([
         getDocs(collection(this.db, 'loans', PRIMARY_LOAN_ID, 'members')),
         getDocs(collection(this.db, 'loans', PRIMARY_LOAN_ID, 'transactions')),
@@ -129,6 +141,10 @@ export class FirestoreLedgerRepository implements LedgerRepository {
         getDocs(collection(this.db, 'loans', PRIMARY_LOAN_ID, 'statements')),
         getDocs(collection(this.db, 'loans', PRIMARY_LOAN_ID, 'auditLog')),
         getDocs(collection(this.db, 'loans', PRIMARY_LOAN_ID, 'statementRecords')),
+        getDocs(collection(this.db, 'loans', PRIMARY_LOAN_ID, 'odWithdrawals')),
+        getDocs(collection(this.db, 'loans', PRIMARY_LOAN_ID, 'interestAudit')),
+        getDocs(collection(this.db, 'loans', PRIMARY_LOAN_ID, 'paymentsAudit')),
+        getDocs(collection(this.db, 'loans', PRIMARY_LOAN_ID, 'balanceTrajectory')),
       ]);
 
       const mockIds = new Set([
@@ -156,6 +172,12 @@ export class FirestoreLedgerRepository implements LedgerRepository {
 
       // Cache authentic statement records directly from Cloud Firestore
       this.statementRecordsCache = statementRecordsSnap.docs.map((d) => d.data() as SbiPassbookRow);
+      this.odWithdrawalsCache = odWithdrawalsSnap.docs.map((d) => d.data() as OdWithdrawalRecord);
+      this.interestAuditCache = interestAuditSnap.docs.map((d) => d.data() as SbiMonthlyAuditRecord);
+      this.paymentsAuditCache = paymentsAuditSnap.docs.map((d) => d.data() as SbiMonthlyPaymentRecord);
+      this.balanceTrajectoryCache = balanceTrajectorySnap.docs
+        .map((d) => d.data() as DualTrackPoint)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
 
       const state: LedgerState = {
         loan,
@@ -318,6 +340,22 @@ export class FirestoreLedgerRepository implements LedgerRepository {
 
   getStatementRecords(): SbiPassbookRow[] {
     return this.statementRecordsCache;
+  }
+
+  getOdWithdrawals(): OdWithdrawalRecord[] {
+    return this.odWithdrawalsCache;
+  }
+
+  getInterestAudit(): SbiMonthlyAuditRecord[] {
+    return this.interestAuditCache;
+  }
+
+  getPaymentsAudit(): SbiMonthlyPaymentRecord[] {
+    return this.paymentsAuditCache;
+  }
+
+  getBalanceTrajectory(): DualTrackPoint[] {
+    return this.balanceTrajectoryCache;
   }
 
   async savePushSubscription(subData: Record<string, unknown>): Promise<void> {

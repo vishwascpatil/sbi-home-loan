@@ -25,6 +25,12 @@ import {
   memberStatistics,
   monthlySummary,
   MonthlySummary,
+  DualTrackPoint,
+  getOdWithdrawalsSummary,
+  getSbiAuditSummary,
+  getSbiPaymentsSummary,
+  OdWithdrawalRecord,
+  OdWithdrawalsSummary,
   outstandingAt,
   Paise,
   paise,
@@ -36,6 +42,10 @@ import {
   RepaymentPaceAnalysis,
   getRepaymentPaceAnalysis,
   SavedScenario,
+  SbiMonthlyAuditRecord,
+  SbiAuditSummary,
+  SbiMonthlyPaymentRecord,
+  SbiPaymentsSummary,
   StatementSnapshot,
   toPaise,
   Transaction,
@@ -86,6 +96,21 @@ export class LedgerStore {
     return this.repo.getStatementRecords();
   });
 
+  readonly odWithdrawals = signal<OdWithdrawalRecord[]>([]);
+  readonly interestAudit = signal<SbiMonthlyAuditRecord[]>([]);
+  readonly paymentsAudit = signal<SbiMonthlyPaymentRecord[]>([]);
+  readonly balanceTrajectory = signal<DualTrackPoint[]>([]);
+
+  readonly odWithdrawalsSummary = computed<OdWithdrawalsSummary>(() =>
+    getOdWithdrawalsSummary(this.odWithdrawals())
+  );
+  readonly sbiAuditSummary = computed<SbiAuditSummary>(() =>
+    getSbiAuditSummary(this.interestAudit())
+  );
+  readonly sbiPaymentsSummary = computed<SbiPaymentsSummary>(() =>
+    getSbiPaymentsSummary(this.paymentsAudit())
+  );
+
   readonly isLoading = signal<boolean>(true);
   readonly storageWarning = computed<string | null>(() => {
     if (this.repo.isStorageDegraded()) {
@@ -127,12 +152,12 @@ export class LedgerStore {
   // Computed Projections
   readonly currentPrincipal = computed<Paise>(() => {
     const today = new Date().toISOString().slice(0, 10);
-    return outstandingAt(today, this.ledgerState());
+    return outstandingAt(today, this.ledgerState(), this.statementRecords());
   });
 
   readonly currentOutstanding = computed<Paise>(() => {
     const today = new Date().toISOString().slice(0, 10);
-    const baseOutstanding = outstandingAt(today, this.ledgerState());
+    const baseOutstanding = outstandingAt(today, this.ledgerState(), this.statementRecords());
 
     // Check if an explicit interestCharge is already recorded in transactions for this month
     const curMonth = today.slice(0, 7);
@@ -164,11 +189,19 @@ export class LedgerStore {
 
   readonly thisMonthSummary = computed<MonthlySummary>(() => {
     const currentMonth = new Date().toISOString().slice(0, 7);
-    return monthlySummary(currentMonth, this.ledgerState());
+    return monthlySummary(currentMonth, this.ledgerState(), undefined, {
+      paymentsAudit: this.paymentsAudit(),
+      interestAudit: this.interestAudit(),
+      statementRows: this.statementRecords(),
+    });
   });
 
   readonly repaymentPace = computed<RepaymentPaceAnalysis>(() => {
-    return getRepaymentPaceAnalysis(this.ledgerState());
+    return getRepaymentPaceAnalysis(this.ledgerState(), {
+      odWithdrawals: this.odWithdrawals(),
+      interestAudit: this.interestAudit(),
+      paymentsAudit: this.paymentsAudit(),
+    });
   });
 
   readonly groupFunds = computed<GroupFundsSummary>(() => {
@@ -222,6 +255,10 @@ export class LedgerStore {
     try {
       const state = await this.repo.load();
       this.syncState(state);
+      this.odWithdrawals.set(this.repo.getOdWithdrawals());
+      this.interestAudit.set(this.repo.getInterestAudit());
+      this.paymentsAudit.set(this.repo.getPaymentsAudit());
+      this.balanceTrajectory.set(this.repo.getBalanceTrajectory());
       this.settingsStore.initFromState(state.settings);
     } finally {
       this.isLoading.set(false);
@@ -493,11 +530,11 @@ export class LedgerStore {
   }
 
   getDailyBreakdown(period: string): DailyLedgerRecord[] {
-    return getSbiDailyLedger(period, this.transactions()).records;
+    return getSbiDailyLedger(period, this.transactions(), this.statementRecords()).records;
   }
 
   getSbiDailyMonthSummary(period: string): SbiDailyMonthSummary {
-    return getSbiDailyLedger(period, this.transactions());
+    return getSbiDailyLedger(period, this.transactions(), this.statementRecords());
   }
 
   isPeriodLocked(dateOrMonth: string): boolean {
