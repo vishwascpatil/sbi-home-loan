@@ -109,127 +109,157 @@ import {
             </button>
           </div>
 
-          <!-- 3 Dynamic WOW Telemetry Cards -->
-          <div class="explorer-summary-grid">
-            <div class="exp-stat-card card-inflow">
-              <span class="exp-stat-lbl">Filtered Deposits (Money In)</span>
-              <div class="exp-stat-val text-success tabular-nums">
+          <!-- Minimal WOW Telemetry Strip -->
+          <div class="passbook-hero-strip">
+            <div class="hero-metric-tile in">
+              <span class="hero-metric-tag">Deposits In</span>
+              <span class="hero-metric-val tabular-nums text-success">
                 +{{ formatCompactPaise(filteredStats().totalCredit) }}
-              </div>
-              <span class="exp-stat-sub tabular-nums">{{ formatPaise(filteredStats().totalCredit) }}</span>
+              </span>
             </div>
-
-            <div class="exp-stat-card card-outflow">
-              <span class="exp-stat-lbl">Filtered Debits (Money Out)</span>
-              <div class="exp-stat-val text-danger tabular-nums">
+            <div class="hero-metric-tile out">
+              <span class="hero-metric-tag">Debits Out</span>
+              <span class="hero-metric-val tabular-nums text-danger">
                 −{{ formatCompactPaise(filteredStats().totalDebit) }}
-              </div>
-              <span class="exp-stat-sub tabular-nums">{{ formatPaise(filteredStats().totalDebit) }}</span>
+              </span>
             </div>
-
-            <div class="exp-stat-card card-count">
-              <span class="exp-stat-lbl">Matching Records</span>
-              <div class="exp-stat-val text-purple tabular-nums">
-                {{ filteredStats().count }} <span class="val-unit">of 101</span>
-              </div>
-              <span class="exp-stat-sub">
-                {{ selectedCategoryTitle() }}
+            <div class="hero-metric-tile count">
+              <span class="hero-metric-tag">Records</span>
+              <span class="hero-metric-val tabular-nums text-purple">
+                {{ filteredStats().count }}
               </span>
             </div>
           </div>
 
-          <!-- Filter Control Console (No Print) -->
-          <div class="filter-console no-print">
-            <!-- Search Row -->
-            <div class="search-input-wrap">
-              <span class="search-icon">🔍</span>
-              <input
-                type="text"
-                class="search-input"
-                placeholder="Search description, Vikas, Vishwas, UPI, RACPC, cheques, amounts..."
-                [ngModel]="searchQuery()"
-                (ngModelChange)="searchQuery.set($event)"
-              />
-              @if (searchQuery()) {
-                <button type="button" class="clear-search-btn" (click)="searchQuery.set('')">✕</button>
-              }
-            </div>
+          <!-- Modern Apple-Style Smart Filter Bar (No Print) -->
+          <div class="smart-filter-bar no-print">
+            <!-- Search & Sort Row -->
+            <div class="search-sort-row">
+              <div class="search-box">
+                <span class="search-lens" aria-hidden="true">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                </span>
+                <input
+                  type="text"
+                  class="search-field"
+                  placeholder="Search narration, ref, or amount..."
+                  [ngModel]="searchQuery()"
+                  (ngModelChange)="searchQuery.set($event)"
+                  autocomplete="off"
+                />
+                @if (searchQuery()) {
+                  <button type="button" class="clear-btn" (click)="searchQuery.set('')" aria-label="Clear search">✕</button>
+                }
+              </div>
 
-            <!-- Category Quick Filters -->
-            <div class="filter-chips-row">
               <button
                 type="button"
-                class="filter-chip"
+                class="sort-pill-btn"
+                (click)="toggleSort()"
+                title="Toggle Date Ordering"
+              >
+                {{ sortOrder() === 'desc' ? '↓ Newest' : '↑ Oldest' }}
+              </button>
+            </div>
+
+            <!-- Category Pills Ribbon -->
+            <div class="category-pill-track">
+              <button
+                type="button"
+                class="cat-pill"
                 [class.active]="selectedCategory() === 'all'"
                 (click)="setCategory('all')"
               >
-                All (101)
+                All
               </button>
               <button
                 type="button"
-                class="filter-chip chip-green"
+                class="cat-pill pill-deposit"
                 [class.active]="selectedCategory() === 'credit'"
                 (click)="setCategory('credit')"
               >
-                🟢 Deposits (50)
+                🟢 Deposits
               </button>
               <button
                 type="button"
-                class="filter-chip chip-blue"
+                class="cat-pill pill-emi"
                 [class.active]="selectedCategory() === 'emi_credit'"
                 (click)="setCategory('emi_credit')"
               >
-                🏦 Monthly EMIs (29)
+                🏦 EMIs
               </button>
               <button
                 type="button"
-                class="filter-chip chip-purple"
+                class="cat-pill pill-prepay"
                 [class.active]="selectedCategory() === 'prepayment'"
                 (click)="setCategory('prepayment')"
               >
-                ⚡ Prepayments (21)
+                ⚡ Prepayments
               </button>
               <button
                 type="button"
-                class="filter-chip chip-red"
+                class="cat-pill pill-interest"
                 [class.active]="selectedCategory() === 'interest_debit'"
                 (click)="setCategory('interest_debit')"
               >
-                🔴 Interest Debits (29)
+                🔴 Interest
               </button>
               <button
                 type="button"
-                class="filter-chip chip-amber"
+                class="cat-pill pill-withdraw"
                 [class.active]="selectedCategory() === 'withdrawal'"
                 (click)="setCategory('withdrawal')"
               >
-                ⚠️ Withdrawals (21)
+                ⚠️ Withdrawals
               </button>
             </div>
 
-            <!-- Sub Filter Controls (Year, Amount, Sort) -->
-            <div class="sub-filters-row">
-              <div class="filter-subgroup">
-                <span class="subgroup-lbl">Year:</span>
-                <button type="button" class="mini-pill" [class.active]="selectedYear() === 'all'" (click)="setYear('all')">All</button>
-                <button type="button" class="mini-pill" [class.active]="selectedYear() === '2026'" (click)="setYear('2026')">2026</button>
-                <button type="button" class="mini-pill" [class.active]="selectedYear() === '2025'" (click)="setYear('2025')">2025</button>
-                <button type="button" class="mini-pill" [class.active]="selectedYear() === '2024'" (click)="setYear('2024')">2024</button>
+            <!-- Refine Filters Row (Year & Amount Dropdown Pills + Reset) -->
+            <div class="refine-row">
+              <div class="dropdown-pill-wrap" [class.is-filtered]="selectedYear() !== 'all'">
+                <label class="sr-only" for="year-select">Year</label>
+                <select
+                  id="year-select"
+                  class="dropdown-pill-select"
+                  [ngModel]="selectedYear()"
+                  (ngModelChange)="setYear($event)"
+                >
+                  <option value="all">📅 All Years</option>
+                  <option value="2026">2026</option>
+                  <option value="2025">2025</option>
+                  <option value="2024">2024</option>
+                </select>
+                <span class="dropdown-arrow">▾</span>
               </div>
 
-              <div class="filter-subgroup">
-                <span class="subgroup-lbl">Amount:</span>
-                <button type="button" class="mini-pill" [class.active]="selectedAmountRange() === 'all'" (click)="setAmount('all')">All</button>
-                <button type="button" class="mini-pill" [class.active]="selectedAmountRange() === 'gt1L'" (click)="setAmount('gt1L')">≥ ₹1L</button>
-                <button type="button" class="mini-pill" [class.active]="selectedAmountRange() === '25k-1L'" (click)="setAmount('25k-1L')">₹25k–₹1L</button>
-                <button type="button" class="mini-pill" [class.active]="selectedAmountRange() === 'lt25k'" (click)="setAmount('lt25k')">&lt; ₹25k</button>
+              <div class="dropdown-pill-wrap" [class.is-filtered]="selectedAmountRange() !== 'all'">
+                <label class="sr-only" for="amount-select">Amount</label>
+                <select
+                  id="amount-select"
+                  class="dropdown-pill-select"
+                  [ngModel]="selectedAmountRange()"
+                  (ngModelChange)="setAmount($event)"
+                >
+                  <option value="all">💰 Any Amount</option>
+                  <option value="gt1L">≥ ₹1 Lakh</option>
+                  <option value="25k-1L">₹25k – ₹1L</option>
+                  <option value="lt25k">&lt; ₹25k</option>
+                </select>
+                <span class="dropdown-arrow">▾</span>
               </div>
 
-              <div class="filter-subgroup align-right">
-                <button type="button" class="sort-toggle-btn" (click)="toggleSort()">
-                  {{ sortOrder() === 'desc' ? '📅 Newest First' : '📅 Oldest First' }}
+              @if (hasActiveFilters()) {
+                <button
+                  type="button"
+                  class="reset-capsule-btn"
+                  (click)="resetAllFilters()"
+                >
+                  ✕ Reset All
                 </button>
-              </div>
+              }
             </div>
           </div>
 
@@ -1210,37 +1240,48 @@ import {
       color: #ffffff !important;
     }
 
-    .explorer-summary-grid {
+    /* MINIMAL WOW TELEMETRY STRIP */
+    .passbook-hero-strip {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 12px;
-      margin: 16px 0;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 12px 0 16px;
     }
 
-    .exp-stat-card {
-      background: #f8f8fc;
+    .hero-metric-tile {
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.05);
       border-radius: 18px;
-      padding: 16px;
+      padding: 12px 14px;
       display: flex;
       flex-direction: column;
-      gap: 3px;
-      border: 1px solid rgba(0, 0, 0, 0.04);
+      gap: 2px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
 
-      &.card-inflow { background: rgba(15, 178, 124, 0.05); border-color: rgba(15, 178, 124, 0.15); }
-      &.card-outflow { background: rgba(238, 77, 107, 0.05); border-color: rgba(238, 77, 107, 0.15); }
-      &.card-count { background: rgba(108, 76, 255, 0.05); border-color: rgba(108, 76, 255, 0.15); }
+      &.in {
+        background: linear-gradient(180deg, rgba(15, 178, 124, 0.06) 0%, #ffffff 100%);
+        border-color: rgba(15, 178, 124, 0.15);
+      }
+      &.out {
+        background: linear-gradient(180deg, rgba(238, 77, 107, 0.06) 0%, #ffffff 100%);
+        border-color: rgba(238, 77, 107, 0.15);
+      }
+      &.count {
+        background: linear-gradient(180deg, rgba(108, 76, 255, 0.06) 0%, #ffffff 100%);
+        border-color: rgba(108, 76, 255, 0.15);
+      }
     }
 
-    .exp-stat-lbl {
-      font-size: 0.72rem;
+    .hero-metric-tag {
+      font-size: 0.7rem;
       font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: #8e8e93;
+      letter-spacing: 0.05em;
+      color: #767a90;
     }
 
-    .exp-stat-val {
-      font-size: 1.55rem;
+    .hero-metric-val {
+      font-size: 1.35rem;
       font-weight: 900;
       letter-spacing: -0.03em;
       line-height: 1.1;
@@ -1248,53 +1289,56 @@ import {
       &.text-success { color: #0fb27c; }
       &.text-danger { color: #ee4d6b; }
       &.text-purple { color: #6c4cff; }
-
-      .val-unit { font-size: 0.85rem; font-weight: 700; color: #767a90; }
     }
 
-    .exp-stat-sub {
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: #767a90;
-    }
-
-    .filter-console {
-      background: #fbfbfd;
-      border: 1px solid rgba(0, 0, 0, 0.06);
-      border-radius: 20px;
-      padding: 14px 16px;
+    /* MODERN APPLE-STYLE SMART FILTER BAR */
+    .smart-filter-bar {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
       margin-bottom: 20px;
     }
 
-    .search-input-wrap {
+    .search-sort-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .search-box {
+      flex: 1;
       position: relative;
       display: flex;
       align-items: center;
-      width: 100%;
     }
 
-    .search-icon {
+    .search-lens {
       position: absolute;
       left: 14px;
-      font-size: 0.95rem;
+      display: grid;
+      place-items: center;
+      color: #767a90;
       pointer-events: none;
-      color: #8e8e93;
     }
 
-    .search-input {
+    .search-field {
       width: 100%;
-      height: 42px;
+      height: 44px;
       border-radius: 99px;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      padding: 0 40px 0 38px;
+      border: 1px solid rgba(0, 0, 0, 0.07);
+      background: #ffffff;
+      padding: 0 38px 0 42px;
       font-size: 0.88rem;
       font-family: inherit;
-      background: #ffffff;
+      color: #15172b;
       outline: none;
-      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &::placeholder {
+        color: #9399b4;
+        font-size: 0.84rem;
+      }
 
       &:focus {
         border-color: #6c4cff;
@@ -1302,108 +1346,195 @@ import {
       }
     }
 
-    .clear-search-btn {
+    .clear-btn {
       position: absolute;
       right: 12px;
-      background: #eef0f5;
-      border: none;
-      border-radius: 50%;
       width: 22px;
       height: 22px;
+      border-radius: 50%;
+      border: none;
+      background: #f0f0f5;
+      color: #555b72;
       font-size: 0.72rem;
-      cursor: pointer;
       display: grid;
       place-items: center;
-      color: #555b72;
-    }
-
-    .filter-chips-row {
-      display: flex;
-      gap: 6px;
-      overflow-x: auto;
-      padding-bottom: 2px;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    .filter-chip {
-      background: #ffffff;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      border-radius: 99px;
-      padding: 6px 14px;
-      font-size: 0.78rem;
-      font-weight: 700;
-      color: #15172b;
       cursor: pointer;
+      transition: background 0.15s ease;
+
+      &:hover { background: #e5e5ec; }
+    }
+
+    .sort-pill-btn {
+      height: 44px;
+      padding: 0 16px;
+      border-radius: 99px;
+      border: 1px solid rgba(0, 0, 0, 0.07);
+      background: #ffffff;
+      color: #15172b;
+      font-size: 0.82rem;
+      font-weight: 700;
       white-space: nowrap;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
-      &:hover { border-color: rgba(108, 76, 255, 0.3); }
+      &:active {
+        transform: scale(0.96);
+      }
+    }
 
-      &.active {
-        background: #15172b;
-        color: #ffffff;
-        border-color: #15172b;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    .category-pill-track {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding: 2px 0 4px;
+
+      &::-webkit-scrollbar {
+        display: none;
+      }
+    }
+
+    .cat-pill {
+      height: 38px;
+      padding: 0 16px;
+      border-radius: 99px;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      background: #ffffff;
+      color: #555b72;
+      font-size: 0.82rem;
+      font-weight: 700;
+      white-space: nowrap;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &:active {
+        transform: scale(0.96);
       }
 
-      &.chip-green.active { background: #0fb27c; border-color: #0fb27c; }
-      &.chip-blue.active { background: #0071e3; border-color: #0071e3; }
-      &.chip-purple.active { background: #6c4cff; border-color: #6c4cff; }
-      &.chip-red.active { background: #ee4d6b; border-color: #ee4d6b; }
-      &.chip-amber.active { background: #f59e0b; border-color: #f59e0b; }
-    }
-
-    .sub-filters-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-      padding-top: 6px;
-      border-top: 1px solid rgba(0, 0, 0, 0.04);
-    }
-
-    .filter-subgroup {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 0.75rem;
-
-      &.align-right { margin-left: auto; }
-    }
-
-    .subgroup-lbl {
-      font-weight: 800;
-      color: #8e8e93;
-      margin-right: 2px;
-    }
-
-    .mini-pill {
-      background: transparent;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      border-radius: 6px;
-      padding: 2px 8px;
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: #767a90;
-      cursor: pointer;
-
       &.active {
-        background: #6c4cff;
         color: #ffffff;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+        border-color: transparent;
+        background: #15172b;
+      }
+
+      &.pill-deposit.active {
+        background: linear-gradient(135deg, #0fb27c 0%, #0c8a60 100%);
+        box-shadow: 0 4px 14px rgba(15, 178, 124, 0.3);
+      }
+
+      &.pill-emi.active {
+        background: linear-gradient(135deg, #0071e3 0%, #0056b3 100%);
+        box-shadow: 0 4px 14px rgba(0, 113, 227, 0.3);
+      }
+
+      &.pill-prepay.active {
+        background: linear-gradient(135deg, #6c4cff 0%, #5132d6 100%);
+        box-shadow: 0 4px 14px rgba(108, 76, 255, 0.3);
+      }
+
+      &.pill-interest.active {
+        background: linear-gradient(135deg, #ee4d6b 0%, #c9324e 100%);
+        box-shadow: 0 4px 14px rgba(238, 77, 107, 0.3);
+      }
+
+      &.pill-withdraw.active {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);
+      }
+    }
+
+    .refine-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .dropdown-pill-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+
+      &.is-filtered .dropdown-pill-select {
+        background: rgba(108, 76, 255, 0.08);
+        border-color: #6c4cff;
+        color: #6c4cff;
+        font-weight: 800;
+      }
+    }
+
+    .dropdown-pill-select {
+      appearance: none;
+      -webkit-appearance: none;
+      height: 36px;
+      padding: 0 28px 0 14px;
+      border-radius: 99px;
+      border: 1px solid rgba(0, 0, 0, 0.07);
+      background: #ffffff;
+      color: #767a90;
+      font-size: 0.78rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      outline: none;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+      transition: all 0.2s ease;
+
+      &:focus {
         border-color: #6c4cff;
       }
     }
 
-    .sort-toggle-btn {
-      background: #ffffff;
-      border: 1px solid rgba(0, 0, 0, 0.08);
+    .dropdown-arrow {
+      position: absolute;
+      right: 10px;
+      font-size: 0.7rem;
+      color: #8e8e93;
+      pointer-events: none;
+    }
+
+    .reset-capsule-btn {
+      height: 36px;
+      padding: 0 14px;
       border-radius: 99px;
-      padding: 4px 12px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: #15172b;
+      border: 1px dashed rgba(238, 77, 107, 0.4);
+      background: rgba(238, 77, 107, 0.08);
+      color: #ee4d6b;
+      font-size: 0.76rem;
+      font-weight: 800;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: auto;
+      transition: all 0.2s ease;
+
+      &:active {
+        transform: scale(0.95);
+      }
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
     }
 
     /* Mobile-First Passbook Card Feed */
@@ -1621,21 +1752,17 @@ import {
         font-size: 1.25rem;
       }
 
-      .explorer-summary-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
+      .passbook-hero-strip {
+        gap: 6px;
+      }
 
-        .card-count {
-          grid-column: span 2;
-        }
+      .hero-metric-tile {
+        padding: 10px 10px;
+        border-radius: 14px;
+      }
 
-        .exp-stat-card {
-          padding: 12px 14px;
-        }
-
-        .exp-stat-val {
-          font-size: 1.25rem;
-        }
+      .hero-metric-val {
+        font-size: 1.15rem;
       }
 
       .audit-summary-grid {
@@ -1693,9 +1820,8 @@ import {
         }
       }
 
-      .filter-console {
-        padding: 12px 14px;
-        gap: 10px;
+      .smart-filter-bar {
+        gap: 8px;
       }
     }
 
@@ -1743,6 +1869,15 @@ export class StatementsComponent {
   readonly sortOrder = signal<'desc' | 'asc'>('desc');
 
   readonly formatCompactPaise = formatCompactPaise;
+
+  readonly hasActiveFilters = computed(() => {
+    return (
+      this.searchQuery().trim() !== '' ||
+      this.selectedCategory() !== 'all' ||
+      this.selectedYear() !== 'all' ||
+      this.selectedAmountRange() !== 'all'
+    );
+  });
 
   setCategory(cat: string): void {
     triggerHaptic('light');
