@@ -1,0 +1,57 @@
+name: 5-Minute WOW Push Notification Broadcast
+
+on:
+  schedule:
+    # Runs every 5 minutes in GitHub Actions cloud runner
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      statement_index:
+        description: 'Specific WOW statement index (1 to 20, leave empty for auto 5-min rotation)'
+        required: false
+        default: ''
+      target_phone:
+        description: 'Target phone (e.g. 8105242578, leave empty for all 5 numbers)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wow-broadcast
+  cancel-in-progress: false
+
+jobs:
+  broadcast:
+    name: Dispatch WOW Notifications & SMS
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
+          cache: npm
+
+      - name: Install Dependencies
+        run: npm install --no-fund --no-audit
+
+      - name: Execute 5-Minute WOW Dispatch
+        env:
+          FAST2SMS_API_KEY: ${{ secrets.FAST2SMS_API_KEY || 'ifP2O75vmoqxcxZ4L7XvQTDUhQBYEz9upwlR69z7nDIRaM0mD0Ne7S9IZd8R3YTpGzOkJhtoOCUK0my2' }}
+          VAPID_PUBLIC_KEY: 'BOszAne7k25hJNMQtwmE-kXuDhNgmyKpePhwCsk_3xZvJa1kgFIiP2lVtlIK127Q837t164rWc8eQ-C06lvHY3Y'
+          VAPID_PRIVATE_KEY: 'RfzSC4biNRFEkPHoQB5fm73huUNO6xSI8NaCJve5B0I'
+          VAPID_SUBJECT: 'mailto:vishwascpatilonline@gmail.com'
+        run: |
+          CMD="node scripts/broadcast-wow-runner.mjs --once"
+          if [ -n "${{ github.event.inputs.statement_index }}" ]; then
+            CMD="$CMD --index=${{ github.event.inputs.statement_index }}"
+          fi
+          if [ -n "${{ github.event.inputs.target_phone }}" ]; then
+            CMD="$CMD --phone=${{ github.event.inputs.target_phone }}"
+          fi
+          echo "Executing: $CMD"
+          $CMD
