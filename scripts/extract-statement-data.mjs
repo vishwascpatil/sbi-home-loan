@@ -99,3 +99,4 @@ export const SBI_AUTHENTIC_STATEMENT_ROWS: SbiPassbookRow[] = ${JSON.stringify(t
 }
 
 extract().catch(console.error);
+

@@ -56,27 +56,7 @@ import {
               [class.active]="activeTab() === 'passbook'"
               (click)="activeTab.set('passbook')"
             >
-              📋 SBI Passbook Explorer (101)
-            </button>
-            <button
-              type="button"
-              role="tab"
-              [attr.aria-selected]="activeTab() === 'monthly'"
-              class="tab-btn"
-              [class.active]="activeTab() === 'monthly'"
-              (click)="activeTab.set('monthly')"
-            >
-              Monthly Statement
-            </button>
-            <button
-              type="button"
-              role="tab"
-              [attr.aria-selected]="activeTab() === 'annual'"
-              class="tab-btn"
-              [class.active]="activeTab() === 'annual'"
-              (click)="activeTab.set('annual')"
-            >
-              Indian FY (April–March)
+              📋 Passbook (101)
             </button>
             <button
               type="button"
@@ -86,7 +66,27 @@ import {
               [class.active]="activeTab() === 'audit'"
               (click)="activeTab.set('audit')"
             >
-              🔍 SBI Rate & Interest Audit
+              🔍 SBI Audit
+            </button>
+            <button
+              type="button"
+              role="tab"
+              [attr.aria-selected]="activeTab() === 'monthly'"
+              class="tab-btn"
+              [class.active]="activeTab() === 'monthly'"
+              (click)="activeTab.set('monthly')"
+            >
+              📅 Monthly
+            </button>
+            <button
+              type="button"
+              role="tab"
+              [attr.aria-selected]="activeTab() === 'annual'"
+              class="tab-btn"
+              [class.active]="activeTab() === 'annual'"
+              (click)="activeTab.set('annual')"
+            >
+              📊 FY Tax
             </button>
           </div>
         </div>
@@ -233,60 +233,60 @@ import {
             </div>
           </div>
 
-          <!-- Passbook Transaction Table -->
-          <div class="section-block">
-            <div class="table-responsive">
-              <table class="styled-table passbook-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Type</th>
-                    <th>Description & Details</th>
-                    <th class="text-right">Debit (Out)</th>
-                    <th class="text-right">Credit (In)</th>
-                    <th class="text-right">Balance (Debt)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (row of filteredRows(); track row.id) {
-                    <tr class="passbook-row">
-                      <td class="font-bold date-cell">
-                        <span class="main-date">{{ row.postDate }}</span>
-                        @if (row.valueDate && row.valueDate !== row.postDate) {
-                          <span class="val-date">Val: {{ row.valueDate }}</span>
-                        }
-                      </td>
-                      <td>
-                        <span class="category-chip cat-{{ row.category }}">
-                          {{ getCategoryBadge(row.category) }}
-                        </span>
-                      </td>
-                      <td class="desc-cell">
-                        <div class="desc-text">{{ row.desc }}</div>
-                        @if (row.refNo) {
-                          <span class="ref-no-pill">Ref: {{ row.refNo }}</span>
-                        }
-                      </td>
-                      <td class="text-right tabular-nums debit-cell font-bold">
-                        {{ row.rawDebit ? '₹' + row.rawDebit : '—' }}
-                      </td>
-                      <td class="text-right tabular-nums credit-cell font-bold">
-                        {{ row.rawCredit ? '₹' + row.rawCredit : '—' }}
-                      </td>
-                      <td class="text-right tabular-nums balance-cell font-bold">
-                        ₹{{ row.rawBalance }} <span class="dr-tag">DR</span>
-                      </td>
-                    </tr>
-                  } @empty {
-                    <tr>
-                      <td colspan="6" class="text-center empty-cell">
-                        No transactions found matching your filters.
-                      </td>
-                    </tr>
+          <!-- Mobile-First Passbook Feed (Replaces Clunky Desktop Table) -->
+          <div class="passbook-feed">
+            @for (row of filteredRows(); track row.id) {
+              <div
+                class="m-tx-card"
+                [class.card-credit]="row.type === 'credit'"
+                [class.card-debit]="row.type === 'debit'"
+              >
+                <!-- Top Header: Date, Val Date & Category Pill -->
+                <div class="m-tx-header">
+                  <div class="m-tx-date-cluster">
+                    <span class="m-tx-date">{{ row.postDate }}</span>
+                    @if (row.valueDate && row.valueDate !== row.postDate) {
+                      <span class="m-tx-valdate">Val: {{ row.valueDate }}</span>
+                    }
+                  </div>
+                  <span class="category-chip cat-{{ row.category }}">
+                    {{ getCategoryBadge(row.category) }}
+                  </span>
+                </div>
+
+                <!-- Main Body: Description & Big Bold Amount -->
+                <div class="m-tx-body">
+                  <div class="m-tx-desc-text">
+                    {{ row.desc }}
+                  </div>
+                  <div
+                    class="m-tx-amount tabular-nums font-bold"
+                    [class.text-success]="row.type === 'credit'"
+                    [class.text-danger]="row.type === 'debit'"
+                  >
+                    {{ row.type === 'credit' ? '+' : '−' }}₹{{ row.type === 'credit' ? row.rawCredit : row.rawDebit }}
+                  </div>
+                </div>
+
+                <!-- Footer: Balance Debt & Reference -->
+                <div class="m-tx-footer">
+                  <div class="m-tx-bal-pill">
+                    <span class="bal-label">Debt:</span>
+                    <span class="bal-val tabular-nums">₹{{ row.rawBalance }}</span>
+                    <span class="dr-tag">DR</span>
+                  </div>
+                  @if (row.refNo) {
+                    <span class="m-tx-ref-pill">Ref: {{ row.refNo }}</span>
                   }
-                </tbody>
-              </table>
-            </div>
+                </div>
+              </div>
+            } @empty {
+              <div class="empty-feed-card">
+                <span class="empty-icon">🔍</span>
+                <p class="empty-text">No transactions found matching your filters.</p>
+                <button type="button" class="reset-filter-btn" (click)="resetAllFilters()">Reset Filters</button>
+              </div>
+            }
           </div>
 
           <div class="doc-footer">
@@ -733,21 +733,33 @@ import {
     .tab-toggle {
       display: flex;
       background: rgba(0, 0, 0, 0.05);
-      padding: 3px;
+      padding: 4px;
       border-radius: var(--radius-pill, 9999px);
       border: 1px solid rgba(0, 0, 0, 0.04);
-      width: fit-content;
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      gap: 4px;
+      box-sizing: border-box;
+
+      &::-webkit-scrollbar {
+        display: none;
+      }
     }
 
     .tab-btn {
-      padding: 8px 18px;
+      padding: 8px 14px;
       border: none;
       background: transparent;
       border-radius: var(--radius-pill, 9999px);
-      font-size: 0.9rem;
-      font-weight: 600;
+      font-size: 0.8rem;
+      font-weight: 700;
       color: var(--muted, #86868b);
       cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 
       &:active {
@@ -757,8 +769,8 @@ import {
       &.active {
         background: #ffffff;
         color: var(--ink, #1d1d1f);
-        font-weight: 700;
-        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        font-weight: 800;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       }
     }
 
@@ -1394,29 +1406,61 @@ import {
       cursor: pointer;
     }
 
-    .passbook-table {
-      font-size: 0.82rem;
+    /* Mobile-First Passbook Card Feed */
+    .passbook-feed {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
 
-      th {
-        white-space: nowrap;
-        background: #f4f4f8;
+    .m-tx-card {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+      &:active {
+        transform: scale(0.99);
+      }
+
+      &.card-credit {
+        border-left: 4px solid #0fb27c;
+      }
+      &.card-debit {
+        border-left: 4px solid #ee4d6b;
       }
     }
 
-    .passbook-row {
-      transition: background 0.15s ease;
-      &:hover { background: rgba(108, 76, 255, 0.03); }
-    }
-
-    .date-cell {
-      white-space: nowrap;
+    .m-tx-header {
       display: flex;
-      flex-direction: column;
-      gap: 1px;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
     }
 
-    .main-date { color: #15172b; }
-    .val-date { font-size: 0.68rem; color: #8e8e93; font-weight: normal; }
+    .m-tx-date-cluster {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .m-tx-date {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #15172b;
+    }
+
+    .m-tx-valdate {
+      font-size: 0.7rem;
+      color: #8e8e93;
+      font-weight: 500;
+    }
 
     .category-chip {
       display: inline-block;
@@ -1434,27 +1478,66 @@ import {
       &.cat-other { background: #f0f0f5; color: #555b72; }
     }
 
-    .desc-cell {
-      max-width: 320px;
-      line-height: 1.35;
+    .m-tx-body {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
     }
 
-    .desc-text {
-      font-size: 0.8rem;
+    .m-tx-desc-text {
+      font-size: 0.82rem;
+      font-weight: 600;
       color: #15172b;
+      line-height: 1.35;
+      flex: 1;
       word-break: break-word;
     }
 
-    .ref-no-pill {
-      display: inline-block;
-      font-size: 0.65rem;
-      color: #8e8e93;
-      margin-top: 2px;
+    .m-tx-amount {
+      font-size: 1.12rem;
+      font-weight: 900;
+      white-space: nowrap;
+      letter-spacing: -0.02em;
+      text-align: right;
+
+      &.text-success { color: #0fb27c; }
+      &.text-danger { color: #ee4d6b; }
     }
 
-    .debit-cell { color: #ee4d6b; }
-    .credit-cell { color: #0fb27c; }
-    .balance-cell { color: #15172b; }
+    .m-tx-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 8px;
+      border-top: 1px solid rgba(0, 0, 0, 0.04);
+      gap: 8px;
+    }
+
+    .m-tx-bal-pill {
+      font-size: 0.74rem;
+      color: #767a90;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+
+      .bal-val {
+        color: #15172b;
+        font-weight: 700;
+      }
+    }
+
+    .m-tx-ref-pill {
+      font-size: 0.68rem;
+      color: #8e8e93;
+      background: #f4f4f8;
+      padding: 2px 6px;
+      border-radius: 4px;
+      max-width: 140px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
 
     .dr-tag {
       font-size: 0.65rem;
@@ -1463,16 +1546,157 @@ import {
       margin-left: 2px;
     }
 
-    .empty-cell {
-      padding: 30px;
-      color: #8e8e93;
+    .empty-feed-card {
+      background: #fbfbfd;
+      border-radius: 18px;
+      padding: 36px 16px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      border: 1px dashed rgba(0, 0, 0, 0.1);
+    }
+
+    .empty-icon {
+      font-size: 2rem;
+    }
+
+    .empty-text {
+      font-size: 0.88rem;
+      color: #767a90;
       font-weight: 600;
+      margin: 0;
+    }
+
+    .reset-filter-btn {
+      margin-top: 6px;
+      padding: 8px 20px;
+      border-radius: 99px;
+      border: none;
+      background: #6c4cff;
+      color: #ffffff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:active {
+        transform: scale(0.96);
+      }
     }
 
     .table-responsive {
       width: 100%;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
+      border-radius: 14px;
+      border: 1px solid #ededf4;
+    }
+
+    /* MOBILE RESPONSIVE MEDIA QUERIES (iPhone 17 Pro Max ~440px First) */
+    @media (max-width: 600px) {
+      .statements-page {
+        padding: 12px 12px calc(130px + env(safe-area-inset-bottom, 20px));
+        gap: 14px;
+      }
+
+      .statement-sheet {
+        padding: 16px 14px;
+        border-radius: 18px;
+        gap: 16px;
+      }
+
+      .doc-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+
+        .doc-meta {
+          text-align: left;
+        }
+      }
+
+      .doc-loan-name {
+        font-size: 1.25rem;
+      }
+
+      .explorer-summary-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+
+        .card-count {
+          grid-column: span 2;
+        }
+
+        .exp-stat-card {
+          padding: 12px 14px;
+        }
+
+        .exp-stat-val {
+          font-size: 1.25rem;
+        }
+      }
+
+      .audit-summary-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+
+        .audit-stat-card:last-child {
+          grid-column: span 2;
+        }
+
+        .audit-stat-card {
+          padding: 12px 14px;
+        }
+
+        .a-stat-num {
+          font-size: 1.25rem;
+        }
+      }
+
+      .metrics-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .tax-cards-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .controls-bar {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 12px 14px;
+        gap: 10px;
+
+        .control-group {
+          justify-content: space-between;
+          width: 100%;
+        }
+
+        .month-picker {
+          flex: 1;
+          text-align: center;
+        }
+
+        .action-buttons {
+          width: 100%;
+          display: flex;
+          gap: 8px;
+
+          .btn {
+            flex: 1;
+            justify-content: center;
+          }
+        }
+      }
+
+      .filter-console {
+        padding: 12px 14px;
+        gap: 10px;
+      }
     }
 
     /* PRINT MEDIA QUERY */
@@ -1538,6 +1762,14 @@ export class StatementsComponent {
   toggleSort(): void {
     triggerHaptic('light');
     this.sortOrder.update((s) => (s === 'desc' ? 'asc' : 'desc'));
+  }
+
+  resetAllFilters(): void {
+    triggerHaptic('light');
+    this.searchQuery.set('');
+    this.selectedCategory.set('all');
+    this.selectedYear.set('all');
+    this.selectedAmountRange.set('all');
   }
 
   getCategoryBadge(cat: SbiPassbookRow['category']): string {
