@@ -19,7 +19,7 @@ import {
   getTransactionMode,
   Paise,
   paise,
-  simulatePayback,
+  SimulationResult,
   simulateV2,
   toPaise,
   toRupees,
@@ -275,58 +275,160 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
         <app-repayment-pace-card [pace]="ledgerStore.repaymentPace()" />
       </section>
 
-      <!-- 5. Section: Payback Simulation Accelerator -->
+      <!-- 5. Section: Monthly Payment Payoff Simulator -->
       <section class="home-section">
-        <div class="minimal-panel-card">
+        <div class="minimal-panel-card payoff-sim-card">
           <div class="panel-header-row">
             <div class="panel-header-left">
-              <span class="card-tag tag-amber">⚡ Live Simulator</span>
-              <h2 class="panel-title">OD Payback Simulator</h2>
+              <span class="card-tag tag-amber">⚡ Real-Time Payoff</span>
+              <h2 class="panel-title">Monthly Payoff Simulator</h2>
             </div>
             <span class="panel-amount-badge tabular-nums">
-              {{ formatPaise(paybackSliderPaise()) }}
+              {{ formatPaise(monthlyPayoffSliderPaise()) }}<small>/mo</small>
             </span>
           </div>
 
+          <!-- Slider (₹50,000 to ₹5,00,000) -->
           <div class="slider-wrapper">
             <input
               type="range"
               class="minimal-slider"
-              min="10000000"
-              max="250000000"
-              step="5000000"
-              [value]="paybackSliderPaise()"
-              (input)="onPaybackSliderInput($event)"
-              aria-label="Simulated Payback Amount"
+              min="5000000"
+              max="50000000"
+              step="500000"
+              [value]="monthlyPayoffSliderPaise()"
+              (input)="onMonthlyPayoffSliderInput($event)"
+              aria-label="Monthly Payment Amount"
             />
             <div class="slider-ends-labels">
-              <span>₹1 Lakh</span>
-              <span>₹25 Lakhs</span>
+              <span>₹50,000/mo</span>
+              <span>₹2.40L (Target)</span>
+              <span>₹5,00,000/mo</span>
             </div>
           </div>
 
-          <div class="sim-stats-grid">
-            <div class="sim-stat-box">
-              <span class="sim-stat-number tabular-nums text-emerald">
-                +{{ formatCompactPaise(paybackSim().monthlySavingsPaise) }}<small>/mo</small>
-              </span>
-              <span class="sim-stat-lbl">Monthly Relief</span>
-            </div>
-
-            <div class="sim-stat-box">
-              <span class="sim-stat-number tabular-nums text-cyan">
-                {{ formatCompactPaise(paybackSim().lifetimeInterestSavedPaise) }}
-              </span>
-              <span class="sim-stat-lbl">Lifetime Saved</span>
-            </div>
-
-            <div class="sim-stat-box">
-              <span class="sim-stat-number tabular-nums text-purple">
-                −{{ paybackSim().monthsTenureReduced }} mos
-              </span>
-              <span class="sim-stat-lbl">Debt-Free Sooner</span>
-            </div>
+          <!-- Quick Presets Ribbon -->
+          <div class="presets-chip-row" role="group" aria-label="Quick Monthly Payment Presets">
+            <button
+              type="button"
+              class="preset-chip"
+              [class.active]="monthlyPayoffSliderPaise() === 11890000"
+              (click)="setMonthlyPayoffPreset(11890000)"
+            >
+              ₹1.19L EMI
+            </button>
+            <button
+              type="button"
+              class="preset-chip"
+              [class.active]="monthlyPayoffSliderPaise() === 15000000"
+              (click)="setMonthlyPayoffPreset(15000000)"
+            >
+              ₹1.50L
+            </button>
+            <button
+              type="button"
+              class="preset-chip"
+              [class.active]="monthlyPayoffSliderPaise() === 20000000"
+              (click)="setMonthlyPayoffPreset(20000000)"
+            >
+              ₹2.00L
+            </button>
+            <button
+              type="button"
+              class="preset-chip"
+              [class.active]="monthlyPayoffSliderPaise() === 24000000"
+              (click)="setMonthlyPayoffPreset(24000000)"
+            >
+              ₹2.40L Target
+            </button>
+            <button
+              type="button"
+              class="preset-chip"
+              [class.active]="monthlyPayoffSliderPaise() === 30000000"
+              (click)="setMonthlyPayoffPreset(30000000)"
+            >
+              ₹3.00L
+            </button>
+            <button
+              type="button"
+              class="preset-chip"
+              [class.active]="monthlyPayoffSliderPaise() === 50000000"
+              (click)="setMonthlyPayoffPreset(50000000)"
+            >
+              ₹5.00L
+            </button>
           </div>
+
+          @if (payoffSimulation().isValid) {
+            <!-- Real-time Results Grid -->
+            <div class="sim-stats-grid four-col">
+              <!-- Box 1: Time to Debt-Free -->
+              <div class="sim-stat-box">
+                <span class="sim-stat-number tabular-nums text-purple">
+                  {{ payoffSimulation().years }} <small>yrs</small>
+                </span>
+                <span class="sim-stat-lbl">{{ payoffSimulation().months }} mos · {{ payoffSimulation().closureDate }}</span>
+                @if (payoffSimulation().monthsSavedVsBankEmi && payoffSimulation().monthsSavedVsBankEmi! > 0) {
+                  <span class="sim-stat-badge text-emerald">−{{ (payoffSimulation().monthsSavedVsBankEmi! / 12).toFixed(1) }} yrs vs EMI</span>
+                }
+              </div>
+
+              <!-- Box 2: Total Interest -->
+              <div class="sim-stat-box">
+                <span class="sim-stat-number tabular-nums text-coral">
+                  {{ formatCompactPaise(payoffSimulation().totalInterest!) }}
+                </span>
+                <span class="sim-stat-lbl">Total Interest</span>
+                @if (payoffSimulation().interestSavedVsBankEmi && payoffSimulation().interestSavedVsBankEmi! > 0) {
+                  <span class="sim-stat-badge text-emerald">Save +{{ formatCompactPaise(payoffSimulation().interestSavedVsBankEmi!) }}</span>
+                }
+              </div>
+
+              <!-- Box 3: Total Principal -->
+              <div class="sim-stat-box">
+                <span class="sim-stat-number tabular-nums text-cyan">
+                  {{ formatCompactPaise(payoffSimulation().principal) }}
+                </span>
+                <span class="sim-stat-lbl">Loan Principal</span>
+                <span class="sim-stat-badge text-muted">100% Cleared</span>
+              </div>
+
+              <!-- Box 4: Total Outflow -->
+              <div class="sim-stat-box">
+                <span class="sim-stat-number tabular-nums text-dark">
+                  {{ formatCompactPaise(payoffSimulation().totalPaid!) }}
+                </span>
+                <span class="sim-stat-lbl">Total Outflow</span>
+                <span class="sim-stat-badge text-muted">Principal + Interest</span>
+              </div>
+            </div>
+
+            <!-- First Month Breakdown Pill -->
+            <div class="sim-split-pill">
+              <span class="split-dot"></span>
+              <span class="split-text">
+                Monthly Split: <strong>{{ formatPaise(payoffSimulation().firstMonthInterest) }}</strong> interest · <strong>{{ formatPaise(payoffSimulation().firstMonthPrincipalCut) }}</strong> principal reduction
+              </span>
+            </div>
+          } @else {
+            <!-- Below interest warning -->
+            <div class="sim-warning-card">
+              <div class="warning-icon">⚠️</div>
+              <div class="warning-content">
+                <strong>Payment Below Interest Bleed</strong>
+                <p>
+                  {{ formatPaise(monthlyPayoffSliderPaise()) }}/mo does not cover the ~{{ formatPaise(payoffSimulation().minRequired) }}/mo monthly interest charge. The loan cannot amortize at this rate.
+                </p>
+                <button
+                  type="button"
+                  class="btn-recover"
+                  (click)="setMonthlyPayoffPreset(24000000)"
+                >
+                  Reset to Family Target (₹2.40L/mo)
+                </button>
+              </div>
+            </div>
+          }
         </div>
       </section>
 
@@ -1204,30 +1306,35 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
 
     .sim-stats-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+
+      @media (min-width: 480px) {
+        grid-template-columns: repeat(4, 1fr);
+      }
     }
 
     .sim-stat-box {
-      background: #f8f9fc;
-      border-radius: 14px;
-      padding: 10px 8px;
+      background: var(--bg, #f8f9fc);
+      border: 1px solid var(--line, rgba(0, 0, 0, 0.05));
+      border-radius: 16px;
+      padding: 12px 10px;
       display: flex;
       flex-direction: column;
       align-items: center;
       text-align: center;
-      gap: 2px;
+      gap: 3px;
     }
 
     .sim-stat-number {
-      font-size: 13.5px;
+      font-size: 15px;
       font-weight: 800;
       letter-spacing: -0.01em;
-    }
 
-    .sim-stat-number small {
-      font-size: 10px;
-      font-weight: 600;
+      small {
+        font-size: 11px;
+        font-weight: 600;
+      }
     }
 
     .sim-stat-lbl {
@@ -1235,7 +1342,134 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       color: var(--muted, #767a90);
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.02em;
+      letter-spacing: 0.03em;
+    }
+
+    .sim-stat-badge {
+      font-size: 9px;
+      font-weight: 700;
+      margin-top: 2px;
+      padding: 1px 6px;
+      border-radius: 99px;
+      background: rgba(0, 0, 0, 0.04);
+      white-space: nowrap;
+
+      &.text-emerald {
+        background: rgba(15, 178, 124, 0.1);
+        color: #0fb27c;
+      }
+
+      &.text-muted {
+        color: var(--muted, #767a90);
+      }
+    }
+
+    .presets-chip-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 2px 0 6px;
+      scrollbar-width: none;
+
+      &::-webkit-scrollbar {
+        display: none;
+      }
+    }
+
+    .preset-chip {
+      background: var(--bg, #f4f1ec);
+      border: 1px solid var(--line, rgba(0, 0, 0, 0.08));
+      border-radius: 99px;
+      padding: 5px 11px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted, #767a90);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+
+      &:hover {
+        color: var(--ink, #15172b);
+        border-color: rgba(0, 0, 0, 0.2);
+      }
+
+      &.active {
+        background: var(--ink, #15172b);
+        color: #ffffff;
+        border-color: var(--ink, #15172b);
+        box-shadow: 0 2px 6px rgba(21, 23, 43, 0.2);
+      }
+    }
+
+    .sim-split-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(108, 76, 255, 0.05);
+      border: 1px solid rgba(108, 76, 255, 0.15);
+      border-radius: 12px;
+      padding: 8px 12px;
+      font-size: 11px;
+      color: var(--ink, #15172b);
+
+      .split-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #6c4cff;
+        flex-shrink: 0;
+      }
+
+      .split-text strong {
+        font-weight: 700;
+      }
+    }
+
+    .sim-warning-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: #fff8e6;
+      border: 1px solid #ffd591;
+      border-radius: 16px;
+      padding: 14px;
+      color: #873800;
+
+      .warning-icon {
+        font-size: 18px;
+        line-height: 1;
+      }
+
+      .warning-content {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+
+        strong {
+          font-size: 13px;
+          font-weight: 700;
+        }
+
+        p {
+          font-size: 11.5px;
+          line-height: 1.4;
+          margin: 0;
+        }
+
+        .btn-recover {
+          align-self: flex-start;
+          background: #873800;
+          color: #ffffff;
+          border: none;
+          padding: 5px 12px;
+          border-radius: 99px;
+          font-size: 11px;
+          font-weight: 600;
+          cursor: pointer;
+          margin-top: 4px;
+        }
+      }
     }
 
     /* Statements Nav Card */
@@ -1687,14 +1921,134 @@ export class HomeComponent {
 
   readonly isWithdrawalSheetOpen = signal<boolean>(false);
   readonly odWithdrawalSummary = this.ledgerStore.odWithdrawalsSummary;
-  readonly paybackSliderPaise = signal<Paise>(toPaise(500000)); // Default ₹5 Lakhs simulation
-  readonly paybackSim = computed(() =>
-    simulatePayback(
-      this.paybackSliderPaise(),
-      this.ledgerStore.loan().currentRateBps,
-      this.odWithdrawalSummary()
-    )
-  );
+
+  readonly monthlyPayoffSliderPaise = signal<Paise>(toPaise(240000));
+
+  onMonthlyPayoffSliderInput(event: Event): void {
+    const val = Number((event.target as HTMLInputElement).value);
+    this.monthlyPayoffSliderPaise.set(paise(val));
+    triggerHaptic('light');
+  }
+
+  setMonthlyPayoffPreset(amountPaise: number): void {
+    this.monthlyPayoffSliderPaise.set(paise(amountPaise));
+    triggerHaptic('medium');
+  }
+
+  /**
+   * Minimum required monthly payment to cover current interest bleed.
+   */
+  readonly minimumRequiredMonthlyPayment = computed<Paise>(() => {
+    const principal = this.ledgerStore.currentOutstanding();
+    const rateBps = this.ledgerStore.loan().currentRateBps;
+    if (principal <= 0 || rateBps <= 0) return paise(0);
+    const monthlyRate = rateBps / (12 * 10000);
+    return paise(Math.ceil(principal * monthlyRate));
+  });
+
+  /**
+   * Baseline bank regular EMI simulation for comparison.
+   */
+  readonly bankEmiSimResult = computed<SimulationResult | null>(() => {
+    const principal = this.ledgerStore.currentOutstanding();
+    const rateBps = this.ledgerStore.loan().currentRateBps;
+    const regularEmi = this.ledgerStore.loan().regularEmi || toPaise(118900);
+    return simulateV2({
+      principal,
+      monthlyPayment: regularEmi,
+      rateBps,
+      paymentDayOfMonth: 5,
+      rateShiftBps: 0,
+      prepayments: [],
+      drawdowns: [],
+      dayCountBasis: this.ledgerStore.loan().bankRules?.dayCountBasis || 'actual/365',
+    });
+  });
+
+  /**
+   * Real-time payoff simulation for the chosen monthly payment (₹50k to ₹5L/mo).
+   */
+  readonly payoffSimulation = computed(() => {
+    const principal = this.ledgerStore.currentOutstanding();
+    const rateBps = this.ledgerStore.loan().currentRateBps;
+    const monthlyPayment = this.monthlyPayoffSliderPaise();
+    const minRequired = this.minimumRequiredMonthlyPayment();
+
+    if (monthlyPayment <= minRequired) {
+      return {
+        isValid: false,
+        monthlyPayment,
+        minRequired,
+        firstMonthInterest: minRequired,
+        principal,
+        months: null,
+        years: null,
+        closureDate: null,
+        totalInterest: null,
+        totalPaid: null,
+        interestSavedVsBankEmi: null,
+        monthsSavedVsBankEmi: null,
+        firstMonthPrincipalCut: paise(0),
+      };
+    }
+
+    const sim = simulateV2({
+      principal,
+      monthlyPayment,
+      rateBps,
+      paymentDayOfMonth: 5,
+      rateShiftBps: 0,
+      prepayments: [],
+      drawdowns: [],
+      dayCountBasis: this.ledgerStore.loan().bankRules?.dayCountBasis || 'actual/365',
+    });
+
+    if (!sim) {
+      return {
+        isValid: false,
+        monthlyPayment,
+        minRequired,
+        firstMonthInterest: minRequired,
+        principal,
+        months: null,
+        years: null,
+        closureDate: null,
+        totalInterest: null,
+        totalPaid: null,
+        interestSavedVsBankEmi: null,
+        monthsSavedVsBankEmi: null,
+        firstMonthPrincipalCut: paise(0),
+      };
+    }
+
+    const bankSim = this.bankEmiSimResult();
+    let interestSavedVsBankEmi: Paise | null = null;
+    let monthsSavedVsBankEmi: number | null = null;
+
+    if (bankSim) {
+      const diffInterest = bankSim.totalInterest - sim.totalInterest;
+      interestSavedVsBankEmi = paise(diffInterest);
+      monthsSavedVsBankEmi = Math.max(0, bankSim.months - sim.months);
+    }
+
+    const firstMonthPrincipalCut = paise(Math.max(0, monthlyPayment - minRequired));
+
+    return {
+      isValid: true,
+      monthlyPayment,
+      minRequired,
+      firstMonthInterest: minRequired,
+      principal,
+      months: sim.months,
+      years: (sim.months / 12).toFixed(1),
+      closureDate: sim.closureDate,
+      totalInterest: sim.totalInterest,
+      totalPaid: sim.totalPaid,
+      interestSavedVsBankEmi,
+      monthsSavedVsBankEmi,
+      firstMonthPrincipalCut,
+    };
+  });
 
   readonly odAvailableBuffer = computed<Paise>(() => {
     const lim = this.ledgerStore.loan().sanctionedLimit;
@@ -1713,12 +2067,6 @@ export class HomeComponent {
     const rateBps = this.ledgerStore.loan().currentRateBps;
     return paise(Math.round((buffer * rateBps) / (10000 * 12)));
   });
-
-  onPaybackSliderInput(event: Event): void {
-    const val = Number((event.target as HTMLInputElement).value);
-    this.paybackSliderPaise.set(paise(val));
-    triggerHaptic('light');
-  }
 
   readonly repaidAmount = computed<Paise>(() => {
     const initial = this.ledgerStore.loan().initialDisbursed || toPaise(13300000);
