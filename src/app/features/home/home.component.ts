@@ -7,6 +7,7 @@ import {
   BottomSheetComponent,
   ConfirmSheetComponent,
   DualTrackChartComponent,
+  InterestAuditChartComponent,
   RepaymentPaceCardComponent,
 } from '../../shared/ui';
 import { CountUpDirective } from '../../shared/ui/count-up/count-up.directive';
@@ -45,6 +46,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
     DailyLedgerSheetComponent,
     DualTrackChartComponent,
     RepaymentPaceCardComponent,
+    InterestAuditChartComponent,
   ],
   template: `
     <div class="home-page-container">
@@ -289,7 +291,12 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
         />
       </section>
 
-      <!-- 6. Section: This Month & Payoff Baseline -->
+      <!-- 6. Section: How Interest Got Added So Far (29-Month Passbook Audit) -->
+      <section class="home-section">
+        <app-interest-audit-chart />
+      </section>
+
+      <!-- 7. Section: This Month & Payoff Baseline -->
       <section class="home-section">
         <div class="dual-squircle-grid">
           <!-- Card 1: This Month -->

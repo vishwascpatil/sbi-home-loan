@@ -11,6 +11,7 @@ export * from './charts/bar-chart.component';
 export * from './charts/share-bar.component';
 export * from './charts/dual-track-chart.component';
 export * from './charts/repayment-pace-card.component';
+export * from './charts/interest-audit-chart.component';
 export * from './toast/toast.service';
 export * from './toast/toast.component';
 export * from './bottom-sheet/bottom-sheet.component';

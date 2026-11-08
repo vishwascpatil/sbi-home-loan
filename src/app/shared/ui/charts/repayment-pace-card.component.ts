@@ -454,3 +454,4 @@ export class RepaymentPaceCardComponent {
     return Math.min(100, Math.max(8, scaled));
   });
 }
+
