@@ -483,14 +483,14 @@ import {
   styles: [`
     .statements-page {
       width: 100%;
-      max-width: 680px;
-      margin: 0 auto;
+      max-width: 100%;
       box-sizing: border-box;
       overflow-x: hidden;
-      padding: 12px 14px calc(110px + env(safe-area-inset-bottom, 20px));
+      padding: 0 0 calc(110px + env(safe-area-inset-bottom, 20px));
       display: flex;
       flex-direction: column;
       gap: 14px;
+      position: relative;
     }
 
     /* Minimal Header */
@@ -606,6 +606,8 @@ import {
       display: flex;
       flex-direction: column;
       gap: 16px;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .filter-strip {
@@ -860,6 +862,8 @@ import {
       display: flex;
       flex-direction: column;
       gap: 12px;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .clean-sheet {
@@ -870,6 +874,8 @@ import {
       display: flex;
       flex-direction: column;
       gap: 18px;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .sheet-title-row {
