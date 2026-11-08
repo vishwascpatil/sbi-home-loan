@@ -24,7 +24,6 @@ import {
   SBI_AUTHENTIC_STATEMENT_ROWS,
   SbiPassbookRow,
 } from '../../core/data';
-import { AvatarComponent } from '../../shared/ui';
 
 @Component({
   selector: 'app-statements',
@@ -33,7 +32,6 @@ import { AvatarComponent } from '../../shared/ui';
   imports: [
     CommonModule,
     FormsModule,
-    AvatarComponent,
   ],
   template: `
     <div class="statements-page">
@@ -114,38 +112,9 @@ import { AvatarComponent } from '../../shared/ui';
             </div>
           </div>
 
-          <!-- Smart Filter & Search Strip -->
+          <!-- Clean Filter Ribbon & Refine Controls (No Search) -->
           <div class="filter-strip no-print">
-            <div class="search-sort-bar">
-              <div class="search-box">
-                <svg class="search-lens" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-                <input
-                  type="text"
-                  class="search-field"
-                  placeholder="Search..."
-                  [ngModel]="searchQuery()"
-                  (ngModelChange)="searchQuery.set($event)"
-                  autocomplete="off"
-                />
-                @if (searchQuery()) {
-                  <button type="button" class="clear-btn" (click)="searchQuery.set('')" aria-label="Clear search">✕</button>
-                }
-              </div>
-
-              <button
-                type="button"
-                class="sort-btn"
-                (click)="toggleSort()"
-                title="Toggle sort direction"
-              >
-                {{ sortOrder() === 'desc' ? '↓ Newest' : '↑ Oldest' }}
-              </button>
-            </div>
-
-            <!-- Clean Category Ribbon -->
+            <!-- Category Chips -->
             <div class="category-chips-track">
               <button
                 type="button"
@@ -197,7 +166,7 @@ import { AvatarComponent } from '../../shared/ui';
               </button>
             </div>
 
-            <!-- Year / Amount Refine Controls -->
+            <!-- Refine Controls: Year, Amount & Sort Direction -->
             <div class="refine-bar">
               <select
                 class="refine-select"
@@ -222,6 +191,15 @@ import { AvatarComponent } from '../../shared/ui';
                 <option value="25k-1L">₹25k – ₹1L</option>
                 <option value="lt25k">&lt; ₹25k</option>
               </select>
+
+              <button
+                type="button"
+                class="sort-chip-btn"
+                (click)="toggleSort()"
+                title="Toggle sort direction"
+              >
+                {{ sortOrder() === 'desc' ? '↓ Newest' : '↑ Oldest' }}
+              </button>
 
               @if (hasActiveFilters()) {
                 <button type="button" class="reset-chip-btn" (click)="resetAllFilters()">
@@ -266,7 +244,7 @@ import { AvatarComponent } from '../../shared/ui';
                 @if (expandedTxId() === row.id) {
                   <div class="tx-expanded">
                     <span class="raw-label">Bank Narration</span>
-                    <p class="raw-text">{{ row.desc }}</p>
+                    <p class="raw-text">{{ sanitizeNarration(row.desc) }}</p>
                     @if (row.refNo) {
                       <span class="raw-ref">Ref: {{ row.refNo }}</span>
                     }
@@ -283,7 +261,7 @@ import { AvatarComponent } from '../../shared/ui';
         </section>
       }
 
-      <!-- 2. MONTHLY STATEMENT TAB -->
+      <!-- 2. MONTHLY STATEMENT TAB (Official Bank Split Only) -->
       @if (activeTab() === 'monthly') {
         <section class="tab-view" id="statement-doc">
           <div class="controls-bar no-print">
@@ -341,34 +319,6 @@ import { AvatarComponent } from '../../shared/ui';
                 <span class="metric-label">Closing Balance</span>
                 <strong class="metric-value big">{{ formatPaise(currentStatement().closingOutstanding) }}</strong>
               </div>
-            </div>
-
-            <!-- Member Contributions -->
-            <div class="table-section">
-              <h3 class="section-title">Member Shares</h3>
-              <table class="minimal-table">
-                <thead>
-                  <tr>
-                    <th>Member</th>
-                    <th class="text-right">Amount</th>
-                    <th class="text-right">Share</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (m of currentStatement().memberContributions; track m.memberId) {
-                    <tr>
-                      <td>
-                        <div class="member-cell">
-                          <app-avatar [name]="m.name" [colorIndex]="$index" [size]="24" />
-                          <span>{{ m.name }}</span>
-                        </div>
-                      </td>
-                      <td class="text-right tabular-nums font-bold">{{ formatPaise(m.amount) }}</td>
-                      <td class="text-right tabular-nums text-muted">{{ m.sharePercentage | number:'1.0-1' }}%</td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
             </div>
           </article>
         </section>
@@ -628,86 +578,11 @@ import { AvatarComponent } from '../../shared/ui';
       line-height: 1.15;
     }
 
-    /* Filter & Search Strip */
+    /* Filter Strip */
     .filter-strip {
       display: flex;
       flex-direction: column;
       gap: 8px;
-    }
-
-    .search-sort-bar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .search-box {
-      flex: 1;
-      position: relative;
-      display: flex;
-      align-items: center;
-    }
-
-    .search-lens {
-      position: absolute;
-      left: 12px;
-      color: var(--muted, #767a90);
-      pointer-events: none;
-    }
-
-    .search-field {
-      width: 100%;
-      height: 38px;
-      border-radius: 99px;
-      border: 1px solid var(--line, rgba(0, 0, 0, 0.08));
-      background: var(--card, #ffffff);
-      padding: 0 32px 0 36px;
-      font-size: 0.85rem;
-      color: var(--ink, #15172b);
-      outline: none;
-      transition: all 0.2s ease;
-
-      &::placeholder {
-        color: #9399b4;
-      }
-
-      &:focus {
-        border-color: #6c4cff;
-        box-shadow: 0 0 0 3px rgba(108, 76, 255, 0.12);
-      }
-    }
-
-    .clear-btn {
-      position: absolute;
-      right: 10px;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      border: none;
-      background: #f0f0f5;
-      color: #555b72;
-      font-size: 0.7rem;
-      display: grid;
-      place-items: center;
-      cursor: pointer;
-    }
-
-    .sort-btn {
-      height: 38px;
-      padding: 0 12px;
-      border-radius: 99px;
-      border: 1px solid var(--line, rgba(0, 0, 0, 0.08));
-      background: var(--card, #ffffff);
-      color: var(--ink, #15172b);
-      font-size: 0.78rem;
-      font-weight: 700;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.2s ease;
-
-      &:active {
-        transform: scale(0.96);
-      }
     }
 
     .category-chips-track {
@@ -764,6 +639,26 @@ import { AvatarComponent } from '../../shared/ui';
       font-weight: 700;
       cursor: pointer;
       outline: none;
+    }
+
+    .sort-chip-btn {
+      height: 30px;
+      padding: 0 12px;
+      border-radius: 99px;
+      border: 1px solid var(--line, rgba(0, 0, 0, 0.08));
+      background: var(--card, #ffffff);
+      color: var(--ink, #15172b);
+      font-size: 0.74rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      transition: all 0.2s ease;
+
+      &:active {
+        transform: scale(0.96);
+      }
     }
 
     .reset-chip-btn {
@@ -1107,13 +1002,6 @@ import { AvatarComponent } from '../../shared/ui';
       }
     }
 
-    .member-cell {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 600;
-    }
-
     /* Audit View */
     .audit-stats-row {
       display: grid;
@@ -1264,7 +1152,6 @@ export class StatementsComponent {
     return [...dynamicRows, ...staticRows].sort((a, b) => b.isoDate.localeCompare(a.isoDate));
   });
 
-  readonly searchQuery = signal<string>('');
   readonly selectedCategory = signal<string>('all');
   readonly selectedYear = signal<string>('all');
   readonly selectedAmountRange = signal<string>('all');
@@ -1275,7 +1162,6 @@ export class StatementsComponent {
 
   readonly hasActiveFilters = computed(() => {
     return (
-      this.searchQuery().trim() !== '' ||
       this.selectedCategory() !== 'all' ||
       this.selectedYear() !== 'all' ||
       this.selectedAmountRange() !== 'all'
@@ -1309,7 +1195,6 @@ export class StatementsComponent {
 
   resetAllFilters(): void {
     triggerHaptic('light');
-    this.searchQuery.set('');
     this.selectedCategory.set('all');
     this.selectedYear.set('all');
     this.selectedAmountRange.set('all');
@@ -1330,54 +1215,61 @@ export class StatementsComponent {
     if (!desc) return 'Transaction';
     const upper = desc.toUpperCase();
 
+    // 1. Interest debits
     if (cat === 'interest_debit' || upper.includes('TO INTEREST')) {
       return 'Monthly SBI Interest';
     }
+
+    // 2. Standing Instruction / EMI
     if (cat === 'emi_credit' || upper.includes('SI 54897') || upper.includes('TFR SI')) {
       return 'Monthly EMI';
     }
+
+    // 3. Direct statement deposit
     if (upper.includes('DIRECT STATEMENT DEPOSIT') || upper.includes('DEP DIRECT TO STATEMENT')) {
       return 'Direct Statement Deposit';
     }
 
-    // Check /M/ [Memo] pattern in SBI transfers
-    const memoMatch = desc.match(/\/M\/\s*([^0-9]+?)(?:\s+\d{11,}|\s+OF\s+Mr|\s+AT\s+|$)/i);
-    if (memoMatch && memoMatch[1]?.trim()) {
-      const memo = memoMatch[1].trim();
-      if (/VIKAS.*SHRU/i.test(memo)) return 'Vikas & Shruthi';
-      if (/VISHWAS.*BHAV/i.test(memo)) return 'Vishwas & Bhavya';
-      if (/VISHWAS/i.test(memo)) return 'Vishwas Patil';
-      if (/VIKAS/i.test(memo)) return 'Vikas Patil';
-      if (/LOAN REPAYMENT/i.test(memo)) return 'Loan Prepayment';
-      if (/BILL PAYMENT/i.test(memo)) return 'Bill Payment';
-      return memo;
+    // 4. UPI Transfers / Prepayments (NO member names)
+    if (upper.includes('UPI/CR/') || upper.includes('UPI/DR/') || upper.includes('UPI')) {
+      return 'UPI Prepayment';
     }
 
-    // Check UPI pattern
-    if (upper.includes('UPI/CR/') || upper.includes('UPI/DR/')) {
-      if (/SHRU/i.test(desc)) return 'Shruthi (UPI)';
-      if (/BHAV/i.test(desc)) return 'Bhavya (UPI)';
-      if (/VISH/i.test(desc)) return 'Vishwas (UPI)';
-      if (/VIKA/i.test(desc)) return 'Vikas (UPI)';
-      return 'UPI Deposit';
+    // 5. Loan repayments & memos (NO member names)
+    if (upper.includes('LOAN REPAYMENT') || upper.includes('LOAN PREPAYMENT')) {
+      return 'Loan Prepayment';
+    }
+    if (upper.includes('BILL PAYMENT')) {
+      return 'Bill Payment';
     }
 
+    // 6. Withdrawals & Disbursements
     if (cat === 'withdrawal' || upper.startsWith('WDL')) {
       return 'OD Withdrawal';
     }
-
     if (cat === 'disbursement') {
       return 'Loan Disbursement';
     }
 
-    const cleaned = desc
-      .replace(/^DEP\s+TFR\s+/i, '')
-      .replace(/^WDL\s+TFR\s+/i, '')
-      .replace(/\s+AT\s+\d+.*$/i, '')
-      .replace(/\s+OF\s+Mr\..*$/i, '')
-      .trim();
+    // 7. General deposits vs debits
+    if (cat === 'prepayment' || upper.startsWith('DEP')) {
+      return 'Online Prepayment';
+    }
 
-    return cleaned.length > 28 ? cleaned.slice(0, 25) + '…' : cleaned;
+    return 'Account Transfer';
+  }
+
+  sanitizeNarration(desc: string): string {
+    if (!desc) return '';
+    return desc
+      .replace(/VIKAS\s*C?\s*PATIL/gi, 'ACCOUNT HOLDER')
+      .replace(/VIKAS\s*(?:&|AND|\/)?\s*SHRUTHI/gi, 'ONLINE PREPAYMENT')
+      .replace(/VISHWAS\s*(?:&|AND|\/)?\s*BHAVYA/gi, 'ONLINE PREPAYMENT')
+      .replace(/VISHWAS/gi, 'ONLINE')
+      .replace(/BHAVYA/gi, 'ONLINE')
+      .replace(/SHRUTHI/gi, 'ONLINE')
+      .replace(/VIKAS/gi, 'ONLINE')
+      .replace(/CSP/gi, 'ONLINE');
   }
 
   formatDateDisplay(postDate: string): string {
@@ -1394,22 +1286,10 @@ export class StatementsComponent {
 
   readonly filteredRows = computed(() => {
     let rows = [...this.allStatementRows()];
-    const q = this.searchQuery().toLowerCase().trim();
     const cat = this.selectedCategory();
     const yr = this.selectedYear();
     const amt = this.selectedAmountRange();
     const sort = this.sortOrder();
-
-    if (q) {
-      rows = rows.filter((r) =>
-        r.desc.toLowerCase().includes(q) ||
-        r.postDate.includes(q) ||
-        r.refNo.toLowerCase().includes(q) ||
-        r.rawCredit.includes(q) ||
-        r.rawDebit.includes(q) ||
-        r.rawBalance.includes(q)
-      );
-    }
 
     if (cat !== 'all') {
       if (cat === 'credit') {
