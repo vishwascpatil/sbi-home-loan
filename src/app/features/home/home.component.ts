@@ -156,13 +156,13 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
           >
             <div class="card-header-line">
               <span class="card-tag tag-coral">⚠️ Interest Bleed</span>
-              <span class="badge-mini">21 Draws ›</span>
+              <span class="card-chevron">›</span>
             </div>
             <div class="card-metric-val tabular-nums text-coral">
               −{{ formatCompactPaise(odWithdrawalSummary().currentMonthlyBleed) }}<span class="unit-sub">/mo</span>
             </div>
             <span class="card-metric-sub">
-              {{ formatCompactPaise(odWithdrawalSummary().totalInterestLost) }} penalty (21 draws)
+              {{ formatCompactPaise(odWithdrawalSummary().totalInterestLost) }} total penalty
             </span>
           </div>
         </div>
@@ -419,7 +419,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
         (dismissed)="isDailyLedgerOpen.set(false)"
       />
 
-      <!-- OD Forensic Breakdown Sheet (21 Draws) -->
+      <!-- OD Forensic Breakdown Sheet -->
       <app-bottom-sheet
         [isOpen]="isWithdrawalSheetOpen()"
         title="OD Withdrawals & Interest Lost"
@@ -429,7 +429,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
           <div class="forensic-top-chips">
             <div class="forensic-chip">
               <span class="f-chip-val tabular-nums">−{{ formatCompactPaise(odWithdrawalSummary().netWithdrawn) }}</span>
-              <span class="f-chip-lbl">21 Draws Total</span>
+              <span class="f-chip-lbl">Total Withdrawn</span>
             </div>
             <div class="forensic-chip chip-danger">
               <span class="f-chip-val tabular-nums text-coral">₹1.29L</span>
