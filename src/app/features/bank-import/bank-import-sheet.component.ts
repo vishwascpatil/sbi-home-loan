@@ -17,6 +17,7 @@ import {
   Paise,
   parseCsvToRecords,
   ParsedStatementRow,
+  parseSbiPdfStatement,
 } from '../../core/engine';
 
 @Component({
@@ -72,18 +73,25 @@ import {
                 (dragleave)="onDragLeave($event)"
                 (drop)="onFileDrop($event)"
               >
-                <span class="upload-icon">📄</span>
-                <p class="drop-text">Drag & drop bank statement CSV file here</p>
-                <span class="or-divider">— OR —</span>
-                <label class="file-picker-btn">
-                  Browse File
-                  <input
-                    type="file"
-                    accept=".csv,text/csv,text/plain"
-                    (change)="onFileInput($event)"
-                    style="display: none"
-                  />
-                </label>
+                @if (isProcessingPdf()) {
+                  <span class="upload-icon spinning">⚡</span>
+                  <p class="drop-text">Parsing SBI Statement PDF...</p>
+                  <span class="drop-subtext">Extracting passbook transactions & interest entries</span>
+                } @else {
+                  <span class="upload-icon">📄</span>
+                  <p class="drop-text">Drag & drop bank statement PDF or CSV here</p>
+                  <span class="drop-subtext">Supports official SBI Maxgain PDF statements & CSV exports</span>
+                  <span class="or-divider">— OR —</span>
+                  <label class="file-picker-btn">
+                    Browse File
+                    <input
+                      type="file"
+                      accept=".pdf,application/pdf,.csv,text/csv,text/plain"
+                      (change)="onFileInput($event)"
+                      style="display: none"
+                    />
+                  </label>
+                }
               </div>
 
               <div class="sample-box">
@@ -370,6 +378,22 @@ import {
       font-size: 0.95rem;
       font-weight: 700;
       margin: 0;
+    }
+
+    .drop-subtext {
+      font-size: 0.78rem;
+      color: var(--muted, #767a90);
+      margin-top: -4px;
+    }
+
+    .spinning {
+      animation: spin 1s infinite linear;
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
 
     .or-divider {
@@ -678,6 +702,7 @@ export class BankImportSheetComponent {
   readonly profiles = DEFAULT_BANK_PROFILES;
   readonly selectedProfile = signal<ImportMappingProfile>(DEFAULT_BANK_PROFILES[0]);
   readonly isDragging = signal<boolean>(false);
+  readonly isProcessingPdf = signal<boolean>(false);
   readonly parsedRows = signal<ParsedStatementRow[]>([]);
 
   readonly matchedCount = computed(
@@ -747,6 +772,34 @@ export class BankImportSheetComponent {
   }
 
   private processFile(file: File): void {
+    if (file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf') {
+      this.isProcessingPdf.set(true);
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const buffer = e.target?.result as ArrayBuffer;
+          if (buffer) {
+            const records = await parseSbiPdfStatement(buffer);
+            if (records.length > 0) {
+              this.selectedProfile.set(this.profiles[0]); // SBI Maxgain profile
+              const rows = mapAndMatchStatementRows(
+                records,
+                this.profiles[0],
+                this.ledgerStore.ledgerState()
+              );
+              this.parsedRows.set(rows);
+            }
+          }
+        } catch (err) {
+          console.error('PDF parsing error:', err);
+        } finally {
+          this.isProcessingPdf.set(false);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;

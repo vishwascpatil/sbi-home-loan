@@ -6,6 +6,7 @@ import {
   BarChartComponent,
   BottomSheetComponent,
   ConfirmSheetComponent,
+  DualTrackChartComponent,
 } from '../../shared/ui';
 import { CountUpDirective } from '../../shared/ui/count-up/count-up.directive';
 import {
@@ -41,6 +42,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
     ConfirmSheetComponent,
     AddEditTransactionSheetComponent,
     DailyLedgerSheetComponent,
+    DualTrackChartComponent,
   ],
   template: `
     <div class="home-page-container">
@@ -271,7 +273,16 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
         </div>
       </section>
 
-      <!-- 5. Section: This Month & Payoff Baseline -->
+      <!-- 5. Section: Dual-Track Balance Visualizer (Drawing Power vs Debt) -->
+      <section class="home-section">
+        <app-dual-track-chart
+          [sanctionedLimit]="ledgerStore.loan().sanctionedLimit"
+          [currentOutstanding]="ledgerStore.currentOutstanding()"
+          [initialDisbursed]="initialDisbursedAmount()"
+        />
+      </section>
+
+      <!-- 6. Section: This Month & Payoff Baseline -->
       <section class="home-section">
         <div class="dual-squircle-grid">
           <!-- Card 1: This Month -->
@@ -1886,6 +1897,8 @@ export class HomeComponent {
   });
 
   readonly summary = this.ledgerStore.thisMonthSummary;
+
+  readonly initialDisbursedAmount = computed<Paise>(() => this.ledgerStore.loan().initialDisbursed || toPaise(13300000));
 
   readonly monthlyTargetPaise = computed<Paise>(() => this.ledgerStore.loan().monthlyTarget || toPaise(240000));
 

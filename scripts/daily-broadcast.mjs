@@ -40,7 +40,9 @@ async function runDailyBroadcast() {
   console.log('====================================================\n');
 
   // 1. Fetch Loan Details
-  let principalPaise = 1205518900; // ₹1,20,55,189 default
+  let principalPaise = 1188628900; // ₹1,18,86,289 authentic book outstanding
+  let sanctionedPaise = 1261293000; // ₹1,26,12,930 drawing limit
+  let initialDisbursedPaise = 1330000000; // ₹1,33,00,000 initial loan
   let rateBps = 790; // 7.90% default
 
   try {
@@ -50,6 +52,9 @@ async function runDailyBroadcast() {
       const f = loanDoc.fields || {};
       if (f.openingOutstanding?.integerValue) {
         principalPaise = Number(f.openingOutstanding.integerValue);
+      }
+      if (f.sanctionedLimit?.integerValue) {
+        sanctionedPaise = Number(f.sanctionedLimit.integerValue);
       }
       if (f.currentRateBps?.integerValue) {
         rateBps = Number(f.currentRateBps.integerValue);
@@ -62,12 +67,18 @@ async function runDailyBroadcast() {
     console.warn('⚠️ Firestore fetch error, using default parameters:', err.message);
   }
 
-  // 2. Compute Daily Interest (SBI OD actual/365 reducing balance)
+  // 2. Compute Daily Interest & OD Shield Metrics (SBI OD actual/365 reducing balance)
   const dailyInterestPaise = Math.round((principalPaise * (rateBps / 10000)) / 365);
   const updatedOutstandingPaise = principalPaise + dailyInterestPaise;
+  const odBufferPaise = Math.max(0, sanctionedPaise - principalPaise);
+  const dailyOdSavingsPaise = Math.round((odBufferPaise * (rateBps / 10000)) / 365);
+  const clearedPaise = Math.max(0, initialDisbursedPaise - principalPaise);
+  const clearedPct = ((clearedPaise / initialDisbursedPaise) * 100).toFixed(1);
 
   const dailyIntStr = formatRupees(dailyInterestPaise);
   const totalOutStr = formatRupees(updatedOutstandingPaise);
+  const odBufferStr = formatRupees(odBufferPaise);
+  const odSavingsStr = formatRupees(dailyOdSavingsPaise);
   const ratePctStr = (rateBps / 100).toFixed(2);
 
   const dateStr = new Date().toLocaleDateString('en-IN', {
@@ -78,7 +89,8 @@ async function runDailyBroadcast() {
   });
 
   console.log(`📊 Date: ${dateStr}`);
-  console.log(`💰 Principal: ₹${formatRupees(principalPaise)}`);
+  console.log(`💰 Outstanding Debt: ₹${formatRupees(principalPaise)} (${clearedPct}% paid down)`);
+  console.log(`🛡️ OD Surplus Buffer: ₹${odBufferStr} (Saves +₹${odSavingsStr}/day)`);
   console.log(`📈 Rate: ${ratePctStr}% p.a.`);
   console.log(`⚡ Daily Interest Accrued: +₹${dailyIntStr}`);
   console.log(`🏦 New Total Loan Balance: ₹${totalOutStr}\n`);
@@ -98,8 +110,8 @@ async function runDailyBroadcast() {
 
       const payload = JSON.stringify({
         notification: {
-          title: '🏦 SBI Home Loan Daily Update',
-          body: `Today's Interest Accrued: +₹${dailyIntStr} | Total Loan Balance: ₹${totalOutStr} (${ratePctStr}% p.a.)`,
+          title: '🏦 SBI Maxgain OD Daily Update',
+          body: `Debt: ₹${formatRupees(principalPaise)} (${clearedPct}% paid down) | OD Buffer: ₹${odBufferStr} (Saves +₹${odSavingsStr}/day) | Today's interest: +₹${dailyIntStr}`,
           icon: '/sbi-home-loan/icons/icon-192x192.png',
           badge: '/sbi-home-loan/icons/icon-72x72.png',
           data: {
@@ -142,9 +154,10 @@ async function runDailyBroadcast() {
   // =========================================================================
   console.log('\n--- [Step 2] Dispatching Carrier SMS via Fast2SMS ---');
   const smsMessage =
-    `SBI Home Loan Update (${dateStr}): ` +
+    `SBI Maxgain (${dateStr}): ` +
+    `Debt ₹${formatRupees(principalPaise)} (${clearedPct}% cleared). ` +
+    `OD Buffer: ₹${odBufferStr} saves Rs ${odSavingsStr}/day. ` +
     `Today's interest +Rs ${dailyIntStr}. ` +
-    `Total balance: Rs ${totalOutStr}. Rate: ${ratePctStr}%. ` +
     `View: https://vishwascpatil.github.io/sbi-home-loan/`;
 
   console.log('SMS Message Payload:');

@@ -358,3 +358,4 @@ export function simulatePayback(paybackAmountPaise: Paise, currentRateBps: numbe
     monthsTenureReduced,
   };
 }
+
