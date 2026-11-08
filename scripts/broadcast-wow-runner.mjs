@@ -169,7 +169,8 @@ export const WOW_STATEMENTS = [
 let currentIndex = 0;
 
 async function dispatchSingleRound(statementIndex = null, filterPhone = null) {
-  const timeSlotIndex = Math.floor(Date.now() / (5 * 60 * 1000)) % WOW_STATEMENTS.length;
+  // Deterministically advances to the next statement every 6 hours
+  const timeSlotIndex = Math.floor(Date.now() / (6 * 60 * 60 * 1000)) % WOW_STATEMENTS.length;
   const chosenIndex =
     statementIndex !== null
       ? statementIndex
