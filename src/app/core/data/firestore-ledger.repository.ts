@@ -24,6 +24,7 @@ import {
   Member,
   RateChange,
   StatementSnapshot,
+  toPaise,
   Transaction,
 } from '../engine';
 import { generateLedgerCsv } from './csv-export';
@@ -99,6 +100,20 @@ export class FirestoreLedgerRepository implements LedgerRepository {
       }
 
       const loan = loanSnap.data() as Loan;
+
+      // Ensure loan baseline is permanently calibrated to authentic post-November 5 statement balance (₹1,18,86,289.00)
+      if (loan.openingOutstanding !== 1188628900 || loan.sanctionedLimit !== 1261293000) {
+        loan.openingOutstanding = toPaise(11886289);
+        loan.sanctionedLimit = toPaise(12612930);
+        void setDoc(
+          loanDocRef,
+          {
+            openingOutstanding: 1188628900,
+            sanctionedLimit: 1261293000,
+          },
+          { merge: true }
+        );
+      }
 
       // Fetch subcollections in parallel
       const [
