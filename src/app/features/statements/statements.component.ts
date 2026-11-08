@@ -1142,9 +1142,10 @@ export class StatementsComponent {
   readonly activeTab = signal<'passbook' | 'monthly' | 'annual' | 'audit'>('passbook');
   readonly auditSummary = computed(() => getSbiAuditSummary());
 
-  // 1. Passbook Explorer State (Authentic Passbook PDF rows + user-recorded direct statement deposits)
+  // 1. Passbook Explorer State (Cloud Firestore statement records + user-recorded direct statement deposits)
   readonly allStatementRows = computed<SbiPassbookRow[]>(() => {
-    const staticRows = SBI_AUTHENTIC_STATEMENT_ROWS;
+    const cloudRows = this.ledgerStore.statementRecords();
+    const staticRows = cloudRows && cloudRows.length > 0 ? cloudRows : SBI_AUTHENTIC_STATEMENT_ROWS;
     const liveTxs = this.ledgerStore
       .transactions()
       .filter((t): t is BankPaymentTransaction => !t.deletedAt && t.type === 'bankPayment' && !t.id.startsWith('tx-sbi-'));

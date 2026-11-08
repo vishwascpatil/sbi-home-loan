@@ -29,7 +29,7 @@ import {
 } from '../engine';
 import { generateLedgerCsv } from './csv-export';
 import { LedgerRepository } from './ledger-repository.interface';
-import { getInitialSeedData } from './seed-data';
+import { SbiPassbookRow } from './sbi-statement-records';
 import { environment } from '../../../environments/environment';
 
 const PRIMARY_LOAN_ID = 'loan-primary';
@@ -48,6 +48,7 @@ export class FirestoreLedgerRepository implements LedgerRepository {
   private app: FirebaseApp;
   private db: Firestore;
   private inMemoryCache: LedgerState | null = null;
+  private statementRecordsCache: SbiPassbookRow[] = [];
   private readonly degradedSignal = signal<boolean>(false);
   private readonly errorSignal = signal<string | null>(null);
   private activeListeners: Unsubscribe[] = [];
@@ -92,16 +93,12 @@ export class FirestoreLedgerRepository implements LedgerRepository {
       const loanSnap = await getDoc(loanDocRef);
 
       if (!loanSnap.exists()) {
-        // First run: bootstrap Firestore with default 5 profiles and loan baseline
-        const seed = getInitialSeedData();
-        await this.bootstrapSeedData(seed);
-        this.inMemoryCache = seed;
-        return seed;
+        throw new Error('Primary loan document not found in Cloud Firestore. Run node scripts/provision-firebase.cjs to provision.');
       }
 
       const loan = loanSnap.data() as Loan;
 
-      // Ensure loan baseline is permanently calibrated to authentic post-November 5 statement balance (₹1,18,86,289.00)
+      // Ensure loan baseline is permanently calibrated to authentic statement balance (₹1,18,86,289.00)
       if (loan.openingOutstanding !== 1188628900 || loan.sanctionedLimit !== 1261293000) {
         loan.openingOutstanding = toPaise(11886289);
         loan.sanctionedLimit = toPaise(12612930);
@@ -123,6 +120,7 @@ export class FirestoreLedgerRepository implements LedgerRepository {
         snapshotsSnap,
         statementsSnap,
         auditLogSnap,
+        statementRecordsSnap,
       ] = await Promise.all([
         getDocs(collection(this.db, 'loans', PRIMARY_LOAN_ID, 'members')),
         getDocs(collection(this.db, 'loans', PRIMARY_LOAN_ID, 'transactions')),
@@ -130,6 +128,7 @@ export class FirestoreLedgerRepository implements LedgerRepository {
         getDocs(collection(this.db, 'loans', PRIMARY_LOAN_ID, 'snapshots')),
         getDocs(collection(this.db, 'loans', PRIMARY_LOAN_ID, 'statements')),
         getDocs(collection(this.db, 'loans', PRIMARY_LOAN_ID, 'auditLog')),
+        getDocs(collection(this.db, 'loans', PRIMARY_LOAN_ID, 'statementRecords')),
       ]);
 
       const mockIds = new Set([
@@ -155,63 +154,12 @@ export class FirestoreLedgerRepository implements LedgerRepository {
       const statements = statementsSnap.docs.map((d) => d.data() as StatementSnapshot);
       const auditLog = auditLogSnap.docs.map((d) => d.data() as AuditEntry);
 
-      // Ensure proper avatar paths and contact details for the 5 member profiles
-      const avatarMap: Record<string, string> = {
-        vishwas: 'profiles/vishwas.jpeg',
-        vikas: 'profiles/vikas.jpeg',
-        bhavya: 'profiles/bhavya.jpeg',
-        shruthi: 'profiles/shruthi.jpeg',
-        csp: 'profiles/csp.jpeg',
-        'direct statement': 'profiles/bank.svg',
-        'bank deposit': 'profiles/bank.svg',
-      };
-      const contactMap: Record<string, { phone: string; email?: string }> = {
-        vishwas: { phone: '8105242578', email: 'vishwascpatilonline@gmail.com' },
-        vikas: { phone: '9880413201', email: 'vikascpatil123@gmail.com' },
-        bhavya: { phone: '9902103979' },
-        shruthi: { phone: '9844586757' },
-        csp: { phone: '9880404025' },
-        'direct statement': { phone: '43054757071', email: 'sbi.od.43054757071@sbi.co.in' },
-        'bank deposit': { phone: '43054757071', email: 'sbi.od.43054757071@sbi.co.in' },
-      };
-      for (const m of members) {
-        const key = m.name.toLowerCase().trim();
-        if (!m.avatarUrl && avatarMap[key]) {
-          m.avatarUrl = avatarMap[key];
-        }
-        if (contactMap[key]) {
-          if (!m.phone) m.phone = contactMap[key].phone;
-          if (!m.email && contactMap[key].email) m.email = contactMap[key].email;
-        }
-      }
-
-      // Ensure the "Direct Statement" member is present for direct bank deposits
-      const hasDirectDepositMember = members.some(
-        (m) => m.id === 'mem-direct-deposit' || m.name.toLowerCase().includes('direct statement')
-      );
-      if (!hasDirectDepositMember) {
-        const directMember: Member = {
-          id: 'mem-direct-deposit',
-          name: 'Direct Statement',
-          active: true,
-          target: toPaise(0),
-          colorIndex: 5,
-          avatarUrl: 'profiles/bank.svg',
-          phone: '43054757071',
-          email: 'sbi.od.43054757071@sbi.co.in',
-          createdAt: '2024-06-12T00:00:00.000Z',
-          updatedAt: '2024-06-12T00:00:00.000Z',
-        };
-        members.push(directMember);
-        void setDoc(
-          doc(this.db, 'loans', PRIMARY_LOAN_ID, 'members', directMember.id),
-          cleanForFirestore(directMember)
-        );
-      }
+      // Cache authentic statement records directly from Cloud Firestore
+      this.statementRecordsCache = statementRecordsSnap.docs.map((d) => d.data() as SbiPassbookRow);
 
       const state: LedgerState = {
         loan,
-        members: members.length > 0 ? members : getInitialSeedData().members,
+        members,
         transactions,
         rateChanges,
         snapshots,
@@ -231,14 +179,14 @@ export class FirestoreLedgerRepository implements LedgerRepository {
       this.errorSignal.set(null);
       return state;
     } catch (err: unknown) {
-      // Offline fallback: Use seed data and operate in-memory if Firestore is unreachable
       const msg = err instanceof Error ? err.message : String(err);
       console.warn('[FirestoreLedgerRepository] load() failed (operating offline):', msg);
       this.degradedSignal.set(true);
       this.errorSignal.set(msg);
-      const seed = getInitialSeedData();
-      this.inMemoryCache = seed;
-      return seed;
+      if (this.inMemoryCache) {
+        return this.inMemoryCache;
+      }
+      throw err;
     }
   }
 
@@ -368,42 +316,8 @@ export class FirestoreLedgerRepository implements LedgerRepository {
     return generateLedgerCsv(current);
   }
 
-  private async bootstrapSeedData(seed: LedgerState): Promise<void> {
-    try {
-      const batch = writeBatch(this.db);
-
-      // Loan document
-      const loanDocRef = doc(this.db, 'loans', PRIMARY_LOAN_ID);
-      batch.set(loanDocRef, cleanForFirestore(seed.loan));
-
-      // The 5 Member profiles
-      for (const m of seed.members) {
-        const memRef = doc(this.db, 'loans', PRIMARY_LOAN_ID, 'members', m.id);
-        batch.set(memRef, cleanForFirestore(m));
-      }
-
-      // Initial transactions
-      for (const tx of seed.transactions) {
-        const txRef = doc(this.db, 'loans', PRIMARY_LOAN_ID, 'transactions', tx.id);
-        batch.set(txRef, cleanForFirestore(tx));
-      }
-
-      // Rate changes
-      for (const rc of seed.rateChanges) {
-        const rcRef = doc(this.db, 'loans', PRIMARY_LOAN_ID, 'rateChanges', rc.id);
-        batch.set(rcRef, cleanForFirestore(rc));
-      }
-
-      // Snapshots
-      for (const snap of seed.snapshots) {
-        const snapRef = doc(this.db, 'loans', PRIMARY_LOAN_ID, 'snapshots', snap.id);
-        batch.set(snapRef, cleanForFirestore(snap));
-      }
-
-      await batch.commit();
-    } catch (err: unknown) {
-      console.warn('[FirestoreLedgerRepository] bootstrapSeedData failed:', err);
-    }
+  getStatementRecords(): SbiPassbookRow[] {
+    return this.statementRecordsCache;
   }
 
   async savePushSubscription(subData: Record<string, unknown>): Promise<void> {

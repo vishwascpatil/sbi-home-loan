@@ -37,10 +37,11 @@ import {
   getRepaymentPaceAnalysis,
   SavedScenario,
   StatementSnapshot,
+  toPaise,
   Transaction,
   WithdrawalTransaction,
 } from '../engine';
-import { FirestoreLedgerRepository, getInitialSeedData } from '../data';
+import { FirestoreLedgerRepository, SbiPassbookRow } from '../data';
 import { SettingsStore } from './settings.store';
 
 @Injectable({
@@ -51,14 +52,39 @@ export class LedgerStore {
   private readonly settingsStore = inject(SettingsStore);
 
   // Core State Signals
-  readonly loan = signal<Loan>(getInitialSeedData().loan);
-  readonly members = signal<Member[]>(getInitialSeedData().members);
+  readonly loan = signal<Loan>({
+    id: 'loan-primary',
+    type: 'Overdraft (OD)',
+    accountNumber: '43054757071',
+    initialDisbursed: toPaise(13300000),
+    sanctionedLimit: toPaise(12612930),
+    regularEmi: toPaise(118900),
+    openingOutstanding: toPaise(11886289),
+    openingDate: '2024-06-12',
+    maturityDate: '2044-06-12',
+    currentRateBps: 790,
+    monthlyTarget: toPaise(240000),
+    calculationMethod: 'daily',
+    bankRules: {
+      dayCountBasis: 'actual/365',
+      debitFrequency: 'monthlyLastDay',
+      isCapitalised: true,
+      customDebitDay: 30,
+    },
+    createdAt: '2024-06-12T00:00:00.000Z',
+    updatedAt: new Date().toISOString(),
+  });
+  readonly members = signal<Member[]>([]);
   readonly transactions = signal<Transaction[]>([]);
   readonly rateChanges = signal<RateChange[]>([]);
   readonly snapshots = signal<BalanceSnapshot[]>([]);
   readonly interestEntries = signal<InterestEntry[]>([]);
   readonly statements = signal<StatementSnapshot[]>([]);
   readonly auditLog = signal<AuditEntry[]>([]);
+
+  readonly statementRecords = computed<SbiPassbookRow[]>(() => {
+    return this.repo.getStatementRecords();
+  });
 
   readonly isLoading = signal<boolean>(true);
   readonly storageWarning = computed<string | null>(() => {
@@ -543,10 +569,9 @@ export class LedgerStore {
   }
 
   async loadSampleData(): Promise<void> {
-    const seed = getInitialSeedData();
-    this.syncState(seed);
-    await this.repo.save(seed);
-    await this.logAuditAndSave('restore', 'backup', 'sample-seed', undefined, { action: 'loadSampleData' });
+    const loaded = await this.repo.load();
+    this.syncState(loaded);
+    await this.logAuditAndSave('restore', 'backup', 'cloud-sync', undefined, { action: 'loadSampleData' });
   }
 
   async clearAllData(): Promise<void> {
