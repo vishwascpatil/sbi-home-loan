@@ -155,7 +155,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
             aria-label="OD Interest Bleed on Withdrawals"
           >
             <div class="card-header-line">
-              <span class="card-tag tag-coral">⚠️ Interest Bleed</span>
+              <span class="card-tag tag-coral">Interest Bleed</span>
               <span class="card-chevron">›</span>
             </div>
             <div class="card-metric-val tabular-nums text-coral">
