@@ -578,19 +578,28 @@ import {
       line-height: 1.15;
     }
 
-    /* Filter Strip */
+    /* Passbook View & Filter Strip */
+    .passbook-view {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
     .filter-strip {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 12px;
+      margin: 2px 0 4px;
     }
 
     .category-chips-track {
       display: flex;
-      gap: 6px;
+      align-items: center;
+      gap: 8px;
       overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
-      padding: 2px 0;
+      padding: 4px 2px;
 
       &::-webkit-scrollbar {
         display: none;
@@ -598,18 +607,19 @@ import {
     }
 
     .cat-chip {
-      height: 32px;
-      padding: 0 14px;
+      height: 36px;
+      padding: 0 16px;
       border-radius: 99px;
-      border: 1px solid var(--line, rgba(0, 0, 0, 0.06));
+      border: 1px solid var(--line, rgba(0, 0, 0, 0.08));
       background: var(--card, #ffffff);
       color: var(--muted, #767a90);
-      font-size: 0.78rem;
+      font-size: 0.82rem;
       font-weight: 700;
       white-space: nowrap;
       cursor: pointer;
       flex-shrink: 0;
-      transition: all 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
       &:active {
         transform: scale(0.96);
@@ -619,41 +629,56 @@ import {
         background: #15172b;
         color: #ffffff;
         border-color: transparent;
+        box-shadow: 0 2px 8px rgba(21, 23, 43, 0.18);
       }
     }
 
     .refine-bar {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
     .refine-select {
-      height: 30px;
-      padding: 0 10px;
+      height: 34px;
+      padding: 0 28px 0 12px;
       border-radius: 99px;
-      border: 1px solid var(--line, rgba(0, 0, 0, 0.06));
+      border: 1px solid var(--line, rgba(0, 0, 0, 0.08));
       background: var(--card, #ffffff);
-      color: var(--muted, #767a90);
-      font-size: 0.74rem;
+      color: var(--muted, #555b72);
+      font-size: 0.78rem;
       font-weight: 700;
       cursor: pointer;
       outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='none' stroke='%23767a90' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+      transition: all 0.2s ease;
+
+      &:focus {
+        border-color: #6c4cff;
+      }
     }
 
     .sort-chip-btn {
-      height: 30px;
-      padding: 0 12px;
+      height: 34px;
+      padding: 0 14px;
       border-radius: 99px;
       border: 1px solid var(--line, rgba(0, 0, 0, 0.08));
       background: var(--card, #ffffff);
       color: var(--ink, #15172b);
-      font-size: 0.74rem;
+      font-size: 0.78rem;
       font-weight: 700;
       cursor: pointer;
       white-space: nowrap;
       display: inline-flex;
       align-items: center;
+      gap: 6px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
       transition: all 0.2s ease;
 
       &:active {
@@ -662,23 +687,28 @@ import {
     }
 
     .reset-chip-btn {
-      height: 30px;
-      padding: 0 10px;
+      height: 34px;
+      padding: 0 14px;
       border-radius: 99px;
       border: 1px solid rgba(238, 77, 107, 0.3);
       background: rgba(238, 77, 107, 0.08);
       color: #ee4d6b;
-      font-size: 0.74rem;
+      font-size: 0.76rem;
       font-weight: 700;
       cursor: pointer;
       margin-left: auto;
+      transition: all 0.2s ease;
+
+      &:active {
+        transform: scale(0.96);
+      }
     }
 
     /* Minimalist Transaction Feed */
     .tx-feed {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
     }
 
     .tx-card {
