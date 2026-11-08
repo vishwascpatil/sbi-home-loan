@@ -56,19 +56,19 @@ import {
 
       <!-- 2 Big Numbers Side by Side -->
       <div class="big-numbers-grid">
-        <!-- Number 1: Net Injected in OD (Default) or Gross -->
+        <!-- Number 1: Paid (Net default) or Total (Gross) -->
         <div class="big-num-card card-paid">
           <div class="num-top-row">
             <span class="num-label">
-              {{ isNet() ? 'Net Injected' : 'Gross Deposits' }}
+              {{ isNet() ? 'Paid' : 'Total' }}
             </span>
             <button
               type="button"
               class="net-toggle-btn"
               (click)="toggleNet()"
-              title="Toggle between Net retained in OD and Gross total deposits"
+              title="Toggle between Net and Gross deposits"
             >
-              {{ isNet() ? 'Show Gross' : 'Show Net' }}
+              {{ isNet() ? 'Gross' : 'Net' }}
             </button>
           </div>
           <div class="num-value text-emerald tabular-nums">
@@ -81,7 +81,7 @@ import {
 
         <!-- Number 2: Interest Added Till Now -->
         <div class="big-num-card card-supposed">
-          <span class="num-label">Interest Debited</span>
+          <span class="num-label">Interest</span>
           <div class="num-value text-muted tabular-nums">
             {{ formatCompactPaise(pace().totalInterestAddedSoFar) }}
           </div>
@@ -125,7 +125,7 @@ import {
       @if (isProofOpen() && compareMode() === 'bank') {
         <div class="proof-drawer">
           <div class="proof-step">
-            <span class="step-lbl">1. {{ isNet() ? 'Net Injected' : 'Gross Deposits' }}</span>
+            <span class="step-lbl">1. {{ isNet() ? 'Paid' : 'Total' }}</span>
             <strong class="tabular-nums">{{ formatPaise(currentPaidAmount()) }}</strong>
           </div>
           <div class="proof-step">
