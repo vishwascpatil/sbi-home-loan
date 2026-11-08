@@ -31,9 +31,12 @@ import {
   PushNotificationService,
   saveLocalSmsConfig,
   SmsGatewayConfig,
+  TARGET_FAMILY_PHONE_NUMBERS,
   toPaise,
   toRupees,
   triggerHaptic,
+  WOW_STATEMENTS,
+  WowStatement,
   ZERO_PAISE,
 } from '../../core/engine';
 import { FirestoreLedgerRepository } from '../../core/data/firestore-ledger.repository';
@@ -703,6 +706,125 @@ import { FirestoreLedgerRepository } from '../../core/data/firestore-ledger.repo
           {{ smsStatusMessage() }}
         </div>
       }
+    </div>
+
+    <!-- SECTION C: 5-MINUTE FUNNY WOW NOTIFICATION HUB (20 STATEMENTS) -->
+    <div class="settings-sub-panel wow-sub-panel" style="margin-top: 14px;">
+      <div class="sub-panel-header">
+        <div class="panel-icon-wrap wow-icon">
+          <span style="font-size: 18px;">🎭</span>
+        </div>
+        <div class="sub-panel-text">
+          <h4 class="sub-panel-title">5-Min WOW Notification Hub (20 Funny Statements)</h4>
+          <p class="sub-panel-desc">
+            Continuous round-robin notifications &amp; SMS to Vishwas, Vikas, Bhavya, CSP &amp; Shruthi.
+          </p>
+        </div>
+        <div
+          class="status-pill"
+          [class.granted]="pushService.isFiveMinTimerActive()"
+        >
+          {{ pushService.isFiveMinTimerActive() ? '● Loop Active (' + pushService.nextTriggerSeconds() + 's)' : '○ Standby' }}
+        </div>
+      </div>
+
+      <!-- Live WOW Statement Carousel Card -->
+      <div class="wow-card-viewer">
+        <div class="wow-card-top">
+          <span class="wow-badge">#{{ currentWowStatement().id }} of 20 · {{ currentWowStatement().tag }}</span>
+          <span class="wow-target-hint">Target: All 5 Family Numbers</span>
+        </div>
+        <h3 class="wow-headline">{{ currentWowStatement().title }}</h3>
+        <p class="wow-body-text">{{ currentWowStatement().body }}</p>
+
+        <!-- Carousel navigation -->
+        <div class="wow-nav-controls">
+          <button type="button" class="wow-nav-btn" (click)="prevWowStatement()" aria-label="Previous statement">
+            ◀ Previous
+          </button>
+          <button type="button" class="wow-nav-btn random-btn" (click)="randomWowStatement()" aria-label="Random statement">
+            🎲 Random
+          </button>
+          <button type="button" class="wow-nav-btn" (click)="nextWowStatement()" aria-label="Next statement">
+            Next ▶
+          </button>
+        </div>
+      </div>
+
+      <!-- Interval Selector -->
+      <div class="interval-selection-row">
+        <span class="interval-label">Loop Cadence:</span>
+        <div class="interval-pill-group">
+          <button
+            type="button"
+            class="interval-pill"
+            [class.active]="selectedLoopInterval() === 5"
+            (click)="setLoopInterval(5)"
+          >
+            5 Mins (Standard)
+          </button>
+          <button
+            type="button"
+            class="interval-pill"
+            [class.active]="selectedLoopInterval() === 1"
+            (click)="setLoopInterval(1)"
+          >
+            1 Min
+          </button>
+          <button
+            type="button"
+            class="interval-pill demo-pill"
+            [class.active]="selectedLoopInterval() === 0.16"
+            (click)="setLoopInterval(0.16)"
+            title="10-second fast demonstration for instant testing"
+          >
+            ⚡ 10s (Fast Demo)
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Action Buttons -->
+      <div class="panel-action-grid">
+        <button
+          type="button"
+          class="panel-btn wow-loop-btn"
+          [class.active-loop]="pushService.isFiveMinTimerActive()"
+          (click)="toggleFiveMinAutoLoop()"
+        >
+          @if (pushService.isFiveMinTimerActive()) {
+            ⏹️ Stop Notification Loop
+          } @else {
+            ⏱️ Start 5-Min Notification Loop
+          }
+        </button>
+
+        <button
+          type="button"
+          class="panel-btn test-push-btn"
+          (click)="triggerCurrentWowPush()"
+          [disabled]="isSendingWowPush()"
+        >
+          {{ isSendingWowPush() ? 'Firing Push...' : '⚡ Trigger This Lock-Screen Push Now' }}
+        </button>
+      </div>
+
+      <!-- Quick WhatsApp Send to all 5 Family Members -->
+      <div class="direct-chips-container" style="margin-top: 14px;">
+        <span class="direct-label">Send this WOW quote instantly via WhatsApp:</span>
+        <div class="chips-row">
+          @for (m of targetFamilyMembers; track m.phone) {
+            <a
+              [href]="getWowWhatsAppUrl(m.phone, currentWowStatement())"
+              target="_blank"
+              class="direct-phone-chip"
+              [title]="'Send to ' + m.name + ' (' + m.role + ')'"
+            >
+              <span>{{ m.name }}</span>
+              <small>({{ m.phone }})</small>
+            </a>
+          }
+        </div>
+      </div>
     </div>
   </div>
 }
@@ -2156,6 +2278,155 @@ import { FirestoreLedgerRepository } from '../../core/data/firestore-ledger.repo
       }
     }
 
+    /* WOW 5-Min Hub Styles */
+    .wow-sub-panel {
+      border-color: rgba(108, 76, 255, 0.22);
+      background: linear-gradient(180deg, rgba(108, 76, 255, 0.03) 0%, rgba(0, 0, 0, 0.02) 100%);
+    }
+
+    .wow-icon {
+      background: linear-gradient(135deg, rgba(108, 76, 255, 0.2) 0%, rgba(255, 95, 158, 0.2) 100%);
+    }
+
+    .wow-card-viewer {
+      background: var(--card, #ffffff);
+      border: 1px solid var(--line-strong, rgba(0, 0, 0, 0.08));
+      border-radius: 16px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    }
+
+    .wow-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .wow-badge {
+      font-size: 11px;
+      font-weight: 800;
+      color: #6c4cff;
+      background: rgba(108, 76, 255, 0.1);
+      padding: 3px 8px;
+      border-radius: 99px;
+      letter-spacing: 0.02em;
+    }
+
+    .wow-target-hint {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .wow-headline {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--ink);
+      margin: 0;
+      line-height: 1.35;
+    }
+
+    .wow-body-text {
+      font-size: 12.5px;
+      color: var(--ink-secondary, #4b4c52);
+      margin: 0;
+      line-height: 1.45;
+    }
+
+    .wow-nav-controls {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .wow-nav-btn {
+      flex: 1;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--bg, #f2f3f6);
+      border: 1px solid var(--line, rgba(0, 0, 0, 0.06));
+      color: var(--ink);
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: background 0.15s ease;
+
+      &:hover {
+        background: #e5e7eb;
+      }
+
+      &.random-btn {
+        background: rgba(108, 76, 255, 0.08);
+        color: #6c4cff;
+      }
+    }
+
+    .interval-selection-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+
+    .interval-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .interval-pill-group {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .interval-pill {
+      border: 1px solid var(--line-strong, rgba(0, 0, 0, 0.08));
+      background: var(--bg, #f2f3f6);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 99px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+
+      &:hover {
+        color: var(--ink);
+      }
+
+      &.active {
+        background: var(--ink);
+        color: #ffffff;
+        border-color: var(--ink);
+      }
+
+      &.demo-pill.active {
+        background: #f59e0b;
+        border-color: #f59e0b;
+        color: #ffffff;
+      }
+    }
+
+    .wow-loop-btn {
+      background: linear-gradient(135deg, #6c4cff 0%, #4f35ff 100%);
+      color: #ffffff;
+      box-shadow: 0 6px 16px -3px rgba(108, 76, 255, 0.4);
+
+      &.active-loop {
+        background: #ef4444;
+        box-shadow: 0 6px 16px -3px rgba(239, 68, 68, 0.4);
+      }
+    }
+
     /* Warning Card */
     .alert-warning-card {
       background: rgba(245, 159, 0, 0.12);
@@ -2355,6 +2626,63 @@ export class SettingsComponent {
   getMonthlyReminderWhatsApp(member?: Member): string {
     if (!member) return '';
     return buildMonthlyDueReminder(member, this.ledgerStore.ledgerState()).whatsappUrl;
+  }
+
+  readonly wowStatements = WOW_STATEMENTS;
+  readonly targetFamilyMembers = TARGET_FAMILY_PHONE_NUMBERS;
+  readonly isSendingWowPush = signal(false);
+  readonly selectedLoopInterval = signal<number>(5);
+
+  currentWowStatement(): WowStatement {
+    return this.pushService.getCurrentWowStatement();
+  }
+
+  nextWowStatement(): void {
+    triggerHaptic('light');
+    this.pushService.nextWowStatement();
+  }
+
+  prevWowStatement(): void {
+    triggerHaptic('light');
+    this.pushService.prevWowStatement();
+  }
+
+  randomWowStatement(): void {
+    triggerHaptic('selection');
+    const randomIdx = Math.floor(Math.random() * WOW_STATEMENTS.length);
+    this.pushService.setWowStatementIndex(randomIdx);
+  }
+
+  async triggerCurrentWowPush(): Promise<void> {
+    this.isSendingWowPush.set(true);
+    triggerHaptic('medium');
+    const res = await this.pushService.sendWowNotification();
+    this.pushTestStatus.set(res.message);
+    this.isSendingWowPush.set(false);
+  }
+
+  toggleFiveMinAutoLoop(): void {
+    triggerHaptic('selection');
+    if (this.pushService.isFiveMinTimerActive()) {
+      this.pushService.stopFiveMinuteTimer();
+    } else {
+      this.pushService.startFiveMinuteTimer(this.selectedLoopInterval());
+    }
+  }
+
+  setLoopInterval(minutes: number): void {
+    triggerHaptic('selection');
+    this.selectedLoopInterval.set(minutes);
+    if (this.pushService.isFiveMinTimerActive()) {
+      this.pushService.startFiveMinuteTimer(minutes);
+    }
+  }
+
+  getWowWhatsAppUrl(phone: string, statement: WowStatement): string {
+    const text = `${statement.title}\n\n${statement.body}\n\nLive Tracker: https://vishwascpatil.github.io/sbi-home-loan/`;
+    const clean = phone.replace(/\D/g, '');
+    const phoneParam = clean.startsWith('91') ? clean : `91${clean}`;
+    return `https://wa.me/${phoneParam}?text=${encodeURIComponent(text)}`;
   }
 
   downloadExcel(): void {

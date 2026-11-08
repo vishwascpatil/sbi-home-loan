@@ -1,5 +1,6 @@
-import { Injectable, signal, inject } from '@angular/core';
+import { Injectable, signal, inject, OnDestroy } from '@angular/core';
 import { FirestoreLedgerRepository } from '../data/firestore-ledger.repository';
+import { WOW_STATEMENTS, WowStatement } from './wow-statements';
 
 export const VAPID_PUBLIC_KEY =
   'BOszAne7k25hJNMQtwmE-kXuDhNgmyKpePhwCsk_3xZvJa1kgFIiP2lVtlIK127Q837t164rWc8eQ-C06lvHY3Y';
@@ -24,7 +25,7 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 @Injectable({
   providedIn: 'root',
 })
-export class PushNotificationService {
+export class PushNotificationService implements OnDestroy {
   private readonly repo = inject(FirestoreLedgerRepository);
 
   readonly isSupported = typeof window !== 'undefined' && 'Notification' in window;
@@ -34,6 +35,14 @@ export class PushNotificationService {
   readonly isSubscribed = signal<boolean>(false);
   readonly isBusy = signal<boolean>(false);
   readonly lastMessage = signal<string | null>(null);
+
+  // 5-Minute WOW Statements Queue & Loop
+  readonly currentWowIndex = signal<number>(0);
+  readonly isFiveMinTimerActive = signal<boolean>(false);
+  readonly nextTriggerSeconds = signal<number>(0);
+  readonly activeIntervalMinutes = signal<number>(5);
+
+  private countdownIntervalId: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     this.checkExistingSubscription();
@@ -194,5 +203,83 @@ export class PushNotificationService {
       this.lastMessage.set(`Failed to trigger notification: ${errMsg}`);
       return { success: false, message: errMsg, error: errMsg };
     }
+  }
+
+  // =========================================================================
+  // 5-Minute WOW Statements Management & Timer Loop
+  // =========================================================================
+
+  getCurrentWowStatement(): WowStatement {
+    return WOW_STATEMENTS[this.currentWowIndex() % WOW_STATEMENTS.length];
+  }
+
+  setWowStatementIndex(idx: number): void {
+    const safeIdx = ((idx % WOW_STATEMENTS.length) + WOW_STATEMENTS.length) % WOW_STATEMENTS.length;
+    this.currentWowIndex.set(safeIdx);
+  }
+
+  nextWowStatement(): WowStatement {
+    const nextIdx = (this.currentWowIndex() + 1) % WOW_STATEMENTS.length;
+    this.currentWowIndex.set(nextIdx);
+    return WOW_STATEMENTS[nextIdx];
+  }
+
+  prevWowStatement(): WowStatement {
+    const prevIdx = (this.currentWowIndex() - 1 + WOW_STATEMENTS.length) % WOW_STATEMENTS.length;
+    this.currentWowIndex.set(prevIdx);
+    return WOW_STATEMENTS[prevIdx];
+  }
+
+  async sendWowNotification(customStatement?: WowStatement): Promise<PushResult> {
+    const stmt = customStatement || this.getCurrentWowStatement();
+    return this.sendLocalTestNotification(stmt.title, stmt.body);
+  }
+
+  /**
+   * Starts periodic lock-screen notification delivery.
+   * Default: 5 minutes (300 seconds), can also be 1 minute or 10-second demo.
+   */
+  startFiveMinuteTimer(intervalMinutes = 5): void {
+    this.stopFiveMinuteTimer();
+    this.activeIntervalMinutes.set(intervalMinutes);
+    this.isFiveMinTimerActive.set(true);
+
+    const totalSeconds = intervalMinutes < 1 ? 10 : Math.round(intervalMinutes * 60);
+    this.nextTriggerSeconds.set(totalSeconds);
+
+    // Immediately dispatch current WOW statement
+    void this.sendWowNotification();
+
+    // 1-second interval tracker
+    this.countdownIntervalId = setInterval(() => {
+      const remaining = this.nextTriggerSeconds();
+      if (remaining <= 1) {
+        this.nextTriggerSeconds.set(totalSeconds);
+        this.nextWowStatement();
+        void this.sendWowNotification();
+      } else {
+        this.nextTriggerSeconds.set(remaining - 1);
+      }
+    }, 1000);
+
+    this.lastMessage.set(
+      `✓ Auto-broadcast started: firing a funny WOW notification every ${
+        intervalMinutes < 1 ? '10 seconds (Demo)' : intervalMinutes + ' mins'
+      }!`
+    );
+  }
+
+  stopFiveMinuteTimer(): void {
+    if (this.countdownIntervalId) {
+      clearInterval(this.countdownIntervalId);
+      this.countdownIntervalId = null;
+    }
+    this.isFiveMinTimerActive.set(false);
+    this.nextTriggerSeconds.set(0);
+    this.lastMessage.set('Auto-broadcast timer stopped.');
+  }
+
+  ngOnDestroy(): void {
+    this.stopFiveMinuteTimer();
   }
 }

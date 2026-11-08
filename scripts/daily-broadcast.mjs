@@ -1,4 +1,5 @@
 import { setVapidDetails, sendNotification } from 'web-push';
+import { WOW_STATEMENTS } from './broadcast-wow-runner.mjs';
 
 const PROJECT_ID = 'loan-emi-tracker-61c10';
 const PRIMARY_LOAN_ID = 'loan-primary';
@@ -95,6 +96,9 @@ async function runDailyBroadcast() {
   console.log(`⚡ Daily Interest Accrued: +₹${dailyIntStr}`);
   console.log(`🏦 New Total Loan Balance: ₹${totalOutStr}\n`);
 
+  const todayWow = WOW_STATEMENTS[new Date().getDate() % WOW_STATEMENTS.length];
+  console.log(`💬 Today's Featured WOW Statement (#${todayWow.id}): "${todayWow.title}"`);
+
   // =========================================================================
   // STEP 3: Dispatch Web Push Notifications to all Registered Apple / Web Devices
   // =========================================================================
@@ -110,8 +114,8 @@ async function runDailyBroadcast() {
 
       const payload = JSON.stringify({
         notification: {
-          title: '🏦 SBI Maxgain OD Daily Update',
-          body: `Debt: ₹${formatRupees(principalPaise)} (${clearedPct}% paid down) | OD Buffer: ₹${odBufferStr} (Saves +₹${odSavingsStr}/day) | Today's interest: +₹${dailyIntStr}`,
+          title: todayWow.title,
+          body: `${todayWow.body} (Debt: ₹${formatRupees(principalPaise)} | OD Buffer: ₹${odBufferStr})`,
           icon: '/sbi-home-loan/icons/icon-192x192.png',
           badge: '/sbi-home-loan/icons/icon-72x72.png',
           data: {
@@ -154,11 +158,10 @@ async function runDailyBroadcast() {
   // =========================================================================
   console.log('\n--- [Step 2] Dispatching Carrier SMS via Fast2SMS ---');
   const smsMessage =
-    `SBI Maxgain (${dateStr}): ` +
-    `Debt ₹${formatRupees(principalPaise)} (${clearedPct}% cleared). ` +
+    `${todayWow.title}\n` +
+    `SBI Maxgain: Debt ₹${formatRupees(principalPaise)} (${clearedPct}% cleared). ` +
     `OD Buffer: ₹${odBufferStr} saves Rs ${odSavingsStr}/day. ` +
-    `Today's interest +Rs ${dailyIntStr}. ` +
-    `View: https://vishwascpatil.github.io/sbi-home-loan/`;
+    `Live: https://vishwascpatil.github.io/sbi-home-loan/`;
 
   console.log('SMS Message Payload:');
   console.log(smsMessage);

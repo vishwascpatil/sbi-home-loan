@@ -21,4 +21,5 @@ export * from './sbi-payments-audit';
 export * from './sbi-daily-ledger';
 export * from './pdf-statement-parser';
 export * from './repayment-pace';
+export * from './wow-statements';
 

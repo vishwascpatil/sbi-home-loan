@@ -10,7 +10,10 @@
     "test": "ng test",
     "lint": "ng lint",
     "test:e2e": "playwright test",
-    "format": "prettier --write \"src/**/*.{ts,html,scss}\""
+    "format": "prettier --write \"src/**/*.{ts,html,scss}\"",
+    "broadcast:daily": "node scripts/daily-broadcast.mjs",
+    "broadcast:wow": "node scripts/broadcast-wow-runner.mjs",
+    "broadcast:wow:loop": "node scripts/broadcast-wow-runner.mjs --interval=5"
   },
   "dependencies": {
     "@angular/cdk": "^22.2.5",
