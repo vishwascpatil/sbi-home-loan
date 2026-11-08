@@ -83,18 +83,31 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
           </div>
         </div>
 
-        <a
-          routerLink="/settings"
-          class="top-circle-action-btn"
-          aria-label="Settings"
-          title="Settings"
-          (click)="triggerNavHaptic()"
-        >
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-          </svg>
-        </a>
+        <div class="top-action-cluster">
+          <a
+            routerLink="/statements"
+            class="top-statement-badge-btn"
+            aria-label="View SBI Statements"
+            title="SBI Passbook Statements (101 txns)"
+            (click)="triggerNavHaptic()"
+          >
+            <span class="btn-icon">📋</span>
+            <span class="btn-text">Statements</span>
+          </a>
+
+          <a
+            routerLink="/settings"
+            class="top-circle-action-btn"
+            aria-label="Settings"
+            title="Settings"
+            (click)="triggerNavHaptic()"
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+          </a>
+        </div>
       </header>
 
       <!-- Storage / Cloud Sync Warning Banner -->
@@ -134,6 +147,16 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
             <span class="lightning-bolt">⚡</span>
             <span>{{ (ledgerStore.loan().currentRateBps / 100).toFixed(2) }}% p.a. · Overdraft</span>
           </div>
+
+          <a
+            routerLink="/statements"
+            class="hero-statement-pill"
+            (click)="$event.stopPropagation(); triggerNavHaptic()"
+            title="View full passbook statement (101 txns)"
+          >
+            <span>Passbook (101)</span>
+            <span class="chevron-micro">›</span>
+          </a>
         </div>
 
         <div class="hero-main-stat">
@@ -409,9 +432,14 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       <section class="home-section">
         <div class="section-title-bar">
           <h2 class="section-main-heading">Recent Payments</h2>
-          <button type="button" class="section-see-all-btn" (click)="router.navigate(['/members/history'])">
-            View all ›
-          </button>
+          <div class="title-action-group">
+            <a routerLink="/statements" class="section-statement-pill" (click)="triggerNavHaptic()">
+              📋 Full Statement ›
+            </a>
+            <button type="button" class="section-see-all-btn" (click)="router.navigate(['/members/history'])">
+              History ›
+            </button>
+          </div>
         </div>
 
         <div class="squircle-items-list">
@@ -758,6 +786,81 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
 
       &:active {
         transform: scale(0.94);
+      }
+    }
+
+    .top-action-cluster {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .top-statement-badge-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 40px;
+      padding: 0 14px;
+      border-radius: 99px;
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      color: #111216;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 800;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &:hover {
+        background: #6c4cff;
+        color: #ffffff;
+        border-color: #6c4cff;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(108, 76, 255, 0.25);
+      }
+    }
+
+    .hero-statement-pill {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 800;
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      padding: 5px 12px;
+      border-radius: 99px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: translateY(-1px);
+      }
+    }
+
+    .title-action-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-statement-pill {
+      font-size: 12px;
+      font-weight: 800;
+      color: #6c4cff;
+      background: rgba(108, 76, 255, 0.08);
+      border: 1px solid rgba(108, 76, 255, 0.18);
+      padding: 4px 12px;
+      border-radius: 99px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: #6c4cff;
+        color: #ffffff;
       }
     }
 
