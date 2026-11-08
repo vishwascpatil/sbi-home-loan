@@ -169,7 +169,11 @@ export const WOW_STATEMENTS = [
 let currentIndex = 0;
 
 async function dispatchSingleRound(statementIndex = null, filterPhone = null) {
-  const chosenIndex = statementIndex !== null ? statementIndex : (currentIndex % WOW_STATEMENTS.length);
+  const timeSlotIndex = Math.floor(Date.now() / (5 * 60 * 1000)) % WOW_STATEMENTS.length;
+  const chosenIndex =
+    statementIndex !== null
+      ? statementIndex
+      : ((currentIndex > 0 ? currentIndex : timeSlotIndex) % WOW_STATEMENTS.length);
   const statement = WOW_STATEMENTS[chosenIndex];
   currentIndex++;
 
