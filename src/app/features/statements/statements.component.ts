@@ -10,10 +10,12 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { LedgerStore } from '../../core/state';
 import {
+  BankPaymentTransaction,
   formatCompactPaise,
   formatPaise,
   FinancialYearSummary,
   getSbiAuditSummary,
+  outstandingAt,
   Paise,
   paise,
   StatementSnapshot,
@@ -101,7 +103,7 @@ import {
               <span class="brand-badge badge-passbook">AUTHENTIC STATEMENT</span>
               <h2 class="doc-title">SBI Maxgain Passbook Explorer</h2>
               <span class="loan-account-num">
-                A/C No: <strong>{{ ledgerStore.loan().accountNumber }}</strong> · 01-Jun-2024 to 07-Nov-2026 (101 Transactions)
+                A/C No: <strong>{{ ledgerStore.loan().accountNumber }}</strong> · 01-Jun-2024 to Present ({{ allStatementRows().length }} Transactions)
               </span>
             </div>
             <button type="button" class="btn btn-secondary no-print" (click)="printStatement()">
@@ -1860,8 +1862,45 @@ export class StatementsComponent {
   readonly activeTab = signal<'passbook' | 'monthly' | 'annual' | 'audit'>('passbook');
   readonly auditSummary = computed(() => getSbiAuditSummary());
 
-  // 1. Passbook Explorer State
-  readonly allStatementRows = SBI_AUTHENTIC_STATEMENT_ROWS;
+  // 1. Passbook Explorer State (Authentic Passbook PDF rows + user-recorded direct statement deposits)
+  readonly allStatementRows = computed<SbiPassbookRow[]>(() => {
+    const staticRows = SBI_AUTHENTIC_STATEMENT_ROWS;
+    const liveTxs = this.ledgerStore
+      .transactions()
+      .filter((t): t is BankPaymentTransaction => !t.deletedAt && t.type === 'bankPayment' && !t.id.startsWith('tx-sbi-'));
+
+    if (liveTxs.length === 0) {
+      return staticRows;
+    }
+
+    const dynamicRows: SbiPassbookRow[] = liveTxs.map((t) => {
+      const parts = (t.valueDate || t.date).split('-');
+      const y = parts[0] || '2026';
+      const m = parts[1] || '11';
+      const d = parts[2] || '01';
+      const postDate = `${d}/${m}/${y}`;
+      const creditPaise = t.amount;
+      const balancePaise = outstandingAt(t.date, this.ledgerStore.ledgerState());
+      return {
+        id: t.id,
+        postDate,
+        valueDate: postDate,
+        isoDate: t.date,
+        desc: t.notes || 'DEP DIRECT TO STATEMENT - ' + t.mode,
+        refNo: t.reference || 'DIRECT-DEP',
+        type: 'credit' as const,
+        category: 'prepayment' as const,
+        debitPaise: paise(0),
+        creditPaise,
+        balancePaise,
+        rawDebit: '',
+        rawCredit: (creditPaise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+        rawBalance: (balancePaise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+      };
+    });
+
+    return [...dynamicRows, ...staticRows].sort((a, b) => b.isoDate.localeCompare(a.isoDate));
+  });
   readonly searchQuery = signal<string>('');
   readonly selectedCategory = signal<string>('all');
   readonly selectedYear = signal<string>('all');
@@ -1925,12 +1964,12 @@ export class StatementsComponent {
       case 'prepayment': return 'Ad-Hoc Lump-Sum Prepayments';
       case 'interest_debit': return 'Monthly SBI Interest Debits';
       case 'withdrawal': return 'Non-Loan Withdrawals from OD';
-      default: return 'All 101 Passbook Transactions';
+      default: return `All ${this.allStatementRows().length} Passbook Transactions`;
     }
   });
 
   readonly filteredRows = computed(() => {
-    let rows = [...this.allStatementRows];
+    let rows = [...this.allStatementRows()];
     const q = this.searchQuery().toLowerCase().trim();
     const cat = this.selectedCategory();
     const yr = this.selectedYear();

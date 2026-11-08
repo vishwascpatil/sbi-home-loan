@@ -55,6 +55,11 @@ const KNOWN_AVATARS: Record<string, string> = {
   bhavya: 'profiles/bhavya.jpeg',
   shruthi: 'profiles/shruthi.jpeg',
   csp: 'profiles/csp.jpeg',
+  'direct statement': 'profiles/bank.svg',
+  'bank deposit': 'profiles/bank.svg',
+  'statement deposit': 'profiles/bank.svg',
+  'sbi statement': 'profiles/bank.svg',
+  bank: 'profiles/bank.svg',
 };
 
 const MEMBER_GRADIENTS = [

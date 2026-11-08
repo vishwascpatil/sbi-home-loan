@@ -233,6 +233,7 @@ export class LedgerStore {
   }
 
   async recordBankPayment(params: {
+    memberId?: string;
     amount: Paise;
     interestPortion?: Paise;
     date: string;
@@ -259,9 +260,10 @@ export class LedgerStore {
             params.interestPortion
           );
 
-    const tx: Transaction = {
+    const tx: BankPaymentTransaction = {
       id: crypto.randomUUID(),
       type: 'bankPayment',
+      memberId: params.memberId,
       amount: params.amount,
       interestPortion: split.interestPortion,
       principalPortion: split.principalPortion,

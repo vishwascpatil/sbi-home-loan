@@ -130,6 +130,7 @@ export interface ContributionTransaction extends BaseEntity {
 
 export interface BankPaymentTransaction extends BaseEntity {
   type: 'bankPayment';
+  memberId?: string;
   amount: Paise;
   interestPortion: Paise;
   principalPortion: Paise;

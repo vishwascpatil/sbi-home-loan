@@ -191,19 +191,18 @@ export function getSbiDailyLedger(
       });
     }
 
-    // Member contributions from "Add Payment" are NEVER included in daily balance or interest calculations.
-    // Calculations for every formula come strictly from the authentic statement PDF.
-    if (period >= '2026-11' && dayLiveTxs.length > 0) {
+    // Apply live user-recorded direct statement deposits
+    if (dayLiveTxs.length > 0) {
       for (const lt of dayLiveTxs) {
-        if (lt.type === 'bankPayment') {
+        if (lt.type === 'bankPayment' && !lt.id.startsWith('tx-sbi-')) {
           dayMovements -= lt.principalPortion;
           totalCredits += lt.amount;
           currentBalance = paise(Math.max(0, currentBalance - lt.principalPortion));
           txDetails.push({
-            desc: lt.notes || 'Recorded Bank Payment',
+            desc: lt.notes || 'Direct Statement Deposit',
             type: 'credit',
             amount: `+₹${(lt.amount / 100).toLocaleString('en-IN')}`,
-            category: 'emi_credit',
+            category: 'prepayment',
           });
         }
       }

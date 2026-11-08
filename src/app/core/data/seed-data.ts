@@ -90,6 +90,18 @@ export function getInitialSeedData(): LedgerState {
       createdAt: '2024-06-12T00:00:00.000Z',
       updatedAt: '2024-06-12T00:00:00.000Z',
     },
+    {
+      id: 'mem-direct-deposit',
+      name: 'Direct Statement',
+      active: true,
+      target: toPaise(0), // Direct deposit into loan statement
+      colorIndex: 5,
+      avatarUrl: 'profiles/bank.svg',
+      phone: '43054757071',
+      email: 'sbi.od.43054757071@sbi.co.in',
+      createdAt: '2024-06-12T00:00:00.000Z',
+      updatedAt: '2024-06-12T00:00:00.000Z',
+    },
   ];
 
   // Start with clean empty transactions; no default mock deposits

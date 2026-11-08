@@ -162,6 +162,8 @@ export class FirestoreLedgerRepository implements LedgerRepository {
         bhavya: 'profiles/bhavya.jpeg',
         shruthi: 'profiles/shruthi.jpeg',
         csp: 'profiles/csp.jpeg',
+        'direct statement': 'profiles/bank.svg',
+        'bank deposit': 'profiles/bank.svg',
       };
       const contactMap: Record<string, { phone: string; email?: string }> = {
         vishwas: { phone: '8105242578', email: 'vishwascpatilonline@gmail.com' },
@@ -169,6 +171,8 @@ export class FirestoreLedgerRepository implements LedgerRepository {
         bhavya: { phone: '9902103979' },
         shruthi: { phone: '9844586757' },
         csp: { phone: '9880404025' },
+        'direct statement': { phone: '43054757071', email: 'sbi.od.43054757071@sbi.co.in' },
+        'bank deposit': { phone: '43054757071', email: 'sbi.od.43054757071@sbi.co.in' },
       };
       for (const m of members) {
         const key = m.name.toLowerCase().trim();
@@ -179,6 +183,30 @@ export class FirestoreLedgerRepository implements LedgerRepository {
           if (!m.phone) m.phone = contactMap[key].phone;
           if (!m.email && contactMap[key].email) m.email = contactMap[key].email;
         }
+      }
+
+      // Ensure the "Direct Statement" member is present for direct bank deposits
+      const hasDirectDepositMember = members.some(
+        (m) => m.id === 'mem-direct-deposit' || m.name.toLowerCase().includes('direct statement')
+      );
+      if (!hasDirectDepositMember) {
+        const directMember: Member = {
+          id: 'mem-direct-deposit',
+          name: 'Direct Statement',
+          active: true,
+          target: toPaise(0),
+          colorIndex: 5,
+          avatarUrl: 'profiles/bank.svg',
+          phone: '43054757071',
+          email: 'sbi.od.43054757071@sbi.co.in',
+          createdAt: '2024-06-12T00:00:00.000Z',
+          updatedAt: '2024-06-12T00:00:00.000Z',
+        };
+        members.push(directMember);
+        void setDoc(
+          doc(this.db, 'loans', PRIMARY_LOAN_ID, 'members', directMember.id),
+          cleanForFirestore(directMember)
+        );
       }
 
       const state: LedgerState = {

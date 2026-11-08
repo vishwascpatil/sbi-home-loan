@@ -147,20 +147,17 @@ export function outstandingAt(dateOrMonth: string, ledger: LedgerState): Paise {
 
     const rowsUpToTarget = CHRONO_STATEMENT_ROWS.filter((r) => r.isoDate <= targetDate);
     let currentBalance: Paise;
-    let anchorDate: string;
 
     if (rowsUpToTarget.length > 0) {
       const lastRow = rowsUpToTarget[rowsUpToTarget.length - 1];
       currentBalance = lastRow.balancePaise;
-      anchorDate = lastRow.isoDate;
     } else {
       currentBalance = ledger.loan.openingOutstanding;
-      anchorDate = earliestDate;
     }
 
-    // Apply any live bank transactions recorded strictly after the statement anchor date
+    // Apply any live user-recorded bank transactions (not in authentic PDF statement)
     const liveTx = activeOnly(ledger.transactions)
-      .filter((tx) => tx.date > anchorDate && tx.date <= targetDate)
+      .filter((tx) => !tx.id.startsWith('tx-sbi-') && tx.date <= targetDate)
       .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt));
 
     for (const tx of liveTx) {
@@ -254,7 +251,7 @@ export function monthlySummary(
   // 1. Check if month is covered by authentic bank statement PDF (Jun '24 - Nov '26)
   const stmtPayment = SBI_30_MONTH_PAYMENTS.find((r) => r.period === month);
   if (stmtPayment) {
-    const dailyData = getSbiDailyLedger(month);
+    const dailyData = getSbiDailyLedger(month, ledger.transactions);
     const auditRecord = SBI_29_MONTH_AUDIT.find((r) => r.period === month);
     const stmtPaidToBank = stmtPayment.totalPaid;
     const stmtInterest = auditRecord ? auditRecord.sbiInterest : dailyData.totalInterestAccrued;

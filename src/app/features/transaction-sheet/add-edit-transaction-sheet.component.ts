@@ -75,37 +75,51 @@ const PAYMENT_MODES: PaymentMode[] = [
           </div>
         }
 
-        <!-- 1. Who Paid? (Only for member contributions) -->
-        @if (selectedType() === 'contribution') {
-          <div class="form-group member-picker-group">
+        <!-- 1. Who Paid? -->
+        <div class="form-group member-picker-group">
+          <div class="field-label-row">
             <span class="field-label" id="member-select-label">Who Paid?</span>
-            <div class="members-grid-row" role="group" aria-labelledby="member-select-label">
-              @for (m of ledgerStore.activeMembers(); track m.id) {
-                <button
-                  type="button"
-                  class="member-select-card"
-                  [class.selected]="selectedMemberId() === m.id"
-                  (click)="selectMember(m)"
-                  [attr.aria-label]="m.name"
-                >
-                  <div class="avatar-ring-container">
-                    <app-avatar
-                      [name]="m.name"
-                      [colorIndex]="m.colorIndex"
-                      [size]="50"
-                      [avatarUrl]="m.avatarUrl"
-                      [circular]="true"
-                    />
-                    @if (selectedMemberId() === m.id) {
-                      <span class="selected-check-badge" aria-hidden="true">✓</span>
-                    }
-                  </div>
-                  <span class="member-name-label">{{ m.name }}</span>
-                </button>
-              }
-            </div>
+            @if (isDirectStatement()) {
+              <span class="statement-deposit-badge">🏦 Bank Statement Credit</span>
+            }
           </div>
-        }
+          <div class="members-grid-row" role="group" aria-labelledby="member-select-label">
+            @for (m of ledgerStore.activeMembers(); track m.id) {
+              <button
+                type="button"
+                class="member-select-card"
+                [class.selected]="selectedMemberId() === m.id"
+                [class.is-bank]="m.id === 'mem-direct-deposit'"
+                (click)="selectMember(m)"
+                [attr.aria-label]="m.name"
+              >
+                <div class="avatar-ring-container">
+                  <app-avatar
+                    [name]="m.name"
+                    [colorIndex]="m.colorIndex"
+                    [size]="50"
+                    [avatarUrl]="m.avatarUrl"
+                    [circular]="true"
+                  />
+                  @if (selectedMemberId() === m.id) {
+                    <span class="selected-check-badge" aria-hidden="true">✓</span>
+                  }
+                </div>
+                <span class="member-name-label">{{ m.name }}</span>
+              </button>
+            }
+          </div>
+
+          @if (isDirectStatement()) {
+            <div class="direct-statement-alert" role="status">
+              <span class="alert-icon">🏦</span>
+              <div class="alert-body">
+                <strong>Credited Directly to SBI Statement</strong>
+                <p>This payment immediately reduces your loan principal debt and recalculates all statement, interest, and payoff formulas.</p>
+              </div>
+            </div>
+          }
+        </div>
 
         <!-- 2. Amount -->
         <div class="form-group">
@@ -145,7 +159,7 @@ const PAYMENT_MODES: PaymentMode[] = [
           <button type="submit" class="submit-btn" [disabled]="numericAmount() <= 0 || isLocked()">
             <span class="btn-laser-halo" aria-hidden="true"></span>
             <span class="btn-shimmer" aria-hidden="true"></span>
-            <span class="btn-text">{{ isEdit() ? 'Save Changes' : 'Save Payment' }}</span>
+            <span class="btn-text">{{ isEdit() ? 'Save Changes' : (isDirectStatement() ? 'Deposit to Statement' : 'Save Payment') }}</span>
           </button>
 
           @if (isEdit()) {
@@ -264,6 +278,23 @@ const PAYMENT_MODES: PaymentMode[] = [
       animation: fieldCascade 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
+    .field-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2px;
+    }
+
+    .statement-deposit-badge {
+      font-size: 10px;
+      font-weight: 800;
+      color: #0fb27c;
+      background: rgba(15, 178, 124, 0.12);
+      padding: 2px 8px;
+      border-radius: 99px;
+      letter-spacing: 0.02em;
+    }
+
     .field-label {
       font-size: 12px;
       font-weight: 700;
@@ -274,9 +305,45 @@ const PAYMENT_MODES: PaymentMode[] = [
 
     .members-grid-row {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 6px;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 5px;
       padding: 6px 0 8px;
+    }
+
+    .direct-statement-alert {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 14px;
+      background: rgba(15, 178, 124, 0.08);
+      border: 1px solid rgba(15, 178, 124, 0.2);
+      margin-top: 4px;
+      animation: fieldCascade 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .alert-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .alert-body {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+
+      strong {
+        font-size: 11.5px;
+        font-weight: 800;
+        color: #0fb27c;
+      }
+
+      p {
+        margin: 0;
+        font-size: 11px;
+        color: #767a90;
+        line-height: 1.35;
+      }
     }
 
     .member-select-card {
@@ -728,6 +795,10 @@ export class AddEditTransactionSheetComponent implements OnChanges {
 
   readonly isEdit = computed(() => !!this.editTransaction());
 
+  readonly isDirectStatement = computed(() => {
+    return this.selectedMemberId() === 'mem-direct-deposit' || this.selectedType() === 'bankPayment';
+  });
+
   readonly isLocked = computed<boolean>(() => {
     return this.ledgerStore.isPeriodLocked(this.forMonthInput);
   });
@@ -752,9 +823,18 @@ export class AddEditTransactionSheetComponent implements OnChanges {
   selectMember(m: Member): void {
     triggerHaptic('light');
     this.selectedMemberId.set(m.id);
-    const stats = this.ledgerStore.memberStats().find((s) => s.memberId === m.id);
-    if (stats?.target) {
-      this.amountInput.set((stats.target / 100).toString());
+    if (m.id === 'mem-direct-deposit') {
+      this.selectedType.set('bankPayment');
+      this.notesInput = 'Direct Statement Deposit';
+      this.amountInput.set('');
+    } else {
+      this.selectedType.set('contribution');
+      const stats = this.ledgerStore.memberStats().find((s) => s.memberId === m.id);
+      if (stats?.target) {
+        this.amountInput.set((stats.target / 100).toString());
+      } else {
+        this.amountInput.set('');
+      }
     }
   }
 
@@ -778,16 +858,9 @@ export class AddEditTransactionSheetComponent implements OnChanges {
       return;
     }
 
-    if (this.selectedType() === 'contribution') {
-      const memberId =
-        this.selectedMemberId() || this.ledgerStore.activeMembers()[0]?.id;
-      if (!memberId) {
-        return;
-      }
-    }
-
+    const isDirect = this.isDirectStatement();
     const memberId =
-      this.selectedMemberId() || this.ledgerStore.activeMembers()[0]?.id;
+      this.selectedMemberId() || (isDirect ? 'mem-direct-deposit' : this.ledgerStore.activeMembers()[0]?.id);
     const date = this.dateInput;
     const forMonth = this.dateInput.slice(0, 7);
     const mode = this.modeInput || 'UPI';
@@ -796,15 +869,16 @@ export class AddEditTransactionSheetComponent implements OnChanges {
       if (this.isEdit()) {
         const txId = this.editTransaction()!.id;
         const currentTx = this.editTransaction()!;
-        if (currentTx.type === 'bankPayment') {
+        if (currentTx.type === 'bankPayment' || isDirect) {
           await this.ledgerStore.updateTransaction(txId, {
+            memberId: this.selectedMemberId() || 'mem-direct-deposit',
             amount: amt,
             principalPortion: amt,
             interestPortion: toPaise(0),
             date,
             forMonth,
             mode,
-            notes: this.notesInput,
+            notes: this.notesInput || 'Direct Statement Deposit',
           });
         } else {
           await this.ledgerStore.updateTransaction(txId, {
@@ -816,16 +890,17 @@ export class AddEditTransactionSheetComponent implements OnChanges {
             notes: this.notesInput,
           });
         }
-      } else if (this.selectedType() === 'bankPayment') {
+      } else if (isDirect || this.selectedType() === 'bankPayment') {
         const actualInterest = this.customInterestInput() ? toPaise(this.customInterestInput()) : undefined;
         await this.ledgerStore.recordBankPayment({
+          memberId: this.selectedMemberId() || 'mem-direct-deposit',
           amount: amt,
           interestPortion: actualInterest,
           date,
           forMonth,
           mode,
           reference: this.referenceInput,
-          notes: this.notesInput,
+          notes: this.notesInput || 'Direct Statement Deposit',
         });
       } else {
         await this.ledgerStore.addContribution({
@@ -866,7 +941,8 @@ export class AddEditTransactionSheetComponent implements OnChanges {
   }
 
   private resetForm(): void {
-    this.selectedType.set(this.initialType() || 'contribution');
+    const initType = this.initialType() || 'contribution';
+    this.selectedType.set(initType);
     const firstMember = this.ledgerStore.activeMembers()[0];
     const targetMemberId =
       this.initialMemberId() ||
@@ -874,7 +950,11 @@ export class AddEditTransactionSheetComponent implements OnChanges {
       (firstMember ? firstMember.id : '');
     this.selectedMemberId.set(targetMemberId);
 
-    if (targetMemberId) {
+    if (targetMemberId === 'mem-direct-deposit') {
+      this.selectedType.set('bankPayment');
+      this.notesInput = 'Direct Statement Deposit';
+      this.amountInput.set('');
+    } else if (targetMemberId) {
       const stats = this.ledgerStore.memberStats().find((s) => s.memberId === targetMemberId);
       if (stats?.target) {
         this.amountInput.set((stats.target / 100).toString());
@@ -891,7 +971,9 @@ export class AddEditTransactionSheetComponent implements OnChanges {
     this.valueDateInput = '';
     this.modeInput = 'UPI';
     this.referenceInput = '';
-    this.notesInput = '';
+    if (targetMemberId !== 'mem-direct-deposit') {
+      this.notesInput = '';
+    }
   }
 
   private populateForEdit(tx: Transaction): void {
@@ -905,6 +987,8 @@ export class AddEditTransactionSheetComponent implements OnChanges {
 
     if (tx.type === 'contribution') {
       this.selectedMemberId.set(tx.memberId);
+    } else if (tx.type === 'bankPayment') {
+      this.selectedMemberId.set(tx.memberId || 'mem-direct-deposit');
     }
     this.amountInput.set((getTransactionAmount(tx) / 100).toString());
   }
