@@ -54,15 +54,13 @@ export function getRepaymentPaceAnalysis(ledger: LedgerState): RepaymentPaceAnal
   const familyMonthlyTarget: Paise = loan.monthlyTarget || toPaise(240000);
   const familySupposedToPay = paise(monthsElapsed * familyMonthlyTarget); // ₹69,60,000
 
-  // 3. Compute Actual Cash Deposits from Ledger Transactions
+  // 3. Compute Actual Cash Deposits from Authentic Statement PDF (exclude member contributions from calculations)
   const activeTxs = ledger.transactions.filter((t) => !t.deletedAt);
   let ledgerDeposits = 0;
   let ledgerWithdrawals = 0;
 
   for (const tx of activeTxs) {
-    if (tx.type === 'contribution') {
-      ledgerDeposits += tx.amount;
-    } else if (tx.type === 'bankPayment') {
+    if (tx.type === 'bankPayment') {
       ledgerDeposits += tx.amount;
     } else if (tx.type === 'withdrawal') {
       ledgerWithdrawals += tx.amount;

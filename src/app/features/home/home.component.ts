@@ -1957,7 +1957,7 @@ export class HomeComponent {
   readonly thisMonthPacingPercent = computed(() => {
     const target = this.monthlyTargetPaise();
     if (target <= 0) return 0;
-    const paid = this.summary().memberContributions;
+    const paid = this.summary().paidToBank;
     return Math.min(100, (paid / target) * 100);
   });
 

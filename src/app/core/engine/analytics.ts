@@ -1,4 +1,4 @@
-import { BankPaymentTransaction, ContributionTransaction, LedgerState } from './models';
+import { BankPaymentTransaction, LedgerState } from './models';
 import { Paise, paise, toPaise } from './money';
 import { getEffectiveRateBps, monthlySummary, outstandingAt } from './ledger';
 
@@ -60,10 +60,6 @@ export function computeMonthRupeeSplit(month: string, ledger: LedgerState): Mont
     (tx): tx is BankPaymentTransaction =>
       tx.type === 'bankPayment' && (tx.forMonth === month || (!tx.forMonth && tx.date.slice(0, 7) === month))
   );
-  const contribTxs = activeTxs.filter(
-    (tx): tx is ContributionTransaction =>
-      tx.type === 'contribution' && (tx.forMonth === month || (!tx.forMonth && tx.date.slice(0, 7) === month))
-  );
 
   const curSummary = monthlySummary(month, ledger);
   let estInterest = curSummary.interestIncurredEst;
@@ -96,22 +92,12 @@ export function computeMonthRupeeSplit(month: string, ledger: LedgerState): Mont
     }
     isEstimated = bankTxs.some((t) => t.isEstimatedSplit);
     hasActualPayments = true;
-  } else if (contribTxs.length > 0) {
-    for (const tx of contribTxs) {
-      totalPaid = paise(totalPaid + tx.amount);
-    }
-    // Proportional split according to monthly target ratio so partial deposits don't allocate 100% to interest
-    if (totalPaid >= target) {
-      interestPaid = paise(Math.min(totalPaid, estInterest));
-      principalReduced = paise(Math.max(0, totalPaid - interestPaid));
-    } else if (estInterest > 0 && target > 0) {
-      interestPaid = paise(Math.round((totalPaid * estInterest) / target));
-      principalReduced = paise(Math.max(0, totalPaid - interestPaid));
-    } else {
-      interestPaid = paise(0);
-      principalReduced = totalPaid;
-    }
-    isEstimated = true;
+  } else if (curSummary.paidToBank > 0) {
+    // Ground directly in authentic bank statement PDF data
+    totalPaid = curSummary.paidToBank;
+    interestPaid = curSummary.interestIncurredEst;
+    principalReduced = curSummary.principalReduced;
+    isEstimated = false;
     hasActualPayments = true;
   } else {
     // Current or projected month target

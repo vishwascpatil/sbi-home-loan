@@ -14,6 +14,9 @@ import {
   StatementSnapshot,
 } from './models';
 import { addPaise, Paise, paise, subPaise, ZERO_PAISE } from './money';
+import { SBI_30_MONTH_PAYMENTS } from './sbi-payments-audit';
+import { SBI_29_MONTH_AUDIT } from './sbi-interest-audit';
+import { getSbiDailyLedger } from './sbi-daily-ledger';
 
 export interface BankPaymentSplit {
   interestPortion: Paise;
@@ -126,7 +129,7 @@ export function bankPaymentSplit(
 /**
  * Calculate the outstanding loan principal at a specific date or month.
  * Derived deterministically from opening balance and historical ledger transactions.
- * Member deposits into the OD loan directly reduce the outstanding principal.
+ * Member contributions NEVER reduce outstanding principal; only authentic bank payments do.
  */
 export function outstandingAt(dateOrMonth: string, ledger: LedgerState): Paise {
   const targetDate = dateOrMonth.length === 7 ? `${dateOrMonth}-31` : dateOrMonth;
@@ -140,8 +143,7 @@ export function outstandingAt(dateOrMonth: string, ledger: LedgerState): Paise {
   for (const tx of activeTx) {
     switch (tx.type) {
       case 'contribution':
-        // Member deposits directly reduce the OD loan outstanding balance
-        currentBalance = subPaise(currentBalance, tx.amount);
+        // Member deposits are internal tracking; they NEVER alter bank loan balance
         break;
       case 'bankPayment':
         currentBalance = subPaise(currentBalance, tx.principalPortion);
@@ -168,16 +170,65 @@ export function outstandingAt(dateOrMonth: string, ledger: LedgerState): Paise {
 
 /**
  * Produce the financial summary for a specific calendar month (YYYY-MM).
+ * Strictly grounded in authentic bank statement PDF data.
+ * Member contributions from "Add Payment" are NEVER included in loan calculation formulas.
  */
 export function monthlySummary(
   month: string,
   ledger: LedgerState,
   engine?: InterestEngine
 ): MonthlySummary {
+  const activeTx = activeOnly(ledger.transactions).filter((tx) => tx.forMonth === month);
+
+  let memberContributions = ZERO_PAISE;
+  let livePaidToBank = ZERO_PAISE;
+  let livePrincipalReduced = ZERO_PAISE;
+
+  for (const tx of activeTx) {
+    if (tx.type === 'contribution') {
+      memberContributions = addPaise(memberContributions, tx.amount);
+      // Member contributions NEVER alter paidToBank or principalReduced
+    } else if (tx.type === 'bankPayment') {
+      livePaidToBank = addPaise(livePaidToBank, tx.amount);
+      livePrincipalReduced = addPaise(livePrincipalReduced, tx.principalPortion);
+    }
+  }
+
+  // 1. Check if month is covered by authentic bank statement PDF (Jun '24 - Nov '26)
+  const stmtPayment = SBI_30_MONTH_PAYMENTS.find((r) => r.period === month);
+  if (stmtPayment) {
+    const dailyData = getSbiDailyLedger(month);
+    const auditRecord = SBI_29_MONTH_AUDIT.find((r) => r.period === month);
+    const stmtPaidToBank = stmtPayment.totalPaid;
+    const stmtInterest = auditRecord ? auditRecord.sbiInterest : dailyData.totalInterestAccrued;
+    const stmtPrincipalReduced = paise(Math.max(0, stmtPaidToBank - stmtInterest));
+
+    const totalPaidToBank = addPaise(stmtPaidToBank, livePaidToBank);
+    const totalPrincipalReduced = addPaise(stmtPrincipalReduced, livePrincipalReduced);
+    const monthlyTarget = ledger.loan.monthlyTarget;
+    const remainingTarget = paise(Math.max(0, monthlyTarget - memberContributions));
+    const targetProgressPercent =
+      monthlyTarget > 0 ? Math.min(100, (memberContributions / monthlyTarget) * 100) : 0;
+
+    return {
+      month,
+      openingOutstanding: dailyData.openingBalance,
+      closingOutstanding: dailyData.closingBalance,
+      memberContributions,
+      paidToBank: totalPaidToBank,
+      interestIncurredEst: stmtInterest,
+      principalReduced: totalPrincipalReduced,
+      remainingTarget,
+      monthlyTarget,
+      targetProgressPercent,
+    };
+  }
+
+  // 2. Fallback for prospective / future months outside statement period
   const activeEngine = engine || getEngineForMethod(ledger.loan.calculationMethod);
   const [yearStr, monthStr] = month.split('-');
-  const year = parseInt(yearStr || '2025', 10);
-  const monthNum = parseInt(monthStr || '1', 10);
+  const year = parseInt(yearStr || '2026', 10);
+  const monthNum = parseInt(monthStr || '11', 10);
   const prevMonthDate = new Date(year, monthNum - 2, 28).toISOString().slice(0, 10);
 
   const openingOutstanding = outstandingAt(prevMonthDate, ledger);
@@ -198,24 +249,7 @@ export function monthlySummary(
     interestIncurredEst = activeEngine.calculateInterest(openingOutstanding, rateBps, month);
   }
 
-  const activeTx = activeOnly(ledger.transactions).filter((tx) => tx.forMonth === month);
-
-  let memberContributions = ZERO_PAISE;
-  let paidToBank = ZERO_PAISE;
-  let principalReduced = ZERO_PAISE;
-
-  for (const tx of activeTx) {
-    if (tx.type === 'contribution') {
-      memberContributions = addPaise(memberContributions, tx.amount);
-      paidToBank = addPaise(paidToBank, tx.amount);
-      principalReduced = addPaise(principalReduced, tx.amount);
-    } else if (tx.type === 'bankPayment') {
-      paidToBank = addPaise(paidToBank, tx.amount);
-      principalReduced = addPaise(principalReduced, tx.principalPortion);
-    }
-  }
-
-  const closingOutstanding = subPaise(openingOutstanding, principalReduced);
+  const closingOutstanding = subPaise(openingOutstanding, livePrincipalReduced);
   const monthlyTarget = ledger.loan.monthlyTarget;
   const remainingTarget = paise(Math.max(0, monthlyTarget - memberContributions));
   const targetProgressPercent =
@@ -226,9 +260,9 @@ export function monthlySummary(
     openingOutstanding,
     closingOutstanding,
     memberContributions,
-    paidToBank,
+    paidToBank: livePaidToBank,
     interestIncurredEst,
-    principalReduced,
+    principalReduced: livePrincipalReduced,
     remainingTarget,
     monthlyTarget,
     targetProgressPercent,
