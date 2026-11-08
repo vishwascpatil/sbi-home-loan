@@ -12,7 +12,8 @@ import {
   DailyLedgerRecord,
   FinancialYearSummary,
   generateStatementSnapshot,
-  getDailyLedger,
+  getSbiDailyLedger,
+  SbiDailyMonthSummary,
   getEngineForMethod,
   getIndianFinancialYearSummary,
   GroupFundsSummary,
@@ -464,7 +465,11 @@ export class LedgerStore {
   }
 
   getDailyBreakdown(period: string): DailyLedgerRecord[] {
-    return getDailyLedger(period, this.ledgerState());
+    return getSbiDailyLedger(period, this.transactions()).records;
+  }
+
+  getSbiDailyMonthSummary(period: string): SbiDailyMonthSummary {
+    return getSbiDailyLedger(period, this.transactions());
   }
 
   isPeriodLocked(dateOrMonth: string): boolean {

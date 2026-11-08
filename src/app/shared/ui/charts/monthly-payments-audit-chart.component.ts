@@ -792,3 +792,4 @@ export class MonthlyPaymentsAuditChartComponent {
     return points.join(' ');
   }
 }
+
