@@ -318,6 +318,31 @@ import {
                 <strong class="metric-value big">{{ formatPaise(currentStatement().closingOutstanding) }}</strong>
               </div>
             </div>
+
+            <!-- Upcoming Payment Banner (Month End / Due Calculation) -->
+            @if (ledgerStore.upcomingPayment().isMonthEnd || selectedPeriod() === ledgerStore.upcomingPayment().closedPeriod || selectedPeriod() === ledgerStore.upcomingPayment().nextPeriod) {
+              <div class="upcoming-due-banner">
+                <div class="due-banner-head">
+                  <div class="due-banner-title">
+                    <span class="due-dot"></span>
+                    <span class="due-tag">Payment Due: {{ ledgerStore.upcomingPayment().nextDueLabel }}</span>
+                  </div>
+                  <span class="due-interest-pill">+{{ formatPaise(ledgerStore.upcomingPayment().calculatedInterest) }} Interest Debited</span>
+                </div>
+                <div class="due-amounts-row">
+                  <div class="due-col bank">
+                    <span class="due-lbl">Bank Scheduled EMI</span>
+                    <strong class="due-val tabular-nums">{{ formatPaise(ledgerStore.upcomingPayment().bankRegularEmi) }}</strong>
+                    <span class="due-sub">Principal: {{ formatPaise(ledgerStore.upcomingPayment().bankEmiPrincipalReduction) }}</span>
+                  </div>
+                  <div class="due-col target">
+                    <span class="due-lbl">Family Target</span>
+                    <strong class="due-val text-success tabular-nums">{{ formatPaise(ledgerStore.upcomingPayment().familyTarget) }}</strong>
+                    <span class="due-sub">Principal: {{ formatPaise(ledgerStore.upcomingPayment().targetPrincipalReduction) }}</span>
+                  </div>
+                </div>
+              </div>
+            }
           </article>
         </section>
       }
@@ -881,6 +906,89 @@ import {
       }
     }
 
+    .upcoming-due-banner {
+      background: linear-gradient(135deg, rgba(79, 53, 255, 0.06), rgba(255, 95, 158, 0.06));
+      border: 1px solid rgba(108, 76, 255, 0.2);
+      border-radius: 16px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 6px;
+
+      .due-banner-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .due-banner-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .due-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #4f35ff;
+          box-shadow: 0 0 8px rgba(79, 53, 255, 0.6);
+        }
+
+        .due-tag {
+          font-size: 0.82rem;
+          font-weight: 800;
+          color: var(--ink, #15172b);
+          letter-spacing: -0.01em;
+        }
+      }
+
+      .due-interest-pill {
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 99px;
+        background: rgba(238, 77, 107, 0.12);
+        color: #ee4d6b;
+      }
+
+      .due-amounts-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        padding-top: 6px;
+        border-top: 1px dashed rgba(0, 0, 0, 0.08);
+
+        .due-col {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+
+          .due-lbl {
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: var(--muted, #767a90);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+          }
+
+          .due-val {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--ink, #15172b);
+          }
+
+          .due-sub {
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: var(--muted, #767a90);
+          }
+        }
+      }
+    }
+
     /* Controls Bar */
     .controls-bar {
       display: flex;
@@ -1142,7 +1250,7 @@ export class StatementsComponent {
 
   // 1. Passbook Explorer State (Cloud Firestore statement records + user-recorded direct statement deposits)
   readonly allStatementRows = computed<SbiPassbookRow[]>(() => {
-    const cloudRows = this.ledgerStore.statementRecords();
+    const cloudRows = this.ledgerStore.effectiveStatementRecords();
     const liveTxs = this.ledgerStore
       .transactions()
       .filter((t): t is BankPaymentTransaction => !t.deletedAt && t.type === 'bankPayment' && !t.id.startsWith('tx-sbi-'));

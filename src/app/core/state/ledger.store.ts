@@ -49,6 +49,7 @@ import {
   StatementSnapshot,
   toPaise,
   Transaction,
+  UpcomingPaymentInfo,
   WithdrawalTransaction,
 } from '../engine';
 import { FirestoreLedgerRepository, SbiPassbookRow } from '../data';
@@ -128,6 +129,101 @@ export class LedgerStore {
     return null;
   });
 
+  // Simulated Date Control for testing and month-end preview
+  readonly simulatedDate = signal<string | null>(null);
+
+  setSimulatedDate(date: string | null): void {
+    this.simulatedDate.set(date);
+  }
+
+  readonly currentDate = computed<string>(() => {
+    return this.simulatedDate() || new Date().toISOString().slice(0, 10);
+  });
+
+  /**
+   * Effective statement records with automatic month-end closing interest debit.
+   * When datetime reaches the end of the month (e.g. Nov 30th) or during next month's payment window,
+   * if no bank interest debit has been posted yet, calculates the month's interest and injects
+   * an authentic closing debit row into the passbook statement.
+   */
+  readonly effectiveStatementRecords = computed<SbiPassbookRow[]>(() => {
+    const records = this.statementRecords();
+    if (records.length === 0) return records;
+
+    const today = this.currentDate();
+    const [yStr, mStr, dStr] = today.split('-');
+    const y = parseInt(yStr || '2026', 10);
+    const m = parseInt(mStr || '11', 10);
+    const d = parseInt(dStr || '01', 10);
+    const lastDay = new Date(y, m, 0).getDate();
+
+    let targetPeriod: string;
+    let targetLastDayDate: string;
+    let targetPostDate: string;
+
+    if (d >= lastDay) {
+      // Month-end reached for current month (e.g. 2026-11-30)
+      targetPeriod = `${yStr}-${mStr}`;
+      targetLastDayDate = `${yStr}-${mStr}-${String(lastDay).padStart(2, '0')}`;
+      targetPostDate = `${String(lastDay).padStart(2, '0')}/${mStr}/${yStr}`;
+    } else if (d <= 5) {
+      // In early payment window of next month (e.g. 2026-12-01 to 2026-12-05), check previous month's interest
+      const prevDate = new Date(y, m - 2, 28);
+      const prevY = prevDate.getFullYear();
+      const prevM = prevDate.getMonth() + 1;
+      const prevLastDay = new Date(prevY, prevM, 0).getDate();
+      targetPeriod = `${prevY}-${String(prevM).padStart(2, '0')}`;
+      targetLastDayDate = `${targetPeriod}-${String(prevLastDay).padStart(2, '0')}`;
+      targetPostDate = `${String(prevLastDay).padStart(2, '0')}/${String(prevM).padStart(2, '0')}/${prevY}`;
+    } else {
+      return records;
+    }
+
+    // Check if an interest_debit already exists for targetPeriod in records
+    const hasInterestDebit = records.some(
+      (r) => r.category === 'interest_debit' && r.isoDate.slice(0, 7) === targetPeriod
+    );
+
+    if (hasInterestDebit) {
+      return records;
+    }
+
+    // Compute month interest using getSbiDailyLedger for targetPeriod
+    const dailyLedger = getSbiDailyLedger(targetPeriod, this.transactions(), records);
+    const monthInterest = dailyLedger.totalInterestAccrued;
+    if (monthInterest <= 0) {
+      return records;
+    }
+
+    // Pre-interest closing balance
+    const preBalance = dailyLedger.closingBalance;
+    const newBalance = addPaise(preBalance, monthInterest);
+
+    const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const targetMonthIdx = parseInt(targetPeriod.slice(5, 7), 10) - 1;
+    const monthCode = monthNames[targetMonthIdx] || 'MON';
+    const yearCode = targetPeriod.slice(0, 4);
+
+    const syntheticRow: SbiPassbookRow = {
+      id: `synthetic-interest-${targetPeriod}`,
+      postDate: targetPostDate,
+      valueDate: targetPostDate,
+      isoDate: targetLastDayDate,
+      desc: `TO INTEREST FOR ${monthCode} ${yearCode} (CLOSING DEBIT)`,
+      refNo: '',
+      type: 'debit',
+      category: 'interest_debit',
+      debitPaise: monthInterest,
+      creditPaise: paise(0),
+      balancePaise: newBalance,
+      rawDebit: (monthInterest / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+      rawCredit: '',
+      rawBalance: (newBalance / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+    };
+
+    return [syntheticRow, ...records].sort((a, b) => b.isoDate.localeCompare(a.isoDate));
+  });
+
   // Full derived LedgerState object for pure engine functions
   readonly ledgerState = computed<LedgerState>(() => ({
     loan: this.loan(),
@@ -144,7 +240,7 @@ export class LedgerStore {
       defaultPaymentMode: 'UPI',
     },
     auditLog: this.auditLog(),
-    statementRecords: this.statementRecords(),
+    statementRecords: this.effectiveStatementRecords(),
     odWithdrawals: this.odWithdrawals(),
     interestAudit: this.interestAudit(),
     paymentsAudit: this.paymentsAudit(),
@@ -153,33 +249,31 @@ export class LedgerStore {
 
   // Computed Projections
   readonly currentPrincipal = computed<Paise>(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    return outstandingAt(today, this.ledgerState(), this.statementRecords());
+    const today = this.currentDate();
+    return outstandingAt(today, this.ledgerState(), this.effectiveStatementRecords());
   });
 
   readonly currentOutstanding = computed<Paise>(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    const baseOutstanding = outstandingAt(today, this.ledgerState(), this.statementRecords());
+    const today = this.currentDate();
+    const effectiveRows = this.effectiveStatementRecords();
+    const baseOutstanding = outstandingAt(today, this.ledgerState(), effectiveRows);
 
-    // Check if an explicit interestCharge is already recorded in transactions for this month
+    // If effectiveRows already contains the month-end closing debit, baseOutstanding includes it!
     const curMonth = today.slice(0, 7);
-    const hasExplicitInterest = this.transactions().some(
-      (t) =>
-        !t.deletedAt &&
-        t.type === 'interestCharge' &&
-        (t.forMonth === curMonth || t.date.slice(0, 7) === curMonth)
+    const hasInterestDebit = effectiveRows.some(
+      (r) => r.category === 'interest_debit' && r.isoDate.slice(0, 7) === curMonth
     );
 
-    if (hasExplicitInterest) {
+    if (hasInterestDebit) {
       return baseOutstanding;
     }
 
-    // Add interest to current outstanding amount ONLY on the last day of the month
+    // Safety fallback: if day is last day of month and not in records, add estimated interest
     const year = parseInt(today.slice(0, 4), 10);
     const month = parseInt(today.slice(5, 7), 10);
     const day = parseInt(today.slice(8, 10), 10);
     const lastDayOfMonth = new Date(year, month, 0).getDate();
-    const isLastDay = day === lastDayOfMonth;
+    const isLastDay = day >= lastDayOfMonth;
 
     if (isLastDay) {
       const estInterest = this.thisMonthSummary().interestIncurredEst;
@@ -189,12 +283,111 @@ export class LedgerStore {
     return baseOutstanding;
   });
 
+  /**
+   * Upcoming Payment due on the 1st of next month, incorporating calculated month-end interest.
+   */
+  readonly upcomingPayment = computed<UpcomingPaymentInfo>(() => {
+    const today = this.currentDate();
+    const isSimulated = this.simulatedDate() !== null;
+    const [yStr, mStr, dStr] = today.split('-');
+    const y = parseInt(yStr || '2026', 10);
+    const m = parseInt(mStr || '11', 10);
+    const d = parseInt(dStr || '01', 10);
+    const lastDay = new Date(y, m, 0).getDate();
+
+    let isMonthEnd: boolean;
+    let closedPeriod: string;
+    let nextPeriod: string;
+    let nextDueDate: string;
+    let nextDueLabel: string;
+    let daysUntilDue: number;
+
+    const monthFullNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    if (d >= lastDay) {
+      // Exact month end (e.g. 2026-11-30)
+      isMonthEnd = true;
+      closedPeriod = `${yStr}-${mStr}`;
+      const nextDate = new Date(y, m, 1);
+      const nextY = nextDate.getFullYear();
+      const nextM = nextDate.getMonth() + 1;
+      nextPeriod = `${nextY}-${String(nextM).padStart(2, '0')}`;
+      nextDueDate = `${nextPeriod}-01`;
+      nextDueLabel = `${monthFullNames[nextM - 1]} 1, ${nextY}`;
+      daysUntilDue = 1;
+    } else if (d <= 5) {
+      // In payment window (e.g. 2026-12-01 to 2026-12-05)
+      isMonthEnd = true;
+      const prevDate = new Date(y, m - 2, 1);
+      const prevY = prevDate.getFullYear();
+      const prevM = prevDate.getMonth() + 1;
+      closedPeriod = `${prevY}-${String(prevM).padStart(2, '0')}`;
+      nextPeriod = `${yStr}-${mStr}`;
+      nextDueDate = `${nextPeriod}-01`;
+      nextDueLabel = `${monthFullNames[m - 1]} 1, ${y}`;
+      daysUntilDue = Math.max(0, 1 - d);
+    } else {
+      // Mid-month: project closing of current month for preview
+      isMonthEnd = false;
+      closedPeriod = `${yStr}-${mStr}`;
+      const nextDate = new Date(y, m, 1);
+      const nextY = nextDate.getFullYear();
+      const nextM = nextDate.getMonth() + 1;
+      nextPeriod = `${nextY}-${String(nextM).padStart(2, '0')}`;
+      nextDueDate = `${nextPeriod}-01`;
+      nextDueLabel = `${monthFullNames[nextM - 1]} 1, ${nextY}`;
+      daysUntilDue = lastDay - d + 1;
+    }
+
+    const closedMonthIdx = parseInt(closedPeriod.slice(5, 7), 10) - 1;
+    const closedMonthName = `${monthFullNames[closedMonthIdx]} ${closedPeriod.slice(0, 4)}`;
+
+    // Compute interest for the closedPeriod
+    const dailyLedger = getSbiDailyLedger(closedPeriod, this.transactions(), this.statementRecords());
+    const calculatedInterest = dailyLedger.totalInterestAccrued;
+    const preInterestOutstanding = dailyLedger.closingBalance;
+    const totalOutstandingAfterInterest = addPaise(preInterestOutstanding, calculatedInterest);
+
+    const bankRegularEmi = this.loan().regularEmi || paise(11890000);
+    const familyTarget = this.loan().monthlyTarget || paise(24000000);
+
+    const bankEmiPrincipalReduction = paise(Math.max(0, bankRegularEmi - calculatedInterest));
+    const targetPrincipalReduction = paise(Math.max(0, familyTarget - calculatedInterest));
+
+    const balanceAfterBankEmi = paise(Math.max(0, totalOutstandingAfterInterest - bankRegularEmi));
+    const balanceAfterTarget = paise(Math.max(0, totalOutstandingAfterInterest - familyTarget));
+
+    return {
+      isMonthEnd,
+      isSimulated,
+      currentDate: today,
+      closedPeriod,
+      closedMonthName,
+      nextPeriod,
+      nextDueDate,
+      nextDueLabel,
+      daysUntilDue,
+      calculatedInterest,
+      preInterestOutstanding,
+      totalOutstandingAfterInterest,
+      bankRegularEmi,
+      familyTarget,
+      bankEmiPrincipalReduction,
+      targetPrincipalReduction,
+      balanceAfterBankEmi,
+      balanceAfterTarget,
+    };
+  });
+
   readonly thisMonthSummary = computed<MonthlySummary>(() => {
-    const currentMonth = new Date().toISOString().slice(0, 7);
+    const currentMonth = this.currentDate().slice(0, 7);
     return monthlySummary(currentMonth, this.ledgerState(), undefined, {
       paymentsAudit: this.paymentsAudit(),
       interestAudit: this.interestAudit(),
-      statementRows: this.statementRecords(),
+      statementRows: this.effectiveStatementRecords(),
     });
   });
 
@@ -227,7 +420,7 @@ export class LedgerStore {
   });
 
   readonly memberStats = computed<MemberStatistics[]>(() => {
-    const currentMonth = new Date().toISOString().slice(0, 7);
+    const currentMonth = this.currentDate().slice(0, 7);
     const ledger = this.ledgerState();
     return this.members()
       .filter((m) => !m.deletedAt)

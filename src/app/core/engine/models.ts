@@ -358,3 +358,24 @@ export interface LedgerState {
   paymentsAudit?: SbiMonthlyPaymentRecord[];
   balanceTrajectory?: DualTrackPoint[];
 }
+
+export interface UpcomingPaymentInfo {
+  isMonthEnd: boolean;                  // True on or after month-end, or during payment window (days 1-5)
+  isSimulated: boolean;                 // True if simulatedDate is being used
+  currentDate: string;                  // YYYY-MM-DD
+  closedPeriod: string;                 // e.g. "2026-11"
+  closedMonthName: string;              // e.g. "November 2026"
+  nextPeriod: string;                   // e.g. "2026-12"
+  nextDueDate: string;                  // e.g. "2026-12-01"
+  nextDueLabel: string;                 // e.g. "Dec 1, 2026"
+  daysUntilDue: number;                 // Days remaining until next payment due date
+  calculatedInterest: Paise;            // Exact month's accrued/debited interest (Paise)
+  preInterestOutstanding: Paise;        // Outstanding balance before month-end interest debit
+  totalOutstandingAfterInterest: Paise; // Outstanding balance after month-end interest debit
+  bankRegularEmi: Paise;                // Bank scheduled regular EMI (Paise)
+  familyTarget: Paise;                  // Family target payment (Paise)
+  bankEmiPrincipalReduction: Paise;     // Principal paid if regular EMI is paid
+  targetPrincipalReduction: Paise;      // Principal paid if Family Target is paid
+  balanceAfterBankEmi: Paise;           // Projected balance if regular EMI is paid
+  balanceAfterTarget: Paise;            // Projected balance if Family Target is paid
+}

@@ -70,6 +70,37 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
             <span class="profile-switch-indicator">▾</span>
           </div>
         </div>
+
+        <!-- Date Simulation Controls -->
+        <div class="date-sim-ribbon" role="group" aria-label="Statement Date Simulator">
+          <button
+            type="button"
+            class="sim-pill-btn"
+            [class.active]="ledgerStore.simulatedDate() === null"
+            (click)="setSimDate(null)"
+            title="Real Time Clock"
+          >
+            Today
+          </button>
+          <button
+            type="button"
+            class="sim-pill-btn"
+            [class.active]="ledgerStore.simulatedDate() === '2026-11-30'"
+            (click)="setSimDate('2026-11-30')"
+            title="Simulate Nov 30 (Month End Interest Added)"
+          >
+            Nov 30
+          </button>
+          <button
+            type="button"
+            class="sim-pill-btn"
+            [class.active]="ledgerStore.simulatedDate() === '2026-12-01'"
+            (click)="setSimDate('2026-12-01')"
+            title="Simulate Dec 1 (Payment Due Date)"
+          >
+            Dec 1
+          </button>
+        </div>
       </header>
 
       <!-- Cloud Sync Warning (if unconfigured) -->
@@ -90,6 +121,9 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
             <span class="lightning-bolt">⚡</span>
             <span>{{ (ledgerStore.loan().currentRateBps / 100).toFixed(2) }}% p.a. · Overdraft</span>
           </div>
+          @if (ledgerStore.upcomingPayment().isSimulated) {
+            <span class="hero-preview-badge">Preview: {{ ledgerStore.currentDate() }}</span>
+          }
         </div>
 
         <div class="hero-main-stat">
@@ -119,6 +153,75 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
           </button>
         </div>
       </div>
+
+      <!-- Upcoming Payment Due Card -->
+      <section class="home-section upcoming-payment-section">
+        <div class="upcoming-payment-card" [class.month-end-active]="ledgerStore.upcomingPayment().isMonthEnd">
+          <div class="card-head-row">
+            <div class="due-date-cluster">
+              <span class="due-pulse-dot" [class.due-alert]="ledgerStore.upcomingPayment().isMonthEnd"></span>
+              <span class="due-badge-text">
+                {{ ledgerStore.upcomingPayment().daysUntilDue === 0 ? 'Payment Due Today' : 'Due ' + ledgerStore.upcomingPayment().nextDueLabel }}
+              </span>
+              @if (ledgerStore.upcomingPayment().isSimulated) {
+                <span class="sim-badge">Simulated</span>
+              }
+            </div>
+            <div class="interest-added-tag" title="Closing interest for {{ ledgerStore.upcomingPayment().closedMonthName }}">
+              +{{ formatPaise(ledgerStore.upcomingPayment().calculatedInterest) }} Interest
+            </div>
+          </div>
+
+          <div class="payment-options-toggle" role="tablist">
+            <button
+              type="button"
+              class="pay-mode-btn"
+              [class.active]="paymentPlanMode() === 'emi'"
+              (click)="setPaymentPlanMode('emi')"
+            >
+              Bank EMI (₹1.19L)
+            </button>
+            <button
+              type="button"
+              class="pay-mode-btn"
+              [class.active]="paymentPlanMode() === 'target'"
+              (click)="setPaymentPlanMode('target')"
+            >
+              Family Target (₹2.40L)
+            </button>
+          </div>
+
+          <div class="due-hero-amount">
+            <span class="amount-lbl">Amount to Pay</span>
+            <div class="due-amount-num tabular-nums">
+              {{ formatPaise(selectedPaymentAmount()) }}
+            </div>
+          </div>
+
+          <div class="payment-breakdown-row">
+            <div class="breakdown-item">
+              <span class="b-lbl">Interest Paid</span>
+              <span class="b-val text-danger tabular-nums">
+                {{ formatPaise(ledgerStore.upcomingPayment().calculatedInterest) }}
+              </span>
+            </div>
+            <div class="breakdown-divider"></div>
+            <div class="breakdown-item">
+              <span class="b-lbl">Principal Reduced</span>
+              <span class="b-val text-success tabular-nums">
+                {{ formatPaise(selectedPrincipalReduction()) }}
+              </span>
+            </div>
+            <div class="breakdown-divider"></div>
+            <div class="breakdown-item">
+              <span class="b-lbl">Balance After</span>
+              <span class="b-val text-cyan tabular-nums">
+                {{ formatPaise(selectedBalanceAfterPayment()) }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <!-- 3. Section: OD Telemetry (OD Shield & Interest Bleed) -->
       <section class="home-section">
@@ -523,6 +626,41 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       align-items: center;
       justify-content: space-between;
       padding-top: 4px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .date-sim-ribbon {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      background: var(--card, #ffffff);
+      padding: 3px;
+      border-radius: 99px;
+      border: 1px solid var(--line, rgba(0, 0, 0, 0.08));
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+    }
+
+    .sim-pill-btn {
+      background: transparent;
+      border: none;
+      padding: 4px 10px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted, #767a90);
+      cursor: pointer;
+      transition: all 0.15s ease;
+
+      &:hover {
+        color: var(--ink, #15172b);
+      }
+
+      &.active {
+        background: var(--ink, #15172b);
+        color: #ffffff;
+        box-shadow: 0 2px 6px rgba(21, 23, 43, 0.18);
+      }
     }
 
     .user-profile-cluster {
@@ -600,7 +738,19 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
 
     .hero-top-row {
       display: flex;
-      justify-content: flex-start;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .hero-preview-badge {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #ffd591;
+      background: rgba(212, 107, 8, 0.25);
+      border: 1px solid rgba(255, 179, 102, 0.4);
+      padding: 3px 8px;
+      border-radius: 99px;
+      letter-spacing: 0.02em;
     }
 
     .hero-rate-pill {
@@ -620,6 +770,169 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
     .lightning-bolt {
       color: #f59e0b;
       font-size: 11px;
+    }
+
+    /* Upcoming Payment Card */
+    .upcoming-payment-section {
+      margin-top: -4px;
+    }
+
+    .upcoming-payment-card {
+      background: var(--card, #ffffff);
+      border-radius: 22px;
+      padding: 16px 18px;
+      border: 1px solid var(--line, rgba(0, 0, 0, 0.08));
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+      &.month-end-active {
+        border: 1px solid rgba(108, 76, 255, 0.35);
+        background: linear-gradient(180deg, rgba(108, 76, 255, 0.03) 0%, var(--card, #ffffff) 100%);
+        box-shadow: 0 6px 22px rgba(108, 76, 255, 0.12);
+      }
+    }
+
+    .card-head-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .due-date-cluster {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .due-pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #0fb27c;
+
+      &.due-alert {
+        background: #6c4cff;
+        box-shadow: 0 0 8px rgba(108, 76, 255, 0.8);
+        animation: pulseDot 2s infinite ease-in-out;
+      }
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.7; }
+    }
+
+    .due-badge-text {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink, #15172b);
+    }
+
+    .sim-badge {
+      font-size: 9.5px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 99px;
+      background: #fff3d6;
+      color: #946200;
+      border: 1px solid #ffd591;
+    }
+
+    .interest-added-tag {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 99px;
+      background: rgba(238, 77, 107, 0.1);
+      color: #ee4d6b;
+    }
+
+    .payment-options-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      background: var(--bg, #f4f1ec);
+      padding: 3px;
+      border-radius: 12px;
+    }
+
+    .pay-mode-btn {
+      background: transparent;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 9px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--muted, #767a90);
+      cursor: pointer;
+      transition: all 0.15s ease;
+
+      &.active {
+        background: var(--card, #ffffff);
+        color: var(--ink, #15172b);
+        font-weight: 700;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+      }
+    }
+
+    .due-hero-amount {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 2px 0;
+    }
+
+    .amount-lbl {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted, #767a90);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .due-amount-num {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--ink, #15172b);
+      letter-spacing: -0.02em;
+    }
+
+    .payment-breakdown-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 10px;
+      border-top: 1px solid var(--line, rgba(0, 0, 0, 0.06));
+      gap: 6px;
+    }
+
+    .breakdown-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      flex: 1;
+
+      .b-lbl {
+        font-size: 10.5px;
+        color: var(--muted, #767a90);
+        font-weight: 500;
+      }
+
+      .b-val {
+        font-size: 12px;
+        font-weight: 700;
+      }
+    }
+
+    .breakdown-divider {
+      width: 1px;
+      height: 24px;
+      background: var(--line, rgba(0, 0, 0, 0.08));
     }
 
     .hero-main-stat {
@@ -1258,6 +1571,36 @@ export class HomeComponent {
   readonly isDailyLedgerOpen = signal<boolean>(false);
   readonly selectedTxForEdit = signal<Transaction | null>(null);
   readonly initialSheetType = signal<'contribution' | 'bankPayment'>('contribution');
+
+  readonly paymentPlanMode = signal<'emi' | 'target'>('target');
+
+  setPaymentPlanMode(mode: 'emi' | 'target'): void {
+    triggerHaptic('light');
+    this.paymentPlanMode.set(mode);
+  }
+
+  setSimDate(date: string | null): void {
+    triggerHaptic('medium');
+    this.ledgerStore.setSimulatedDate(date);
+  }
+
+  readonly selectedPaymentAmount = computed<Paise>(() =>
+    this.paymentPlanMode() === 'emi'
+      ? this.ledgerStore.upcomingPayment().bankRegularEmi
+      : this.ledgerStore.upcomingPayment().familyTarget
+  );
+
+  readonly selectedPrincipalReduction = computed<Paise>(() =>
+    this.paymentPlanMode() === 'emi'
+      ? this.ledgerStore.upcomingPayment().bankEmiPrincipalReduction
+      : this.ledgerStore.upcomingPayment().targetPrincipalReduction
+  );
+
+  readonly selectedBalanceAfterPayment = computed<Paise>(() =>
+    this.paymentPlanMode() === 'emi'
+      ? this.ledgerStore.upcomingPayment().balanceAfterBankEmi
+      : this.ledgerStore.upcomingPayment().balanceAfterTarget
+  );
 
   scrollToDualTrack(): void {
     triggerHaptic('light');
