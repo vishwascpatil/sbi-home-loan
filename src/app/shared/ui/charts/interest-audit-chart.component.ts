@@ -443,3 +443,4 @@ export class InterestAuditChartComponent {
     return Math.max(4, ratio * 115);
   }
 }
+

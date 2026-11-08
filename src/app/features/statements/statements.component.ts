@@ -10,12 +10,19 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { LedgerStore } from '../../core/state';
 import {
+  formatCompactPaise,
   formatPaise,
   FinancialYearSummary,
   getSbiAuditSummary,
   Paise,
+  paise,
   StatementSnapshot,
+  triggerHaptic,
 } from '../../core/engine';
+import {
+  SBI_AUTHENTIC_STATEMENT_ROWS,
+  SbiPassbookRow,
+} from '../../core/data';
 import {
   AvatarComponent,
 } from '../../shared/ui';
@@ -41,6 +48,16 @@ import {
 
         <div class="header-actions">
           <div class="tab-toggle" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              [attr.aria-selected]="activeTab() === 'passbook'"
+              class="tab-btn"
+              [class.active]="activeTab() === 'passbook'"
+              (click)="activeTab.set('passbook')"
+            >
+              📋 SBI Passbook Explorer (101)
+            </button>
             <button
               type="button"
               role="tab"
@@ -74,6 +91,211 @@ import {
           </div>
         </div>
       </header>
+
+      <!-- 1. SBI AUTHENTIC PASSBOOK STATEMENT EXPLORER TAB -->
+      @if (activeTab() === 'passbook') {
+        <article class="statement-sheet explorer-sheet" id="passbook-doc">
+          <!-- Document Header -->
+          <div class="doc-header">
+            <div class="brand-cluster">
+              <span class="brand-badge badge-passbook">AUTHENTIC STATEMENT</span>
+              <h2 class="doc-title">SBI Maxgain Passbook Explorer</h2>
+              <span class="loan-account-num">
+                A/C No: <strong>{{ ledgerStore.loan().accountNumber }}</strong> · 01-Jun-2024 to 07-Nov-2026 (101 Transactions)
+              </span>
+            </div>
+            <button type="button" class="btn btn-secondary no-print" (click)="printStatement()">
+              🖨️ Print / Save PDF
+            </button>
+          </div>
+
+          <!-- 3 Dynamic WOW Telemetry Cards -->
+          <div class="explorer-summary-grid">
+            <div class="exp-stat-card card-inflow">
+              <span class="exp-stat-lbl">Filtered Deposits (Money In)</span>
+              <div class="exp-stat-val text-success tabular-nums">
+                +{{ formatCompactPaise(filteredStats().totalCredit) }}
+              </div>
+              <span class="exp-stat-sub tabular-nums">{{ formatPaise(filteredStats().totalCredit) }}</span>
+            </div>
+
+            <div class="exp-stat-card card-outflow">
+              <span class="exp-stat-lbl">Filtered Debits (Money Out)</span>
+              <div class="exp-stat-val text-danger tabular-nums">
+                −{{ formatCompactPaise(filteredStats().totalDebit) }}
+              </div>
+              <span class="exp-stat-sub tabular-nums">{{ formatPaise(filteredStats().totalDebit) }}</span>
+            </div>
+
+            <div class="exp-stat-card card-count">
+              <span class="exp-stat-lbl">Matching Records</span>
+              <div class="exp-stat-val text-purple tabular-nums">
+                {{ filteredStats().count }} <span class="val-unit">of 101</span>
+              </div>
+              <span class="exp-stat-sub">
+                {{ selectedCategoryTitle() }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Filter Control Console (No Print) -->
+          <div class="filter-console no-print">
+            <!-- Search Row -->
+            <div class="search-input-wrap">
+              <span class="search-icon">🔍</span>
+              <input
+                type="text"
+                class="search-input"
+                placeholder="Search description, Vikas, Vishwas, UPI, RACPC, cheques, amounts..."
+                [ngModel]="searchQuery()"
+                (ngModelChange)="searchQuery.set($event)"
+              />
+              @if (searchQuery()) {
+                <button type="button" class="clear-search-btn" (click)="searchQuery.set('')">✕</button>
+              }
+            </div>
+
+            <!-- Category Quick Filters -->
+            <div class="filter-chips-row">
+              <button
+                type="button"
+                class="filter-chip"
+                [class.active]="selectedCategory() === 'all'"
+                (click)="setCategory('all')"
+              >
+                All (101)
+              </button>
+              <button
+                type="button"
+                class="filter-chip chip-green"
+                [class.active]="selectedCategory() === 'credit'"
+                (click)="setCategory('credit')"
+              >
+                🟢 Deposits (50)
+              </button>
+              <button
+                type="button"
+                class="filter-chip chip-blue"
+                [class.active]="selectedCategory() === 'emi_credit'"
+                (click)="setCategory('emi_credit')"
+              >
+                🏦 Monthly EMIs (29)
+              </button>
+              <button
+                type="button"
+                class="filter-chip chip-purple"
+                [class.active]="selectedCategory() === 'prepayment'"
+                (click)="setCategory('prepayment')"
+              >
+                ⚡ Prepayments (21)
+              </button>
+              <button
+                type="button"
+                class="filter-chip chip-red"
+                [class.active]="selectedCategory() === 'interest_debit'"
+                (click)="setCategory('interest_debit')"
+              >
+                🔴 Interest Debits (29)
+              </button>
+              <button
+                type="button"
+                class="filter-chip chip-amber"
+                [class.active]="selectedCategory() === 'withdrawal'"
+                (click)="setCategory('withdrawal')"
+              >
+                ⚠️ Withdrawals (21)
+              </button>
+            </div>
+
+            <!-- Sub Filter Controls (Year, Amount, Sort) -->
+            <div class="sub-filters-row">
+              <div class="filter-subgroup">
+                <span class="subgroup-lbl">Year:</span>
+                <button type="button" class="mini-pill" [class.active]="selectedYear() === 'all'" (click)="setYear('all')">All</button>
+                <button type="button" class="mini-pill" [class.active]="selectedYear() === '2026'" (click)="setYear('2026')">2026</button>
+                <button type="button" class="mini-pill" [class.active]="selectedYear() === '2025'" (click)="setYear('2025')">2025</button>
+                <button type="button" class="mini-pill" [class.active]="selectedYear() === '2024'" (click)="setYear('2024')">2024</button>
+              </div>
+
+              <div class="filter-subgroup">
+                <span class="subgroup-lbl">Amount:</span>
+                <button type="button" class="mini-pill" [class.active]="selectedAmountRange() === 'all'" (click)="setAmount('all')">All</button>
+                <button type="button" class="mini-pill" [class.active]="selectedAmountRange() === 'gt1L'" (click)="setAmount('gt1L')">≥ ₹1L</button>
+                <button type="button" class="mini-pill" [class.active]="selectedAmountRange() === '25k-1L'" (click)="setAmount('25k-1L')">₹25k–₹1L</button>
+                <button type="button" class="mini-pill" [class.active]="selectedAmountRange() === 'lt25k'" (click)="setAmount('lt25k')">&lt; ₹25k</button>
+              </div>
+
+              <div class="filter-subgroup align-right">
+                <button type="button" class="sort-toggle-btn" (click)="toggleSort()">
+                  {{ sortOrder() === 'desc' ? '📅 Newest First' : '📅 Oldest First' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Passbook Transaction Table -->
+          <div class="section-block">
+            <div class="table-responsive">
+              <table class="styled-table passbook-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Description & Details</th>
+                    <th class="text-right">Debit (Out)</th>
+                    <th class="text-right">Credit (In)</th>
+                    <th class="text-right">Balance (Debt)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of filteredRows(); track row.id) {
+                    <tr class="passbook-row">
+                      <td class="font-bold date-cell">
+                        <span class="main-date">{{ row.postDate }}</span>
+                        @if (row.valueDate && row.valueDate !== row.postDate) {
+                          <span class="val-date">Val: {{ row.valueDate }}</span>
+                        }
+                      </td>
+                      <td>
+                        <span class="category-chip cat-{{ row.category }}">
+                          {{ getCategoryBadge(row.category) }}
+                        </span>
+                      </td>
+                      <td class="desc-cell">
+                        <div class="desc-text">{{ row.desc }}</div>
+                        @if (row.refNo) {
+                          <span class="ref-no-pill">Ref: {{ row.refNo }}</span>
+                        }
+                      </td>
+                      <td class="text-right tabular-nums debit-cell font-bold">
+                        {{ row.rawDebit ? '₹' + row.rawDebit : '—' }}
+                      </td>
+                      <td class="text-right tabular-nums credit-cell font-bold">
+                        {{ row.rawCredit ? '₹' + row.rawCredit : '—' }}
+                      </td>
+                      <td class="text-right tabular-nums balance-cell font-bold">
+                        ₹{{ row.rawBalance }} <span class="dr-tag">DR</span>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="6" class="text-center empty-cell">
+                        No transactions found matching your filters.
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="doc-footer">
+            <p class="disclaimer-text">
+              * Official State Bank of India Maxgain Overdraft Statement (Account 43054757071) from 01-Jun-2024 to 07-Nov-2026. 101 transactions fully reconciled with ₹0 discrepancy.
+            </p>
+          </div>
+        </article>
+      }
 
       <!-- MONTHLY STATEMENT TAB -->
       @if (activeTab() === 'monthly') {
@@ -970,6 +1192,283 @@ import {
       white-space: nowrap;
     }
 
+    /* PASSBOOK EXPLORER STYLES */
+    .badge-passbook {
+      background: linear-gradient(135deg, #0071e3 0%, #6c4cff 100%) !important;
+      color: #ffffff !important;
+    }
+
+    .explorer-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    .exp-stat-card {
+      background: #f8f8fc;
+      border-radius: 18px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      border: 1px solid rgba(0, 0, 0, 0.04);
+
+      &.card-inflow { background: rgba(15, 178, 124, 0.05); border-color: rgba(15, 178, 124, 0.15); }
+      &.card-outflow { background: rgba(238, 77, 107, 0.05); border-color: rgba(238, 77, 107, 0.15); }
+      &.card-count { background: rgba(108, 76, 255, 0.05); border-color: rgba(108, 76, 255, 0.15); }
+    }
+
+    .exp-stat-lbl {
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #8e8e93;
+    }
+
+    .exp-stat-val {
+      font-size: 1.55rem;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+
+      &.text-success { color: #0fb27c; }
+      &.text-danger { color: #ee4d6b; }
+      &.text-purple { color: #6c4cff; }
+
+      .val-unit { font-size: 0.85rem; font-weight: 700; color: #767a90; }
+    }
+
+    .exp-stat-sub {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #767a90;
+    }
+
+    .filter-console {
+      background: #fbfbfd;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      border-radius: 20px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .search-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      font-size: 0.95rem;
+      pointer-events: none;
+      color: #8e8e93;
+    }
+
+    .search-input {
+      width: 100%;
+      height: 42px;
+      border-radius: 99px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      padding: 0 40px 0 38px;
+      font-size: 0.88rem;
+      font-family: inherit;
+      background: #ffffff;
+      outline: none;
+      transition: all 0.2s ease;
+
+      &:focus {
+        border-color: #6c4cff;
+        box-shadow: 0 0 0 3px rgba(108, 76, 255, 0.12);
+      }
+    }
+
+    .clear-search-btn {
+      position: absolute;
+      right: 12px;
+      background: #eef0f5;
+      border: none;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      font-size: 0.72rem;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      color: #555b72;
+    }
+
+    .filter-chips-row {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .filter-chip {
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 99px;
+      padding: 6px 14px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #15172b;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &:hover { border-color: rgba(108, 76, 255, 0.3); }
+
+      &.active {
+        background: #15172b;
+        color: #ffffff;
+        border-color: #15172b;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      }
+
+      &.chip-green.active { background: #0fb27c; border-color: #0fb27c; }
+      &.chip-blue.active { background: #0071e3; border-color: #0071e3; }
+      &.chip-purple.active { background: #6c4cff; border-color: #6c4cff; }
+      &.chip-red.active { background: #ee4d6b; border-color: #ee4d6b; }
+      &.chip-amber.active { background: #f59e0b; border-color: #f59e0b; }
+    }
+
+    .sub-filters-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(0, 0, 0, 0.04);
+    }
+
+    .filter-subgroup {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.75rem;
+
+      &.align-right { margin-left: auto; }
+    }
+
+    .subgroup-lbl {
+      font-weight: 800;
+      color: #8e8e93;
+      margin-right: 2px;
+    }
+
+    .mini-pill {
+      background: transparent;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #767a90;
+      cursor: pointer;
+
+      &.active {
+        background: #6c4cff;
+        color: #ffffff;
+        border-color: #6c4cff;
+      }
+    }
+
+    .sort-toggle-btn {
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 99px;
+      padding: 4px 12px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #15172b;
+      cursor: pointer;
+    }
+
+    .passbook-table {
+      font-size: 0.82rem;
+
+      th {
+        white-space: nowrap;
+        background: #f4f4f8;
+      }
+    }
+
+    .passbook-row {
+      transition: background 0.15s ease;
+      &:hover { background: rgba(108, 76, 255, 0.03); }
+    }
+
+    .date-cell {
+      white-space: nowrap;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .main-date { color: #15172b; }
+    .val-date { font-size: 0.68rem; color: #8e8e93; font-weight: normal; }
+
+    .category-chip {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 99px;
+      white-space: nowrap;
+
+      &.cat-emi_credit { background: rgba(0, 113, 227, 0.1); color: #0071e3; }
+      &.cat-prepayment { background: rgba(15, 178, 124, 0.1); color: #0fb27c; }
+      &.cat-interest_debit { background: rgba(238, 77, 107, 0.1); color: #ee4d6b; }
+      &.cat-withdrawal { background: rgba(245, 158, 11, 0.1); color: #d97706; }
+      &.cat-disbursement { background: rgba(108, 76, 255, 0.1); color: #6c4cff; }
+      &.cat-other { background: #f0f0f5; color: #555b72; }
+    }
+
+    .desc-cell {
+      max-width: 320px;
+      line-height: 1.35;
+    }
+
+    .desc-text {
+      font-size: 0.8rem;
+      color: #15172b;
+      word-break: break-word;
+    }
+
+    .ref-no-pill {
+      display: inline-block;
+      font-size: 0.65rem;
+      color: #8e8e93;
+      margin-top: 2px;
+    }
+
+    .debit-cell { color: #ee4d6b; }
+    .credit-cell { color: #0fb27c; }
+    .balance-cell { color: #15172b; }
+
+    .dr-tag {
+      font-size: 0.65rem;
+      font-weight: 800;
+      color: #8e8e93;
+      margin-left: 2px;
+    }
+
+    .empty-cell {
+      padding: 30px;
+      color: #8e8e93;
+      font-weight: 600;
+    }
+
     .table-responsive {
       width: 100%;
       overflow-x: auto;
@@ -1008,8 +1507,128 @@ import {
 export class StatementsComponent {
   readonly ledgerStore = inject(LedgerStore);
 
-  readonly activeTab = signal<'monthly' | 'annual' | 'audit'>('monthly');
+  readonly activeTab = signal<'passbook' | 'monthly' | 'annual' | 'audit'>('passbook');
   readonly auditSummary = computed(() => getSbiAuditSummary());
+
+  // 1. Passbook Explorer State
+  readonly allStatementRows = SBI_AUTHENTIC_STATEMENT_ROWS;
+  readonly searchQuery = signal<string>('');
+  readonly selectedCategory = signal<string>('all');
+  readonly selectedYear = signal<string>('all');
+  readonly selectedAmountRange = signal<string>('all');
+  readonly sortOrder = signal<'desc' | 'asc'>('desc');
+
+  readonly formatCompactPaise = formatCompactPaise;
+
+  setCategory(cat: string): void {
+    triggerHaptic('light');
+    this.selectedCategory.set(cat);
+  }
+
+  setYear(yr: string): void {
+    triggerHaptic('light');
+    this.selectedYear.set(yr);
+  }
+
+  setAmount(amt: string): void {
+    triggerHaptic('light');
+    this.selectedAmountRange.set(amt);
+  }
+
+  toggleSort(): void {
+    triggerHaptic('light');
+    this.sortOrder.update((s) => (s === 'desc' ? 'asc' : 'desc'));
+  }
+
+  getCategoryBadge(cat: SbiPassbookRow['category']): string {
+    switch (cat) {
+      case 'emi_credit': return '🏦 EMI SI';
+      case 'prepayment': return '⚡ Deposit';
+      case 'interest_debit': return '🔴 Interest';
+      case 'withdrawal': return '⚠️ Withdrawal';
+      case 'disbursement': return '🏛️ Loan Disbursed';
+      default: return '📄 Passbook';
+    }
+  }
+
+  readonly selectedCategoryTitle = computed(() => {
+    switch (this.selectedCategory()) {
+      case 'credit': return 'All Deposits (Credits)';
+      case 'emi_credit': return 'Regular Monthly EMI Standing Instructions';
+      case 'prepayment': return 'Ad-Hoc Lump-Sum Prepayments';
+      case 'interest_debit': return 'Monthly SBI Interest Debits';
+      case 'withdrawal': return 'Non-Loan Withdrawals from OD';
+      default: return 'All 101 Passbook Transactions';
+    }
+  });
+
+  readonly filteredRows = computed(() => {
+    let rows = [...this.allStatementRows];
+    const q = this.searchQuery().toLowerCase().trim();
+    const cat = this.selectedCategory();
+    const yr = this.selectedYear();
+    const amt = this.selectedAmountRange();
+    const sort = this.sortOrder();
+
+    if (q) {
+      rows = rows.filter((r) =>
+        r.desc.toLowerCase().includes(q) ||
+        r.postDate.includes(q) ||
+        r.refNo.toLowerCase().includes(q) ||
+        r.rawCredit.includes(q) ||
+        r.rawDebit.includes(q) ||
+        r.rawBalance.includes(q)
+      );
+    }
+
+    if (cat !== 'all') {
+      if (cat === 'credit') {
+        rows = rows.filter((r) => r.type === 'credit');
+      } else if (cat === 'debit') {
+        rows = rows.filter((r) => r.type === 'debit');
+      } else {
+        rows = rows.filter((r) => r.category === cat);
+      }
+    }
+
+    if (yr !== 'all') {
+      rows = rows.filter((r) => r.isoDate.startsWith(yr));
+    }
+
+    if (amt !== 'all') {
+      rows = rows.filter((r) => {
+        const val = r.creditPaise || r.debitPaise;
+        if (amt === 'gt1L') return val >= 10000000;
+        if (amt === '25k-1L') return val >= 2500000 && val < 10000000;
+        if (amt === 'lt25k') return val < 2500000;
+        return true;
+      });
+    }
+
+    if (sort === 'asc') {
+      rows.sort((a, b) => a.isoDate.localeCompare(b.isoDate) || a.id.localeCompare(b.id));
+    } else {
+      rows.sort((a, b) => b.isoDate.localeCompare(a.isoDate) || b.id.localeCompare(a.id));
+    }
+
+    return rows;
+  });
+
+  readonly filteredStats = computed(() => {
+    const rows = this.filteredRows();
+    let totalCredit = 0;
+    let totalDebit = 0;
+    for (const r of rows) {
+      totalCredit += r.creditPaise;
+      totalDebit += r.debitPaise;
+    }
+    return {
+      count: rows.length,
+      totalCredit: paise(totalCredit),
+      totalDebit: paise(totalDebit),
+      netCashflow: paise(totalCredit - totalDebit),
+    };
+  });
 
   // Selected period defaults to current month
   readonly selectedPeriod = signal<string>(
