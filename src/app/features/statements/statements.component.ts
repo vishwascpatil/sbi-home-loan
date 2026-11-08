@@ -746,6 +746,8 @@ import {
       gap: 4px;
       cursor: pointer;
       transition: all 0.15s ease;
+      content-visibility: auto;
+      contain-intrinsic-size: 0 76px;
 
       &:active {
         transform: scale(0.99);

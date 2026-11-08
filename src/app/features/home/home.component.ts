@@ -1587,6 +1587,8 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       padding: 10px 14px;
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
       transition: transform 0.1s ease;
+      content-visibility: auto;
+      contain-intrinsic-size: 0 64px;
     }
 
     .activity-tap-target {

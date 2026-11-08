@@ -161,7 +161,11 @@ import { triggerHaptic } from '../../../core/engine';
     }
 
     .rail-link:active {
-      transform: scale(0.97);
+      background: rgba(0, 0, 0, 0.07);
+    }
+
+    .rail-link:active .rail-icon {
+      transform: scale(0.90);
     }
 
     .rail-link.active {

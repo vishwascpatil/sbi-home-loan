@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, output } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { ChangeDetectionStrategy, Component, inject, output } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { triggerHaptic } from '../../../core/engine';
 
 @Component({
@@ -17,7 +17,8 @@ import { triggerHaptic } from '../../../core/engine';
         [routerLinkActiveOptions]="{ exact: true }"
         class="dock-item"
         aria-label="Home"
-        (click)="triggerFeedback()"
+        (pointerdown)="triggerFeedback()"
+        (click)="onNavigate('/home', $event)"
       >
         <svg class="dock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 10.5 12 3l9 7.5V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
@@ -32,7 +33,8 @@ import { triggerHaptic } from '../../../core/engine';
         routerLinkActive="active"
         class="dock-item"
         aria-label="Statement"
-        (click)="triggerFeedback()"
+        (pointerdown)="triggerFeedback()"
+        (click)="onNavigate('/statements', $event)"
       >
         <svg class="dock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -48,6 +50,7 @@ import { triggerHaptic } from '../../../core/engine';
       <button
         type="button"
         class="dock-action-btn"
+        (pointerdown)="triggerFeedback()"
         (click)="onActionClick()"
         aria-label="Add transaction"
         title="Add transaction"
@@ -64,7 +67,8 @@ import { triggerHaptic } from '../../../core/engine';
         routerLinkActive="active"
         class="dock-item"
         aria-label="Members"
-        (click)="triggerFeedback()"
+        (pointerdown)="triggerFeedback()"
+        (click)="onNavigate('/members', $event)"
       >
         <svg class="dock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
@@ -81,7 +85,8 @@ import { triggerHaptic } from '../../../core/engine';
         routerLinkActive="active"
         class="dock-item"
         aria-label="Settings"
-        (click)="triggerFeedback()"
+        (pointerdown)="triggerFeedback()"
+        (click)="onNavigate('/settings', $event)"
       >
         <svg class="dock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="3"/>
@@ -97,7 +102,7 @@ import { triggerHaptic } from '../../../core/engine';
       bottom: max(20px, env(safe-area-inset-bottom, 20px));
       left: 50%;
       transform: translateX(-50%);
-      z-index: 1000;
+      z-index: 1200;
       display: flex;
       align-items: center;
       gap: clamp(4px, 1.2vw, 8px);
@@ -136,10 +141,14 @@ import { triggerHaptic } from '../../../core/engine';
       padding: 6px clamp(10px, 2.8vw, 18px);
       border-radius: var(--radius-pill, 9999px);
       min-height: 48px;
+      min-width: 48px;
+      box-sizing: border-box;
       touch-action: manipulation;
       user-select: none;
       -webkit-user-select: none;
-      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      -webkit-touch-callout: none;
+      cursor: pointer;
+      transition: color 0.15s ease, background-color 0.15s ease;
       -webkit-tap-highlight-color: transparent;
 
       &:hover {
@@ -147,7 +156,13 @@ import { triggerHaptic } from '../../../core/engine';
       }
 
       &:active {
-        transform: scale(0.92);
+        // Crucial: Keep the parent hitbox fixed at 48px so touch events are never dropped!
+        .dock-icon {
+          transform: scale(0.88);
+        }
+        .dock-label {
+          opacity: 0.7;
+        }
       }
 
       /* Active State Pill from Screenshot */
@@ -171,7 +186,7 @@ import { triggerHaptic } from '../../../core/engine';
     .dock-icon {
       width: 24px;
       height: 24px;
-      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .dock-label {
@@ -180,7 +195,7 @@ import { triggerHaptic } from '../../../core/engine';
       letter-spacing: -0.01em;
       margin-top: 3px;
       color: inherit;
-      transition: color 0.2s ease, font-weight 0.2s ease;
+      transition: color 0.15s ease, font-weight 0.15s ease, opacity 0.15s ease;
     }
 
     /* Center Action Button (Matte Obsidian Black Orb) */
@@ -211,16 +226,29 @@ import { triggerHaptic } from '../../../core/engine';
   `,
 })
 export class TabBarComponent {
+  private readonly router = inject(Router);
   readonly openAdd = output<void>();
 
   private lastHaptic = 0;
 
   triggerFeedback(): void {
     const now = Date.now();
-    if (now - this.lastHaptic > 60) {
+    if (now - this.lastHaptic > 50) {
       this.lastHaptic = now;
       triggerHaptic('light');
     }
+  }
+
+  onNavigate(path: string, event: MouseEvent): void {
+    this.triggerFeedback();
+    event.preventDefault();
+    if (this.router.url === path || (path === '/home' && this.router.url === '/')) {
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      return;
+    }
+    void this.router.navigateByUrl(path);
   }
 
   onActionClick(): void {
