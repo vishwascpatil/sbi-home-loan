@@ -135,7 +135,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
             <span class="pill-sub">Cleared ({{ formatCompactPaise(repaidAmount()) }})</span>
           </div>
 
-          <div class="hero-glass-pill" (click)="isWithdrawalSheetOpen.set(true)" role="button" tabindex="0">
+          <div class="hero-glass-pill" (click)="scrollToDualTrack()" role="button" tabindex="0" title="View OD Surplus Buffer on Chart">
             <span class="pill-main tabular-nums text-emerald">{{ formatCompactPaise(odAvailableBuffer()) }}</span>
             <span class="pill-sub">OD Surplus Buffer</span>
           </div>
@@ -268,7 +268,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       </section>
 
       <!-- 5. Section: Dual-Track Balance Visualizer (Drawing Power vs Debt) -->
-      <section class="home-section">
+      <section class="home-section" id="dual-track-section">
         <app-dual-track-chart
           [sanctionedLimit]="ledgerStore.loan().sanctionedLimit"
           [currentOutstanding]="ledgerStore.currentOutstanding()"
@@ -1828,6 +1828,11 @@ export class HomeComponent {
   readonly isDailyLedgerOpen = signal<boolean>(false);
   readonly selectedTxForEdit = signal<Transaction | null>(null);
   readonly initialSheetType = signal<'contribution' | 'bankPayment'>('contribution');
+
+  scrollToDualTrack(): void {
+    triggerHaptic('light');
+    document.getElementById('dual-track-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 
   readonly isDeleteModalOpen = signal<boolean>(false);
   readonly txToDelete = signal<Transaction | null>(null);

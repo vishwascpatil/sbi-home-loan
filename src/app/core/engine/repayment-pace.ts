@@ -1,5 +1,6 @@
 import { LedgerState } from './models';
 import { Paise, paise, toPaise } from './money';
+import { SBI_29_MONTH_AUDIT } from './sbi-interest-audit';
 
 export interface RepaymentPaceAnalysis {
   monthsElapsed: number;
@@ -9,6 +10,9 @@ export interface RepaymentPaceAnalysis {
   // Bank Scheduled Figures (Mandatory regular EMI)
   bankMonthlyEmi: Paise;
   bankSupposedToPay: Paise;
+
+  // Bank Interest Debited Till Now (authentic 29-month passbook total)
+  totalInterestAddedSoFar: Paise; // ₹24,79,889
 
   // Family Accelerated Target (₹2.4L / month pool)
   familyMonthlyTarget: Paise;
@@ -25,10 +29,13 @@ export interface RepaymentPaceAnalysis {
   netAheadOfBank: Paise;
   netAheadOfBankPct: number;
 
-  // High-Impact WOW Expressions
-  equivalentEmisPrepaid: number; // e.g. 12.4 months ahead
+  // High-Impact WOW Expressions & Proved Multipliers
+  totalEmisCount: number; // e.g. 41.4 (Total cumulative count of EMIs ever deposited: grossPaid / bankMonthlyEmi)
+  netEquivalentEmisPrepaid: number; // e.g. 3.6 months (netAheadOfBank / bankMonthlyEmi)
+  grossEquivalentEmisPrepaid: number; // e.g. 12.4 months (grossAheadOfBank / bankMonthlyEmi)
+  equivalentEmisPrepaid: number; // e.g. 3.6 months ahead on Net basis (default)
   paceMultiplier: number; // e.g. 1.43x
-  statusMessage: string; // e.g. "12.4 Months Ahead of Bank Schedule"
+  statusMessage: string; // e.g. "+3.6 Months Ahead of Bank Schedule (Net)"
 }
 
 /**
@@ -72,20 +79,33 @@ export function getRepaymentPaceAnalysis(ledger: LedgerState): RepaymentPaceAnal
   const totalWithdrawn = paise(Math.max(ledgerWithdrawals, 104803900));
   const netPaid = paise(grossPaid - totalWithdrawn); // ₹38,72,500
 
-  // 4. Variances vs Bank Schedule
+  // 4. Authentic Bank Interest Incurred So Far (sum of 29 passbook interest charges: ₹24,79,889)
+  const totalInterestAddedSoFar = SBI_29_MONTH_AUDIT.reduce(
+    (acc, r) => (acc + r.sbiInterest) as Paise,
+    toPaise(0)
+  );
+
+  // 5. Variances vs Bank Schedule
   const grossAheadOfBank = paise(grossPaid - bankSupposedToPay); // +₹14,72,439
   const grossAheadOfBankPct = Number(((grossAheadOfBank / bankSupposedToPay) * 100).toFixed(1)); // +42.7%
 
   const netAheadOfBank = paise(netPaid - bankSupposedToPay); // +₹4,24,400
   const netAheadOfBankPct = Number(((netAheadOfBank / bankSupposedToPay) * 100).toFixed(1)); // +12.3%
 
-  const equivalentEmisPrepaid = Number((grossAheadOfBank / bankMonthlyEmi).toFixed(1)); // ~12.4 months
+  // Proven Metrics:
+  // - totalEmisCount: Cumulative count of monthly EMIs ever deposited (₹49,20,539 / ₹1,18,900 = 41.4 EMIs total)
+  // - netEquivalentEmisPrepaid: True prepaid advance EMIs ahead of the 29-month schedule after withdrawals (+₹4.24L / ₹1.189L = 3.6 months)
+  // - grossEquivalentEmisPrepaid: Gross advance EMIs ahead of schedule (+₹14.72L / ₹1.189L = 12.4 months)
+  const totalEmisCount = Number((grossPaid / bankMonthlyEmi).toFixed(1)); // 41.4 EMIs deposited in total
+  const netEquivalentEmisPrepaid = Number((netAheadOfBank / bankMonthlyEmi).toFixed(1)); // +3.6 months ahead
+  const grossEquivalentEmisPrepaid = Number((grossAheadOfBank / bankMonthlyEmi).toFixed(1)); // +12.4 months ahead
+  const equivalentEmisPrepaid = netEquivalentEmisPrepaid;
   const paceMultiplier = Number((grossPaid / bankSupposedToPay).toFixed(2)); // ~1.43x
 
   const statusMessage =
-    grossAheadOfBank >= 0
-      ? `+${equivalentEmisPrepaid} Months Ahead of Bank Schedule`
-      : `${Math.abs(equivalentEmisPrepaid)} Months Behind Bank Schedule`;
+    netAheadOfBank >= 0
+      ? `+${netEquivalentEmisPrepaid} Months Ahead of Bank Schedule (Net)`
+      : `${Math.abs(netEquivalentEmisPrepaid)} Months Behind Bank Schedule (Net)`;
 
   return {
     monthsElapsed,
@@ -93,6 +113,7 @@ export function getRepaymentPaceAnalysis(ledger: LedgerState): RepaymentPaceAnal
     currentPeriod: `${currentYear}-${String(currentMonth).padStart(2, '0')}`,
     bankMonthlyEmi,
     bankSupposedToPay,
+    totalInterestAddedSoFar,
     familyMonthlyTarget,
     familySupposedToPay,
     grossPaid,
@@ -102,6 +123,9 @@ export function getRepaymentPaceAnalysis(ledger: LedgerState): RepaymentPaceAnal
     grossAheadOfBankPct,
     netAheadOfBank,
     netAheadOfBankPct,
+    totalEmisCount,
+    netEquivalentEmisPrepaid,
+    grossEquivalentEmisPrepaid,
     equivalentEmisPrepaid,
     paceMultiplier,
     statusMessage,

@@ -56,17 +56,17 @@ import {
 
       <!-- 2 Big WOW Numbers Side by Side -->
       <div class="big-numbers-grid">
-        <!-- Number 1: Actually Paid -->
+        <!-- Number 1: Net Injected in OD (Default) or Gross -->
         <div class="big-num-card card-paid">
           <div class="num-top-row">
             <span class="num-label">
-              {{ isNet() ? 'Net Injected in OD' : 'Actually Paid In' }}
+              {{ isNet() ? 'Net Injected in OD' : 'Gross Paid In' }}
             </span>
             <button
               type="button"
               class="net-toggle-btn"
               (click)="toggleNet()"
-              title="Toggle between Gross deposits and Net retained"
+              title="Toggle between Net retained in OD and Gross total deposits"
             >
               {{ isNet() ? 'Show Gross' : 'Show Net' }}
             </button>
@@ -76,18 +76,18 @@ import {
           </div>
           <span class="num-subtext tabular-nums">
             {{ formatPaise(currentPaidAmount()) }}
+            {{ isNet() ? '(after ₹10.48L withdrawals)' : '(all cumulative deposits)' }}
           </span>
         </div>
 
-        <!-- Number 2: Supposed to Pay -->
+        <!-- Number 2: Interest Added Till Now -->
         <div class="big-num-card card-supposed">
-          <span class="num-label">Supposed to Pay</span>
+          <span class="num-label">Interest Added Till Now</span>
           <div class="num-value text-muted tabular-nums">
-            {{ formatCompactPaise(currentSupposedAmount()) }}
+            {{ formatCompactPaise(pace().totalInterestAddedSoFar) }}
           </div>
           <span class="num-subtext tabular-nums">
-            {{ formatPaise(currentSupposedAmount()) }}
-            ({{ compareMode() === 'bank' ? '₹1.19L/mo EMI' : '₹2.40L/mo Pool' }})
+            {{ formatPaise(pace().totalInterestAddedSoFar) }} (29 Mos SBI Debits)
           </span>
         </div>
       </div>
@@ -110,9 +110,13 @@ import {
           </div>
           <div class="verdict-subtext">
             @if (compareMode() === 'bank') {
-              Equivalent to <strong>~{{ pace().equivalentEmisPrepaid }} months</strong> of advance EMIs paid ahead of time!
+              @if (isNet()) {
+                Net injected exceeds bank schedule by <strong>+{{ formatCompactPaise(varianceAmount()) }}</strong> — equivalent to <strong>~{{ pace().netEquivalentEmisPrepaid }} months</strong> of advance EMIs paid ahead of time!
+              } @else {
+                Gross deposits exceed bank schedule by <strong>+{{ formatCompactPaise(varianceAmount()) }}</strong> — equivalent to <strong>~{{ pace().grossEquivalentEmisPrepaid }} months</strong> of advance EMIs prepaid (total deposited: <strong>~{{ pace().totalEmisCount }} EMIs</strong>).
+              }
             } @else {
-              <strong>{{ formatCompactPaise(pace().grossPaid) }}</strong> deposited toward accelerated ₹2.40L/month payoff goal.
+              <strong>{{ formatCompactPaise(currentPaidAmount()) }}</strong> deposited toward accelerated ₹2.40L/month payoff goal.
             }
           </div>
         </div>
@@ -398,7 +402,7 @@ export class RepaymentPaceCardComponent {
   readonly pace = input.required<RepaymentPaceAnalysis>();
 
   readonly compareMode = signal<'bank' | 'family'>('bank');
-  readonly isNet = signal<boolean>(false);
+  readonly isNet = signal<boolean>(true); // Show net injected in OD by default
 
   readonly formatPaise = formatPaise;
   readonly formatCompactPaise = formatCompactPaise;

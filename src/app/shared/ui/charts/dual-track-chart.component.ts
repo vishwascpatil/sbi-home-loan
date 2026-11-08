@@ -2,9 +2,19 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { formatCompactPaise, formatPaise, Paise, toPaise } from '../../../core/engine';
 
 export interface DualTrackPoint {
-  month: string; // e.g. "Jun '24", "Jan '25"
+  month: string; // e.g. "Jun '24", "Dec '24"
   drawingPowerPaise: Paise;
   actualOutstandingPaise: Paise;
+}
+
+export interface YAxisTick {
+  label: string;
+  y: number;
+}
+
+export interface XAxisTick {
+  label: string;
+  x: number;
 }
 
 @Component({
@@ -13,68 +23,164 @@ export interface DualTrackPoint {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="dual-track-container" role="region" aria-label="Drawing Power vs Actual Balance Chart">
-      <!-- 3 Big WOW Numbers Header (Zero clutter) -->
-      <div class="dual-stats-header">
-        <div class="stat-cluster">
-          <span class="stat-lbl">Sanction Limit</span>
-          <span class="stat-num text-purple tabular-nums">
-            {{ formatCompactPaise(currentDrawingPower()) }}
-          </span>
+      <!-- Section Title & Badge -->
+      <div class="chart-title-row">
+        <div class="title-cluster">
+          <span class="chart-eyebrow">Balance Trajectory</span>
+          <h2 class="chart-headline">Drawing Power vs Current Debt</h2>
         </div>
-
-        <div class="stat-cluster center">
-          <span class="stat-lbl">OD Shield Buffer</span>
-          <span class="stat-num text-emerald tabular-nums">
-            +{{ formatCompactPaise(currentBuffer()) }}
-          </span>
-        </div>
-
-        <div class="stat-cluster right">
-          <span class="stat-lbl">Current Debt</span>
-          <span class="stat-num text-ink tabular-nums">
-            {{ formatCompactPaise(currentOutstanding()) }}
-          </span>
+        <div class="buffer-live-pill">
+          <span class="pulse-dot"></span>
+          <span>OD Shield Active</span>
         </div>
       </div>
 
-      <!-- Custom Responsive SVG Dual-Track Curves with Shaded Cushion -->
+      <!-- 3 Big Metric Telemetry Tiles -->
+      <div class="dual-stats-header">
+        <div class="stat-cluster stat-limit">
+          <div class="stat-lbl-row">
+            <span class="legend-swatch swatch-purple"></span>
+            <span class="stat-lbl">Sanction Limit</span>
+          </div>
+          <span class="stat-num text-purple tabular-nums">
+            {{ formatCompactPaise(currentDrawingPower()) }}
+          </span>
+          <span class="stat-sub tabular-nums">{{ formatPaise(currentDrawingPower()) }}</span>
+        </div>
+
+        <div class="stat-cluster stat-buffer center">
+          <div class="stat-lbl-row">
+            <span class="legend-swatch swatch-emerald"></span>
+            <span class="stat-lbl">OD Shield Buffer</span>
+          </div>
+          <span class="stat-num text-emerald tabular-nums">
+            +{{ formatCompactPaise(currentBuffer()) }}
+          </span>
+          <span class="stat-sub text-emerald tabular-nums">Surplus Headroom</span>
+        </div>
+
+        <div class="stat-cluster stat-debt right">
+          <div class="stat-lbl-row">
+            <span class="legend-swatch swatch-ink"></span>
+            <span class="stat-lbl">Current Debt</span>
+          </div>
+          <span class="stat-num text-ink tabular-nums">
+            {{ formatCompactPaise(currentOutstanding()) }}
+          </span>
+          <span class="stat-sub tabular-nums">{{ formatPaise(currentOutstanding()) }}</span>
+        </div>
+      </div>
+
+      <!-- Custom SVG Graph with Distinct X and Y Axes -->
       <div class="svg-stage-wrap">
         <svg
           class="dual-svg"
-          viewBox="0 0 500 180"
+          viewBox="0 0 550 230"
           preserveAspectRatio="none"
           aria-hidden="true"
         >
           <defs>
-            <!-- Emerald Cushion Gradient for OD Surplus -->
-            <linearGradient id="odCushionGrad" x1="0" y1="0" x2="0" y2="1">
+            <!-- Emerald Cushion Gradient for OD Shield Buffer Zone -->
+            <linearGradient id="odBufferGradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stop-color="#0fb27c" stop-opacity="0.35" />
+              <stop offset="50%" stop-color="#0fb27c" stop-opacity="0.18" />
               <stop offset="100%" stop-color="#0fb27c" stop-opacity="0.05" />
             </linearGradient>
 
             <!-- Line Glow Filter -->
             <filter id="emeraldGlow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0fb27c" flood-opacity="0.4" />
+              <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0fb27c" flood-opacity="0.35" />
             </filter>
             <filter id="purpleGlow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#6c4cff" flood-opacity="0.3" />
+              <feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#6c4cff" flood-opacity="0.3" />
             </filter>
           </defs>
 
-          <!-- Shaded Area Between Drawing Power and Actual Outstanding (The OD Surplus Buffer!) -->
-          <path [attr.d]="cushionAreaPath()" fill="url(#odCushionGrad)" />
+          <!-- 1. Horizontal Grid Lines & Y-Axis Labels -->
+          @for (tick of yTicks; track tick.label) {
+            <line
+              x1="55"
+              [attr.y1]="tick.y"
+              x2="530"
+              [attr.y2]="tick.y"
+              stroke="rgba(118, 122, 144, 0.15)"
+              stroke-dasharray="3 3"
+              stroke-width="1"
+            />
+            <text
+              x="50"
+              [attr.y]="tick.y + 3.5"
+              text-anchor="end"
+              class="axis-label y-axis-label tabular-nums"
+            >
+              {{ tick.label }}
+            </text>
+          }
 
-          <!-- Upper Curve: Sanctioned Drawing Power (Decreases steadily) -->
+          <!-- Y-Axis Vertical Line -->
+          <line x1="55" y1="18" x2="55" y2="194" stroke="#dcdce6" stroke-width="1.5" />
+
+          <!-- X-Axis Baseline -->
+          <line x1="55" y1="194" x2="530" y2="194" stroke="#dcdce6" stroke-width="1.5" />
+
+          <!-- 2. Vertical Ticks & X-Axis Labels -->
+          @for (tick of xTicks; track tick.label) {
+            <line
+              [attr.x1]="tick.x"
+              y1="194"
+              [attr.x2]="tick.x"
+              y2="199"
+              stroke="#8e8e93"
+              stroke-width="1.2"
+            />
+            <text
+              [attr.x]="tick.x"
+              y="214"
+              text-anchor="middle"
+              class="axis-label x-axis-label"
+            >
+              {{ tick.label }}
+            </text>
+          }
+
+          <!-- 3. OD Shield Buffer Section: Shaded Area Between Sanction Limit & Debt -->
+          <path [attr.d]="cushionAreaPath()" fill="url(#odBufferGradient)" />
+
+          <!-- Floating Callout Badge in OD Shield Buffer Area -->
+          <g transform="translate(415, 122)">
+            <rect
+              x="-60"
+              y="-12"
+              width="120"
+              height="24"
+              rx="12"
+              fill="#0fb27c"
+              opacity="0.92"
+            />
+            <text
+              x="0"
+              y="4"
+              text-anchor="middle"
+              fill="#ffffff"
+              font-size="10"
+              font-weight="800"
+              letter-spacing="0.02em"
+            >
+              🛡️ Buffer: +{{ formatCompactPaise(currentBuffer()) }}
+            </text>
+          </g>
+
+          <!-- 4. Sanction Limit Curve (Purple Dashed Line) -->
           <path
             [attr.d]="drawingPowerPath()"
             fill="none"
             stroke="#6c4cff"
             stroke-width="2.5"
-            stroke-dasharray="4 3"
+            stroke-dasharray="5 3"
             filter="url(#purpleGlow)"
           />
 
-          <!-- Lower Curve: Actual Book Outstanding (Faster drop, active debt) -->
+          <!-- 5. Current Debt Curve (Solid Emerald Line) -->
           <path
             [attr.d]="actualOutstandingPath()"
             fill="none"
@@ -84,26 +190,50 @@ export interface DualTrackPoint {
             filter="url(#emeraldGlow)"
           />
 
-          <!-- Latest End Points with Pulse Markers -->
+          <!-- Milestone Data Nodes on the Curves -->
+          @for (pt of nodePoints(); track pt.x) {
+            <circle [attr.cx]="pt.x" [attr.cy]="pt.dpY" r="3" fill="#6c4cff" opacity="0.8" />
+            <circle [attr.cx]="pt.x" [attr.cy]="pt.actY" r="3.5" fill="#0fb27c" />
+          }
+
+          <!-- Latest End Points with Pulse Markers at Nov '26 -->
           @if (endPoints(); as ep) {
             <!-- Drawing Power End Marker -->
-            <circle [attr.cx]="ep.dpX" [attr.cy]="ep.dpY" r="4.5" fill="#6c4cff" />
+            <circle [attr.cx]="ep.dpX" [attr.cy]="ep.dpY" r="5" fill="#6c4cff" />
+            <circle [attr.cx]="ep.dpX" [attr.cy]="ep.dpY" r="9" fill="none" stroke="#6c4cff" stroke-width="1.5" opacity="0.5" />
 
-            <!-- Actual Outstanding End Marker -->
-            <circle [attr.cx]="ep.actX" [attr.cy]="ep.actY" r="5.5" fill="#0fb27c" />
-            <circle [attr.cx]="ep.actX" [attr.cy]="ep.actY" r="9" fill="none" stroke="#0fb27c" stroke-width="1.5" opacity="0.6" />
+            <!-- Actual Debt End Marker -->
+            <circle [attr.cx]="ep.actX" [attr.cy]="ep.actY" r="6" fill="#0fb27c" />
+            <circle [attr.cx]="ep.actX" [attr.cy]="ep.actY" r="10" fill="none" stroke="#0fb27c" stroke-width="1.8" opacity="0.6" />
           }
         </svg>
       </div>
 
-      <!-- Simple Timeline Axis Labels -->
-      <div class="axis-legend-row">
-        <span>Jun '24 (Disbursed)</span>
-        <span class="legend-pill">
-          <span class="dot-swatch swatch-green"></span> Debt
-          <span class="dot-swatch swatch-purple" style="margin-left: 8px"></span> Limit
-        </span>
-        <span>Nov '26 (Today)</span>
+      <!-- Distinct Section Legend with Explanations -->
+      <div class="axis-legend-grid">
+        <div class="legend-item">
+          <span class="legend-bar bar-purple"></span>
+          <div class="legend-text">
+            <strong>Sanction Limit (Drawing Power)</strong>
+            <span>SBI benchmark capacity (currently {{ formatCompactPaise(currentDrawingPower()) }})</span>
+          </div>
+        </div>
+
+        <div class="legend-item">
+          <span class="legend-bar bar-emerald"></span>
+          <div class="legend-text">
+            <strong>Current Debt (Actual Balance)</strong>
+            <span>Active loan principal to clear ({{ formatCompactPaise(currentOutstanding()) }})</span>
+          </div>
+        </div>
+
+        <div class="legend-item">
+          <span class="legend-bar bar-cushion"></span>
+          <div class="legend-text">
+            <strong>OD Shield Buffer Zone</strong>
+            <span>Interest-free surplus buffer saving daily interest (+{{ formatCompactPaise(currentBuffer()) }})</span>
+          </div>
+        </div>
       </div>
     </div>
   `,
@@ -111,18 +241,76 @@ export interface DualTrackPoint {
     .dual-track-container {
       background: #ffffff;
       border-radius: 26px;
-      padding: 20px;
+      padding: 22px 20px;
       box-shadow: var(--shadow-card);
       position: relative;
       overflow: hidden;
       border: 1px solid rgba(108, 76, 255, 0.08);
     }
 
+    .chart-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+      gap: 12px;
+    }
+
+    .title-cluster {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .chart-eyebrow {
+      font-size: 11px;
+      font-weight: 800;
+      color: #6c4cff;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .chart-headline {
+      font-size: clamp(16px, 4vw, 19px);
+      font-weight: 800;
+      color: #15172b;
+      margin: 0;
+      letter-spacing: -0.02em;
+    }
+
+    .buffer-live-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(15, 178, 124, 0.1);
+      color: #0fb27c;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 99px;
+      white-space: nowrap;
+    }
+
+    .pulse-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #0fb27c;
+      animation: pulseGlow 1.8s ease-in-out infinite;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.3); }
+    }
+
     .dual-stats-header {
       display: grid;
-      grid-template-columns: 1fr 1.2fr 1fr;
+      grid-template-columns: 1fr 1.15fr 1fr;
       gap: 8px;
-      margin-bottom: 16px;
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     }
 
     .stat-cluster {
@@ -141,28 +329,50 @@ export interface DualTrackPoint {
       }
     }
 
+    .stat-lbl-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .legend-swatch {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+
+      &.swatch-purple { background: #6c4cff; }
+      &.swatch-emerald { background: #0fb27c; }
+      &.swatch-ink { background: #15172b; }
+    }
+
     .stat-lbl {
-      font-size: 11px;
+      font-size: 10.5px;
       font-weight: 700;
-      color: #8e8e93;
+      color: #767a90;
       text-transform: uppercase;
       letter-spacing: 0.03em;
     }
 
     .stat-num {
-      font-size: clamp(17px, 4.4vw, 22px);
+      font-size: clamp(16px, 4.2vw, 21px);
       font-weight: 900;
       letter-spacing: -0.025em;
-      line-height: 1.1;
+      line-height: 1.15;
 
       &.text-purple { color: #6c4cff; }
       &.text-emerald { color: #0fb27c; }
       &.text-ink { color: #15172b; }
     }
 
+    .stat-sub {
+      font-size: 10px;
+      font-weight: 600;
+      color: #9399b4;
+    }
+
     .svg-stage-wrap {
       width: 100%;
-      height: 140px;
+      height: 190px;
       position: relative;
     }
 
@@ -172,33 +382,58 @@ export interface DualTrackPoint {
       overflow: visible;
     }
 
-    .axis-legend-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 11px;
+    .axis-label {
+      font-size: 9.5px;
       font-weight: 700;
-      color: #8e8e93;
-      margin-top: 10px;
-      padding-top: 8px;
-      border-top: 1px solid rgba(0, 0, 0, 0.04);
+      fill: #767a90;
     }
 
-    .legend-pill {
-      display: inline-flex;
-      align-items: center;
+    .axis-legend-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .legend-bar {
+      width: 16px;
+      height: 4px;
+      border-radius: 2px;
+      margin-top: 6px;
+      flex-shrink: 0;
+
+      &.bar-purple {
+        background: #6c4cff;
+        border-bottom: 2px dashed #6c4cff;
+      }
+      &.bar-emerald {
+        background: #0fb27c;
+      }
+      &.bar-cushion {
+        background: rgba(15, 178, 124, 0.4);
+        border: 1px solid #0fb27c;
+      }
+    }
+
+    .legend-text {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
       font-size: 11px;
-      color: #555870;
-    }
+      color: #767a90;
 
-    .dot-swatch {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      margin-right: 4px;
-
-      &.swatch-green { background: #0fb27c; }
-      &.swatch-purple { background: #6c4cff; }
+      strong {
+        color: #15172b;
+        font-weight: 700;
+      }
     }
   `,
 })
@@ -212,11 +447,29 @@ export class DualTrackChartComponent {
     Math.max(0, this.currentDrawingPower() - this.currentOutstanding()) as Paise
   );
 
-  // Key monthly milestone points from bank statement history:
-  // Jun'24 (133L), Dec'24 (126.3L vs 125.5L), Jun'25 (125.8L vs 127L), Dec'25 (125L vs 126.1L), Jun'26 (124.2L vs 123.8L), Nov'26 (126.1L vs 118.8L)
+  // Y-axis ticks across the ₹1.15 Cr to ₹1.35 Cr range
+  readonly yTicks: YAxisTick[] = [
+    { label: '₹1.35Cr', y: 18 },
+    { label: '₹1.30Cr', y: 62 },
+    { label: '₹1.25Cr', y: 106 },
+    { label: '₹1.20Cr', y: 150 },
+    { label: '₹1.15Cr', y: 194 },
+  ];
+
+  // X-axis ticks representing key milestone dates
+  readonly xTicks: XAxisTick[] = [
+    { label: "Jun '24", x: 55 },
+    { label: "Dec '24", x: 158 },
+    { label: "Jun '25", x: 262 },
+    { label: "Dec '25", x: 365 },
+    { label: "Jun '26", x: 468 },
+    { label: "Nov '26", x: 520 },
+  ];
+
+  // Key monthly milestone points from authentic bank statement history
   readonly historyPoints: DualTrackPoint[] = [
     { month: "Jun '24", drawingPowerPaise: toPaise(13300000), actualOutstandingPaise: toPaise(13300000) },
-    { month: "Sep '24", drawingPowerPaise: toPaise(13150000), actualOutstandingPaise: toPaise(12420482) }, // Sep ₹5L deposit
+    { month: "Sep '24", drawingPowerPaise: toPaise(13150000), actualOutstandingPaise: toPaise(12420482) }, // Sep ₹5.36L Prepayment
     { month: "Dec '24", drawingPowerPaise: toPaise(13000000), actualOutstandingPaise: toPaise(12537032) },
     { month: "Mar '25", drawingPowerPaise: toPaise(12880000), actualOutstandingPaise: toPaise(12568351) },
     { month: "Jun '25", drawingPowerPaise: toPaise(12760000), actualOutstandingPaise: toPaise(12701009) },
@@ -227,21 +480,20 @@ export class DualTrackChartComponent {
     { month: "Nov '26", drawingPowerPaise: toPaise(12612930), actualOutstandingPaise: toPaise(11886289) },
   ];
 
-  // Map points to SVG coordinates (Width 500, Height 180, Padding Top 20, Bottom 20)
-  // Max scale: 1.35 Cr, Min scale: 1.15 Cr
+  // Map amount in Paise to SVG Y-coordinate (18 to 194)
   private scaleY(amountPaise: Paise): number {
-    const minPaise = toPaise(11500000);
-    const maxPaise = toPaise(13500000);
+    const minPaise = toPaise(11500000); // 1.15 Cr
+    const maxPaise = toPaise(13500000); // 1.35 Cr
     const fraction = (amountPaise - minPaise) / (maxPaise - minPaise);
     const clamped = Math.max(0, Math.min(1, fraction));
-    // SVG y=0 is top (maxPaise), y=140 is bottom (minPaise)
-    return 160 - clamped * 135;
+    return 194 - clamped * 176;
   }
 
+  // Map chronological point index to SVG X-coordinate (55 to 520)
   private scaleX(index: number, total: number): number {
-    const padX = 20;
-    const width = 500 - 2 * padX;
-    return padX + (index / (total - 1)) * width;
+    const padLeft = 55;
+    const width = 465; // 55 to 520
+    return padLeft + (index / (total - 1)) * width;
   }
 
   readonly drawingPowerPath = computed<string>(() => {
@@ -281,6 +533,15 @@ export class DualTrackChartComponent {
     return forward + backward + ' Z';
   });
 
+  readonly nodePoints = computed(() => {
+    const pts = this.historyPoints;
+    return pts.map((p, i) => ({
+      x: this.scaleX(i, pts.length),
+      dpY: this.scaleY(p.drawingPowerPaise),
+      actY: this.scaleY(p.actualOutstandingPaise),
+    }));
+  });
+
   readonly endPoints = computed(() => {
     const pts = this.historyPoints;
     const lastIdx = pts.length - 1;
@@ -297,4 +558,3 @@ export class DualTrackChartComponent {
   formatCompactPaise = formatCompactPaise;
   formatPaise = formatPaise;
 }
-
