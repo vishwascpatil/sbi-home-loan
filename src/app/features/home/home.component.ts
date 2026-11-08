@@ -4,6 +4,7 @@ import { LedgerStore, SettingsStore, UserProfileStore } from '../../core/state';
 import {
   AvatarComponent,
   BarChartComponent,
+  BottomSheetComponent,
   ConfirmSheetComponent,
 } from '../../shared/ui';
 import { CountUpDirective } from '../../shared/ui/count-up/count-up.directive';
@@ -12,10 +13,12 @@ import {
   divideHalfUp,
   formatCompactPaise,
   formatPaise,
+  getOdWithdrawalsSummary,
   getTransactionAmount,
   getTransactionMode,
   Paise,
   paise,
+  simulatePayback,
   simulateV2,
   toPaise,
   toRupees,
@@ -34,6 +37,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
     CountUpDirective,
     BarChartComponent,
     AvatarComponent,
+    BottomSheetComponent,
     ConfirmSheetComponent,
     AddEditTransactionSheetComponent,
     DailyLedgerSheetComponent,
@@ -133,21 +137,141 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
           </div>
         </div>
 
-        <!-- Hero Highlights Row: Today's Interest + Loan Cleared -->
+        <!-- Hero Highlights Row: Loan Cleared + OD Surplus Buffer -->
         <div class="hero-pulse-strip">
           <div class="hero-glass-pill" (click)="isDailyLedgerOpen.set(true)" role="button" tabindex="0">
-            <span class="pill-main tabular-nums">+{{ formatPaise(dailyInterestCalculation().dailyInterest) }}</span>
-            <span class="pill-sub">Today</span>
-          </div>
-
-          <div class="hero-glass-pill">
             <span class="pill-main tabular-nums">{{ repaidPercent().toFixed(1) }}%</span>
             <span class="pill-sub">Cleared ({{ formatCompactPaise(repaidAmount()) }})</span>
+          </div>
+
+          <div class="hero-glass-pill" (click)="isWithdrawalSheetOpen.set(true)" role="button" tabindex="0">
+            <span class="pill-main tabular-nums text-emerald">{{ formatCompactPaise(odAvailableBuffer()) }}</span>
+            <span class="pill-sub">OD Surplus Buffer</span>
           </div>
         </div>
       </div>
 
-      <!-- 3. Section: This Month & Payoff -->
+      <!-- 3. Section: High-Impact OD Telemetry (Big Numbers, Minimal Words) -->
+      <section class="home-section">
+        <div class="dual-squircle-grid">
+          <!-- Card 1: OD Shield (Savings) -->
+          <div
+            class="squircle-metric-card od-shield-card"
+            (click)="isDailyLedgerOpen.set(true)"
+            role="button"
+            tabindex="0"
+            aria-label="OD Shield Daily Interest Savings"
+          >
+            <div class="card-iridescent-edge edge-green" aria-hidden="true"></div>
+            <div class="card-top-header">
+              <span class="card-caption-title text-green-glow">🛡️ OD Shield</span>
+              <span class="card-chevron-icon">›</span>
+            </div>
+
+            <div class="card-metric-body">
+              <div class="metric-hero-wrap">
+                <div class="metric-giant-num tabular-nums text-green">
+                  +{{ formatCompactPaise(odDailyInterestSaved()) }}
+                  <span class="metric-unit-tag">/day</span>
+                </div>
+                <span class="metric-label-sub">
+                  +{{ formatCompactPaise(odMonthlyInterestSaved()) }}/mo saved by buffer
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Interest Bleed (Penalties on Withdrawals) -->
+          <div
+            class="squircle-metric-card od-bleed-card"
+            (click)="isWithdrawalSheetOpen.set(true)"
+            role="button"
+            tabindex="0"
+            aria-label="OD Interest Bleed on Withdrawals"
+          >
+            <div class="card-iridescent-edge edge-coral" aria-hidden="true"></div>
+            <div class="card-top-header">
+              <span class="card-caption-title text-coral-glow">⚠️ Interest Bleed</span>
+              <span class="card-badge-pill">21 Draws ›</span>
+            </div>
+
+            <div class="card-metric-body">
+              <div class="metric-hero-wrap">
+                <div class="metric-giant-num tabular-nums text-coral">
+                  −{{ formatCompactPaise(odWithdrawalSummary().currentMonthlyBleed) }}
+                  <span class="metric-unit-tag">/mo</span>
+                </div>
+                <span class="metric-label-sub">
+                  {{ formatCompactPaise(odWithdrawalSummary().totalInterestLost) }} lost on {{ formatCompactPaise(odWithdrawalSummary().netWithdrawn) }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Section: Interactive Payback Accelerator (WOW Feature) -->
+      <section class="home-section">
+        <div class="payback-feature-card">
+          <div class="payback-header">
+            <div>
+              <span class="trend-eyebrow-pill eyebrow-amber">
+                <span class="live-pulse-dot dot-amber" aria-hidden="true"></span>
+                <span>Payback Accelerator</span>
+              </span>
+              <h2 class="payback-heading">What if we return money to OD?</h2>
+            </div>
+            <span class="payback-current-amount tabular-nums">
+              {{ formatPaise(paybackSliderPaise()) }}
+            </span>
+          </div>
+
+          <!-- Modern Glass Range Slider -->
+          <div class="payback-slider-wrap">
+            <input
+              type="range"
+              min="0"
+              [max]="odWithdrawalSummary().netWithdrawn"
+              step="2500000"
+              [value]="paybackSliderPaise()"
+              (input)="onPaybackSliderInput($event)"
+              class="payback-slider-input"
+              aria-label="Simulate Payback Amount"
+            />
+            <div class="slider-ticks">
+              <span>₹0</span>
+              <span>₹5L</span>
+              <span>₹10.48L (Full)</span>
+            </div>
+          </div>
+
+          <!-- 3 Reactive Big Number Tiles -->
+          <div class="payback-results-grid">
+            <div class="payback-stat-tile">
+              <span class="payback-stat-big text-green tabular-nums">
+                +{{ formatCompactPaise(paybackSim().monthlySavingsPaise) }}
+              </span>
+              <span class="payback-stat-lbl">Monthly Relief</span>
+            </div>
+
+            <div class="payback-stat-tile">
+              <span class="payback-stat-big text-cyan tabular-nums">
+                {{ formatCompactPaise(paybackSim().lifetimeInterestSavedPaise) }}
+              </span>
+              <span class="payback-stat-lbl">Lifetime Saved</span>
+            </div>
+
+            <div class="payback-stat-tile">
+              <span class="payback-stat-big text-purple tabular-nums">
+                −{{ paybackSim().monthsTenureReduced }} mo
+              </span>
+              <span class="payback-stat-lbl">Debt-Free Sooner</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. Section: This Month & Payoff Baseline -->
       <section class="home-section">
         <div class="dual-squircle-grid">
           <!-- Card 1: This Month -->
@@ -344,6 +468,50 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
         [isOpen]="isDailyLedgerOpen()"
         (dismissed)="isDailyLedgerOpen.set(false)"
       />
+
+      <!-- OD Withdrawals Forensic Bottom Sheet -->
+      <app-bottom-sheet
+        [isOpen]="isWithdrawalSheetOpen()"
+        title="OD Withdrawals & Interest Lost"
+        (dismissed)="isWithdrawalSheetOpen.set(false)"
+      >
+        <div class="sheet-forensic-container">
+          <!-- Top 3 Big Stat Chips -->
+          <div class="forensic-top-chips">
+            <div class="forensic-chip">
+              <span class="f-chip-val tabular-nums">−{{ formatCompactPaise(odWithdrawalSummary().netWithdrawn) }}</span>
+              <span class="f-chip-lbl">21 Draws Total</span>
+            </div>
+            <div class="forensic-chip chip-danger">
+              <span class="f-chip-val tabular-nums text-coral">₹1.29L</span>
+              <span class="f-chip-lbl">Interest Lost</span>
+            </div>
+            <div class="forensic-chip chip-amber">
+              <span class="f-chip-val tabular-nums text-amber">−₹6,893</span>
+              <span class="f-chip-lbl">Bleed / Month</span>
+            </div>
+          </div>
+
+          <!-- Itemized List -->
+          <div class="forensic-items-list">
+            @for (rec of odWithdrawalSummary().records; track rec.id) {
+              <div class="forensic-row">
+                <div class="f-row-left">
+                  <div class="f-icon-bubble">{{ rec.categoryIcon }}</div>
+                  <div class="f-meta">
+                    <span class="f-title">{{ rec.categoryLabel }}</span>
+                    <span class="f-dest">{{ rec.date }} · {{ rec.destination }}</span>
+                  </div>
+                </div>
+                <div class="f-row-right">
+                  <span class="f-amount tabular-nums">−{{ formatPaise(rec.amount) }}</span>
+                  <span class="f-penalty tabular-nums">+{{ formatPaise(rec.cumulativeInterestLost) }} lost</span>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </app-bottom-sheet>
     </div>
   `,
   styles: `
@@ -989,6 +1157,302 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       }
     }
 
+    /* OD Shield & Bleed Cards */
+    .edge-green {
+      background: linear-gradient(90deg, #0fb27c 0%, #34d399 100%) !important;
+    }
+
+    .edge-coral {
+      background: linear-gradient(90deg, #ff5f9e 0%, #ee4d6b 100%) !important;
+    }
+
+    .text-green-glow {
+      color: #0fb27c !important;
+    }
+
+    .text-coral-glow {
+      color: #ee4d6b !important;
+    }
+
+    .card-badge-pill {
+      font-size: 11px;
+      font-weight: 700;
+      color: #ee4d6b;
+      background: rgba(238, 77, 107, 0.1);
+      padding: 3px 8px;
+      border-radius: 99px;
+    }
+
+    .metric-hero-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .metric-giant-num {
+      font-size: clamp(24px, 5.8vw, 30px);
+      font-weight: 900;
+      letter-spacing: -0.035em;
+      line-height: 1.1;
+
+      &.text-green {
+        color: #0fb27c;
+      }
+      &.text-coral {
+        color: #ee4d6b;
+      }
+    }
+
+    .metric-unit-tag {
+      font-size: 13px;
+      font-weight: 700;
+      opacity: 0.7;
+      letter-spacing: normal;
+    }
+
+    /* Payback Accelerator Card */
+    .payback-feature-card {
+      background: #ffffff;
+      border-radius: 26px;
+      padding: 20px;
+      box-shadow: var(--shadow-card);
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(108, 76, 255, 0.08);
+    }
+
+    .payback-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+
+    .eyebrow-amber {
+      background: rgba(245, 158, 11, 0.1);
+      color: #d97706;
+      border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+
+    .dot-amber {
+      background: #f59e0b;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.8);
+    }
+
+    .payback-heading {
+      font-size: 16px;
+      font-weight: 800;
+      color: #15172b;
+      margin: 4px 0 0;
+      letter-spacing: -0.02em;
+    }
+
+    .payback-current-amount {
+      font-size: 16px;
+      font-weight: 900;
+      color: #6c4cff;
+      background: rgba(108, 76, 255, 0.08);
+      padding: 6px 12px;
+      border-radius: 99px;
+    }
+
+    .payback-slider-wrap {
+      margin: 12px 0 16px;
+    }
+
+    .payback-slider-input {
+      width: 100%;
+      height: 8px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: linear-gradient(90deg, #6c4cff 0%, #ff5f9e 50%, #0fb27c 100%);
+      border-radius: 99px;
+      outline: none;
+      cursor: pointer;
+
+      &::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #ffffff;
+        border: 3px solid #6c4cff;
+        box-shadow: 0 4px 12px rgba(108, 76, 255, 0.4);
+        cursor: pointer;
+        transition: transform 0.15s ease;
+
+        &:hover {
+          transform: scale(1.15);
+        }
+      }
+    }
+
+    .slider-ticks {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 700;
+      color: #8e8e93;
+      margin-top: 6px;
+    }
+
+    .payback-results-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      background: rgba(244, 241, 236, 0.6);
+      border-radius: 18px;
+      padding: 12px;
+    }
+
+    .payback-stat-tile {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 2px;
+    }
+
+    .payback-stat-big {
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+
+      &.text-green { color: #0fb27c; }
+      &.text-cyan { color: #0284c7; }
+      &.text-purple { color: #7c3aed; }
+    }
+
+    .payback-stat-lbl {
+      font-size: 10px;
+      font-weight: 700;
+      color: #8e8e93;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    /* Colors */
+    .text-coral { color: #ee4d6b !important; }
+    .text-emerald { color: #10b981 !important; }
+    .text-amber { color: #f59e0b !important; }
+
+    /* Forensic Bottom Sheet */
+    .sheet-forensic-container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding-bottom: 24px;
+    }
+
+    .forensic-top-chips {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .forensic-chip {
+      background: #f4f1ec;
+      border-radius: 16px;
+      padding: 10px 8px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+
+      &.chip-danger {
+        background: rgba(238, 77, 107, 0.08);
+      }
+      &.chip-amber {
+        background: rgba(245, 158, 11, 0.08);
+      }
+    }
+
+    .f-chip-val {
+      font-size: 14px;
+      font-weight: 800;
+      color: #15172b;
+    }
+
+    .f-chip-lbl {
+      font-size: 10px;
+      font-weight: 700;
+      color: #8e8e93;
+      text-transform: uppercase;
+    }
+
+    .forensic-items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 420px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .forensic-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: #ffffff;
+      border-radius: 16px;
+      border: 1px solid rgba(0, 0, 0, 0.04);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+    }
+
+    .f-row-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .f-icon-bubble {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      background: #f4f1ec;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .f-meta {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .f-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #15172b;
+    }
+
+    .f-dest {
+      font-size: 11px;
+      font-weight: 600;
+      color: #8e8e93;
+    }
+
+    .f-row-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    .f-amount {
+      font-size: 14px;
+      font-weight: 800;
+      color: #ee4d6b;
+    }
+
+    .f-penalty {
+      font-size: 10px;
+      font-weight: 700;
+      color: #d97706;
+    }
+
     .metric-split-lbl {
       font-size: 10px;
       font-weight: 600;
@@ -1488,16 +1952,47 @@ export class HomeComponent {
     };
   });
 
-  readonly repaidAmount = computed<Paise>(() => {
+  readonly isWithdrawalSheetOpen = signal<boolean>(false);
+  readonly odWithdrawalSummary = computed(() => getOdWithdrawalsSummary());
+  readonly paybackSliderPaise = signal<Paise>(toPaise(500000)); // Default ₹5 Lakhs simulation
+  readonly paybackSim = computed(() =>
+    simulatePayback(this.paybackSliderPaise(), this.ledgerStore.loan().currentRateBps)
+  );
+
+  readonly odAvailableBuffer = computed<Paise>(() => {
     const lim = this.ledgerStore.loan().sanctionedLimit;
     const out = this.ledgerStore.currentOutstanding();
     return Math.max(0, lim - out) as Paise;
   });
 
+  readonly odDailyInterestSaved = computed<Paise>(() => {
+    const buffer = this.odAvailableBuffer();
+    const rateBps = this.ledgerStore.loan().currentRateBps;
+    return paise(Math.round((buffer * rateBps) / (10000 * 365)));
+  });
+
+  readonly odMonthlyInterestSaved = computed<Paise>(() => {
+    const buffer = this.odAvailableBuffer();
+    const rateBps = this.ledgerStore.loan().currentRateBps;
+    return paise(Math.round((buffer * rateBps) / (10000 * 12)));
+  });
+
+  onPaybackSliderInput(event: Event): void {
+    const val = Number((event.target as HTMLInputElement).value);
+    this.paybackSliderPaise.set(paise(val));
+    triggerHaptic('light');
+  }
+
+  readonly repaidAmount = computed<Paise>(() => {
+    const initial = this.ledgerStore.loan().initialDisbursed || toPaise(13300000);
+    const out = this.ledgerStore.currentOutstanding();
+    return Math.max(0, initial - out) as Paise;
+  });
+
   readonly repaidPercent = computed(() => {
-    const lim = this.ledgerStore.loan().sanctionedLimit;
-    if (lim <= 0) return 0;
-    return (this.repaidAmount() / lim) * 100;
+    const initial = this.ledgerStore.loan().initialDisbursed || toPaise(13300000);
+    if (initial <= 0) return 0;
+    return (this.repaidAmount() / initial) * 100;
   });
 
   readonly targetValueRupees = computed(() => {

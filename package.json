@@ -44,6 +44,8 @@
     "eslint-config-prettier": "^10.1.1",
     "firebase-tools": "^15.34.2",
     "jsdom": "^30.0.0",
+    "pdf-parse": "^2.4.5",
+    "pdfjs-dist": "^4.10.38",
     "prettier": "^3.8.1",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.26.0",

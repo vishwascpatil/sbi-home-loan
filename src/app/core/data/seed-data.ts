@@ -13,9 +13,10 @@ export function getInitialSeedData(): LedgerState {
     id: 'loan-primary',
     type: 'Overdraft (OD)',
     accountNumber: '43054757071',
-    sanctionedLimit: toPaise(12636108), // ₹1,26,36,108.00
-    openingOutstanding: toPaise(12055189), // ₹1,20,55,189.00 as of Oct 31st baseline
-    openingDate: '2026-10-31',
+    initialDisbursed: toPaise(13300000), // ₹1,33,00,000.00 initial disbursement
+    sanctionedLimit: toPaise(12612930), // ₹1,26,12,930.00 current drawing power limit
+    openingOutstanding: toPaise(11886289), // ₹1,18,86,289.00 current book balance (Nov 5, 2026)
+    openingDate: '2024-06-12',
     maturityDate: '2044-06-12',
     currentRateBps: 790, // 7.90% p.a.
     monthlyTarget: toPaise(240000), // ₹2,40,000.00 (pool sum of member targets)
@@ -97,24 +98,60 @@ export function getInitialSeedData(): LedgerState {
     {
       id: crypto.randomUUID(),
       effectiveFrom: '2024-06-12',
-      rateBps: 790,
-      previousRateBps: 790,
-      reason: 'Current rate 7.90% p.a.',
+      rateBps: 890,
+      previousRateBps: 890,
+      reason: 'Sanction rate 8.90% p.a.',
       createdAt: '2024-06-12T00:00:00.000Z',
       updatedAt: '2024-06-12T00:00:00.000Z',
+    },
+    {
+      id: crypto.randomUUID(),
+      effectiveFrom: '2025-02-01',
+      rateBps: 850,
+      previousRateBps: 890,
+      reason: 'EBLR rate reduction to 8.50% p.a.',
+      createdAt: '2025-02-01T00:00:00.000Z',
+      updatedAt: '2025-02-01T00:00:00.000Z',
+    },
+    {
+      id: crypto.randomUUID(),
+      effectiveFrom: '2025-07-01',
+      rateBps: 790,
+      previousRateBps: 850,
+      reason: 'EBLR rate reduction to 7.90% p.a.',
+      createdAt: '2025-07-01T00:00:00.000Z',
+      updatedAt: '2025-07-01T00:00:00.000Z',
+    },
+    {
+      id: crypto.randomUUID(),
+      effectiveFrom: '2026-01-01',
+      rateBps: 765,
+      previousRateBps: 790,
+      reason: 'EBLR rate reduction to 7.65% p.a.',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    },
+    {
+      id: crypto.randomUUID(),
+      effectiveFrom: '2026-10-01',
+      rateBps: 790,
+      previousRateBps: 765,
+      reason: 'Current rate 7.90% p.a.',
+      createdAt: '2026-10-01T00:00:00.000Z',
+      updatedAt: '2026-10-01T00:00:00.000Z',
     },
   ];
 
   const snapshots: BalanceSnapshot[] = [
     {
       id: crypto.randomUUID(),
-      date: '2026-10-31',
-      bankActualOutstanding: toPaise(12055189),
-      ledgerCalculatedOutstanding: toPaise(12055189),
+      date: '2026-11-05',
+      bankActualOutstanding: toPaise(11886289),
+      ledgerCalculatedOutstanding: toPaise(11886289),
       variance: toPaise(0),
-      notes: 'Passbook balance baseline as of Oct 31st',
-      createdAt: '2026-10-31T00:00:00.000Z',
-      updatedAt: '2026-10-31T00:00:00.000Z',
+      notes: 'Passbook balance baseline as of Nov 5, 2026 (post-Nov EMI)',
+      createdAt: '2026-11-05T00:00:00.000Z',
+      updatedAt: '2026-11-05T00:00:00.000Z',
     },
   ];
 

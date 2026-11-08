@@ -93,6 +93,7 @@ export interface Loan extends BaseEntity {
   type: string;
   accountNumber: string;
   sanctionedLimit: Paise;
+  initialDisbursed?: Paise;
   openingOutstanding: Paise;
   openingDate: string; // YYYY-MM-DD
   maturityDate: string; // YYYY-MM-DD
