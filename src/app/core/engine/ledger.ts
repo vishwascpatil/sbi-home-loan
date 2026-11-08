@@ -145,7 +145,8 @@ export function outstandingAt(
   statementRows?: SbiPassbookRow[]
 ): Paise {
   const targetDate = dateOrMonth.length === 7 ? `${dateOrMonth}-31` : dateOrMonth;
-  const chronoRows = statementRows && statementRows.length > 0 ? [...statementRows].reverse() : [];
+  const rows = statementRows || ledger.statementRecords || [];
+  const chronoRows = rows.length > 0 ? [...rows].reverse() : [];
 
   // 1. For authentic loan tracking, ground balance directly in authentic bank statement records
   if (ledger.loan.id === 'loan-primary' && chronoRows.length > 0) {
@@ -261,14 +262,15 @@ export function monthlySummary(
   // 1. Check if month is covered by authentic bank statement records from Firestore
   const paymentsList = context?.paymentsAudit && context.paymentsAudit.length > 0
     ? context.paymentsAudit
-    : [];
+    : ledger.paymentsAudit || [];
   const auditList = context?.interestAudit && context.interestAudit.length > 0
     ? context.interestAudit
-    : [];
+    : ledger.interestAudit || [];
+  const statementRows = context?.statementRows || ledger.statementRecords || [];
 
   const stmtPayment = paymentsList.find((r) => r.period === month);
   if (stmtPayment) {
-    const dailyData = getSbiDailyLedger(month, ledger.transactions, context?.statementRows);
+    const dailyData = getSbiDailyLedger(month, ledger.transactions, statementRows);
     const auditRecord = auditList.find((r) => r.period === month);
     const stmtPaidToBank = stmtPayment.totalPaid;
     const stmtInterest = auditRecord ? auditRecord.sbiInterest : dailyData.totalInterestAccrued;

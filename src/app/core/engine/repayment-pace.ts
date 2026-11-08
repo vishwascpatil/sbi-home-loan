@@ -89,21 +89,25 @@ export function getRepaymentPaceAnalysis(
   }
 
   // Baseline from Cloud Firestore subcollections
-  const auditPaymentsTotal = options?.paymentsAudit?.length
-    ? options.paymentsAudit.reduce((acc, r) => acc + r.totalPaid, 0)
-    : 492053900; // fallback to ₹49,20,539.00 if empty
+  const paymentsList = options?.paymentsAudit || ledger.paymentsAudit || [];
+  const withdrawalsList = options?.odWithdrawals || ledger.odWithdrawals || [];
+  const interestList = options?.interestAudit || ledger.interestAudit || [];
 
-  const auditWithdrawalsTotal = options?.odWithdrawals?.length
-    ? options.odWithdrawals.reduce((acc, r) => acc + r.amount, 0)
-    : 104803900; // fallback to ₹10,48,039.00 if empty
+  const auditPaymentsTotal = paymentsList.length
+    ? paymentsList.reduce((acc, r) => acc + r.totalPaid, 0)
+    : 492053900;
+
+  const auditWithdrawalsTotal = withdrawalsList.length
+    ? withdrawalsList.reduce((acc, r) => acc + r.amount, 0)
+    : 104803900;
 
   const grossPaid = paise(auditPaymentsTotal + liveBankDeposits);
   const totalWithdrawn = paise(auditWithdrawalsTotal + liveWithdrawals);
   const netPaid = paise(grossPaid - totalWithdrawn);
 
   // 4. Interest Added (sum from Firestore interestAudit)
-  const totalInterestAddedSoFar: Paise = options?.interestAudit?.length
-    ? (options.interestAudit.reduce((acc, r) => acc + r.sbiInterest, 0) as Paise)
+  const totalInterestAddedSoFar: Paise = interestList.length
+    ? (interestList.reduce((acc, r) => acc + r.sbiInterest, 0) as Paise)
     : toPaise(2479889);
 
   // 5. Variances vs Bank Schedule

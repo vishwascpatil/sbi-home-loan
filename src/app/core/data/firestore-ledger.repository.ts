@@ -52,11 +52,11 @@ export class FirestoreLedgerRepository implements LedgerRepository {
   private app: FirebaseApp;
   private db: Firestore;
   private inMemoryCache: LedgerState | null = null;
-  private statementRecordsCache: SbiPassbookRow[] = [];
-  private odWithdrawalsCache: OdWithdrawalRecord[] = [];
-  private interestAuditCache: SbiMonthlyAuditRecord[] = [];
-  private paymentsAuditCache: SbiMonthlyPaymentRecord[] = [];
-  private balanceTrajectoryCache: DualTrackPoint[] = [];
+  private readonly statementRecordsSignal = signal<SbiPassbookRow[]>([]);
+  private readonly odWithdrawalsSignal = signal<OdWithdrawalRecord[]>([]);
+  private readonly interestAuditSignal = signal<SbiMonthlyAuditRecord[]>([]);
+  private readonly paymentsAuditSignal = signal<SbiMonthlyPaymentRecord[]>([]);
+  private readonly balanceTrajectorySignal = signal<DualTrackPoint[]>([]);
   private readonly degradedSignal = signal<boolean>(false);
   private readonly errorSignal = signal<string | null>(null);
   private activeListeners: Unsubscribe[] = [];
@@ -171,13 +171,19 @@ export class FirestoreLedgerRepository implements LedgerRepository {
       const auditLog = auditLogSnap.docs.map((d) => d.data() as AuditEntry);
 
       // Cache authentic statement records directly from Cloud Firestore
-      this.statementRecordsCache = statementRecordsSnap.docs.map((d) => d.data() as SbiPassbookRow);
-      this.odWithdrawalsCache = odWithdrawalsSnap.docs.map((d) => d.data() as OdWithdrawalRecord);
-      this.interestAuditCache = interestAuditSnap.docs.map((d) => d.data() as SbiMonthlyAuditRecord);
-      this.paymentsAuditCache = paymentsAuditSnap.docs.map((d) => d.data() as SbiMonthlyPaymentRecord);
-      this.balanceTrajectoryCache = balanceTrajectorySnap.docs
+      const statementRecords = statementRecordsSnap.docs.map((d) => d.data() as SbiPassbookRow);
+      const odWithdrawals = odWithdrawalsSnap.docs.map((d) => d.data() as OdWithdrawalRecord);
+      const interestAudit = interestAuditSnap.docs.map((d) => d.data() as SbiMonthlyAuditRecord);
+      const paymentsAudit = paymentsAuditSnap.docs.map((d) => d.data() as SbiMonthlyPaymentRecord);
+      const balanceTrajectory = balanceTrajectorySnap.docs
         .map((d) => d.data() as DualTrackPoint)
         .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+      this.statementRecordsSignal.set(statementRecords);
+      this.odWithdrawalsSignal.set(odWithdrawals);
+      this.interestAuditSignal.set(interestAudit);
+      this.paymentsAuditSignal.set(paymentsAudit);
+      this.balanceTrajectorySignal.set(balanceTrajectory);
 
       const state: LedgerState = {
         loan,
@@ -194,6 +200,11 @@ export class FirestoreLedgerRepository implements LedgerRepository {
           defaultPaymentMode: 'UPI',
         },
         auditLog,
+        statementRecords,
+        odWithdrawals,
+        interestAudit,
+        paymentsAudit,
+        balanceTrajectory,
       };
 
       this.inMemoryCache = state;
@@ -339,23 +350,23 @@ export class FirestoreLedgerRepository implements LedgerRepository {
   }
 
   getStatementRecords(): SbiPassbookRow[] {
-    return this.statementRecordsCache;
+    return this.statementRecordsSignal();
   }
 
   getOdWithdrawals(): OdWithdrawalRecord[] {
-    return this.odWithdrawalsCache;
+    return this.odWithdrawalsSignal();
   }
 
   getInterestAudit(): SbiMonthlyAuditRecord[] {
-    return this.interestAuditCache;
+    return this.interestAuditSignal();
   }
 
   getPaymentsAudit(): SbiMonthlyPaymentRecord[] {
-    return this.paymentsAuditCache;
+    return this.paymentsAuditSignal();
   }
 
   getBalanceTrajectory(): DualTrackPoint[] {
-    return this.balanceTrajectoryCache;
+    return this.balanceTrajectorySignal();
   }
 
   async savePushSubscription(subData: Record<string, unknown>): Promise<void> {

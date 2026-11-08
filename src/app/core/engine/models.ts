@@ -1,4 +1,7 @@
 import { Paise } from './money';
+import { OdWithdrawalRecord } from './od-withdrawals';
+import { SbiMonthlyAuditRecord } from './sbi-interest-audit';
+import { SbiMonthlyPaymentRecord } from './sbi-payments-audit';
 
 export type PaymentMode = 'UPI' | 'Bank transfer' | 'Cash' | 'Cheque' | 'NEFT/RTGS';
 
@@ -236,6 +239,23 @@ export interface AuditEntry {
   payloadAfter?: unknown;
 }
 
+export interface SbiPassbookRow {
+  id: string;
+  postDate: string;
+  valueDate: string;
+  isoDate: string;
+  desc: string;
+  refNo: string;
+  type: 'credit' | 'debit';
+  category: 'emi_credit' | 'prepayment' | 'interest_debit' | 'withdrawal' | 'disbursement' | 'other';
+  debitPaise: Paise;
+  creditPaise: Paise;
+  balancePaise: Paise;
+  rawDebit: string;
+  rawCredit: string;
+  rawBalance: string;
+}
+
 export interface DualTrackPoint {
   id?: string;
   order?: number;
@@ -332,4 +352,9 @@ export interface LedgerState {
   statements?: StatementSnapshot[];
   settings: Settings;
   auditLog: AuditEntry[];
+  statementRecords?: SbiPassbookRow[];
+  odWithdrawals?: OdWithdrawalRecord[];
+  interestAudit?: SbiMonthlyAuditRecord[];
+  paymentsAudit?: SbiMonthlyPaymentRecord[];
+  balanceTrajectory?: DualTrackPoint[];
 }

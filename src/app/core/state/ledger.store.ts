@@ -92,10 +92,7 @@ export class LedgerStore {
   readonly statements = signal<StatementSnapshot[]>([]);
   readonly auditLog = signal<AuditEntry[]>([]);
 
-  readonly statementRecords = computed<SbiPassbookRow[]>(() => {
-    return this.repo.getStatementRecords();
-  });
-
+  readonly statementRecords = signal<SbiPassbookRow[]>([]);
   readonly odWithdrawals = signal<OdWithdrawalRecord[]>([]);
   readonly interestAudit = signal<SbiMonthlyAuditRecord[]>([]);
   readonly paymentsAudit = signal<SbiMonthlyPaymentRecord[]>([]);
@@ -147,6 +144,11 @@ export class LedgerStore {
       defaultPaymentMode: 'UPI',
     },
     auditLog: this.auditLog(),
+    statementRecords: this.statementRecords(),
+    odWithdrawals: this.odWithdrawals(),
+    interestAudit: this.interestAudit(),
+    paymentsAudit: this.paymentsAudit(),
+    balanceTrajectory: this.balanceTrajectory(),
   }));
 
   // Computed Projections
@@ -255,6 +257,7 @@ export class LedgerStore {
     try {
       const state = await this.repo.load();
       this.syncState(state);
+      this.statementRecords.set(this.repo.getStatementRecords());
       this.odWithdrawals.set(this.repo.getOdWithdrawals());
       this.interestAudit.set(this.repo.getInterestAudit());
       this.paymentsAudit.set(this.repo.getPaymentsAudit());
@@ -784,6 +787,11 @@ export class LedgerStore {
     this.interestEntries.set(state.interestEntries || []);
     this.statements.set(state.statements || []);
     this.auditLog.set(state.auditLog || []);
+    if (state.statementRecords) this.statementRecords.set(state.statementRecords);
+    if (state.odWithdrawals) this.odWithdrawals.set(state.odWithdrawals);
+    if (state.interestAudit) this.interestAudit.set(state.interestAudit);
+    if (state.paymentsAudit) this.paymentsAudit.set(state.paymentsAudit);
+    if (state.balanceTrajectory) this.balanceTrajectory.set(state.balanceTrajectory);
   }
 
   private async logAuditAndSave(
