@@ -677,9 +677,11 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
 
     .home-page-container {
       position: relative;
-      max-width: 540px;
-      margin: 0 auto;
-      padding: 12px 16px 110px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      padding: 0 0 114px;
       display: flex;
       flex-direction: column;
       gap: 16px;
@@ -836,6 +838,8 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       display: flex;
       flex-direction: column;
       gap: 16px;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .hero-top-row {
@@ -1104,6 +1108,8 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       display: flex;
       flex-direction: column;
       gap: 12px;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     /* Dual Metric Grid (Used for OD Telemetry & This Month/Debt Free) */
@@ -1225,6 +1231,8 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       display: flex;
       flex-direction: column;
       gap: 14px;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .panel-header-row {
