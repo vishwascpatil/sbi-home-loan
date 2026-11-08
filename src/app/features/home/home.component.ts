@@ -307,58 +307,6 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
             </div>
           </div>
 
-          <!-- Quick Presets Ribbon -->
-          <div class="presets-chip-row" role="group" aria-label="Quick Monthly Payment Presets">
-            <button
-              type="button"
-              class="preset-chip"
-              [class.active]="monthlyPayoffSliderPaise() === 11890000"
-              (click)="setMonthlyPayoffPreset(11890000)"
-            >
-              ₹1.19L EMI
-            </button>
-            <button
-              type="button"
-              class="preset-chip"
-              [class.active]="monthlyPayoffSliderPaise() === 15000000"
-              (click)="setMonthlyPayoffPreset(15000000)"
-            >
-              ₹1.50L
-            </button>
-            <button
-              type="button"
-              class="preset-chip"
-              [class.active]="monthlyPayoffSliderPaise() === 20000000"
-              (click)="setMonthlyPayoffPreset(20000000)"
-            >
-              ₹2.00L
-            </button>
-            <button
-              type="button"
-              class="preset-chip"
-              [class.active]="monthlyPayoffSliderPaise() === 24000000"
-              (click)="setMonthlyPayoffPreset(24000000)"
-            >
-              ₹2.40L Target
-            </button>
-            <button
-              type="button"
-              class="preset-chip"
-              [class.active]="monthlyPayoffSliderPaise() === 30000000"
-              (click)="setMonthlyPayoffPreset(30000000)"
-            >
-              ₹3.00L
-            </button>
-            <button
-              type="button"
-              class="preset-chip"
-              [class.active]="monthlyPayoffSliderPaise() === 50000000"
-              (click)="setMonthlyPayoffPreset(50000000)"
-            >
-              ₹5.00L
-            </button>
-          </div>
-
           @if (payoffSimulation().isValid) {
             <!-- Real-time Results Grid -->
             <div class="sim-stats-grid four-col">
@@ -422,7 +370,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
                 <button
                   type="button"
                   class="btn-recover"
-                  (click)="setMonthlyPayoffPreset(24000000)"
+                  (click)="resetMonthlyPayoffToTarget()"
                 >
                   Reset to Family Target (₹2.40L/mo)
                 </button>
@@ -1372,44 +1320,6 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
       }
     }
 
-    .presets-chip-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      overflow-x: auto;
-      padding: 2px 0 6px;
-      scrollbar-width: none;
-
-      &::-webkit-scrollbar {
-        display: none;
-      }
-    }
-
-    .preset-chip {
-      background: var(--bg, #f4f1ec);
-      border: 1px solid var(--line, rgba(0, 0, 0, 0.08));
-      border-radius: 99px;
-      padding: 5px 11px;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--muted, #767a90);
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.15s ease;
-
-      &:hover {
-        color: var(--ink, #15172b);
-        border-color: rgba(0, 0, 0, 0.2);
-      }
-
-      &.active {
-        background: var(--ink, #15172b);
-        color: #ffffff;
-        border-color: var(--ink, #15172b);
-        box-shadow: 0 2px 6px rgba(21, 23, 43, 0.2);
-      }
-    }
-
     .sim-split-pill {
       display: flex;
       align-items: center;
@@ -1940,8 +1850,8 @@ export class HomeComponent {
     triggerHaptic('light');
   }
 
-  setMonthlyPayoffPreset(amountPaise: number): void {
-    this.monthlyPayoffSliderPaise.set(paise(amountPaise));
+  resetMonthlyPayoffToTarget(): void {
+    this.monthlyPayoffSliderPaise.set(toPaise(240000));
     triggerHaptic('medium');
   }
 
