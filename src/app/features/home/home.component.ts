@@ -3,16 +3,15 @@ import { Router, RouterLink } from '@angular/router';
 import { LedgerStore, SettingsStore, UserProfileStore } from '../../core/state';
 import {
   AvatarComponent,
-  BarChartComponent,
   BottomSheetComponent,
   ConfirmSheetComponent,
   DualTrackChartComponent,
   InterestAuditChartComponent,
+  MonthlyPaymentsAuditChartComponent,
   RepaymentPaceCardComponent,
 } from '../../shared/ui';
 import { CountUpDirective } from '../../shared/ui/count-up/count-up.directive';
 import {
-  ContributionTransaction,
   divideHalfUp,
   formatCompactPaise,
   formatPaise,
@@ -38,7 +37,6 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
   imports: [
     RouterLink,
     CountUpDirective,
-    BarChartComponent,
     AvatarComponent,
     BottomSheetComponent,
     ConfirmSheetComponent,
@@ -47,6 +45,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
     DualTrackChartComponent,
     RepaymentPaceCardComponent,
     InterestAuditChartComponent,
+    MonthlyPaymentsAuditChartComponent,
   ],
   template: `
     <div class="home-page-container">
@@ -402,30 +401,9 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
         </div>
       </section>
 
-      <!-- 4. Section: Monthly Deposit Trend -->
+      <!-- 4. Section: How Much Money We Have Paid So Far (Starting Jun 2024) -->
       <section class="home-section">
-        <div class="trend-feature-card">
-          <div class="trend-card-header">
-            <div>
-              <span class="trend-eyebrow-pill">
-                <span class="live-pulse-dot" aria-hidden="true"></span>
-                <span>Deposit Trend</span>
-              </span>
-              <h2 class="trend-main-heading" style="margin-top: 4px">Past 6 Months</h2>
-            </div>
-            <div class="trend-header-stats">
-              <span class="trend-stat-val tabular-nums">{{ formatCompactPaise(totalDepositedPast6Months()) }}</span>
-              <span class="trend-stat-lbl">Total Deposited</span>
-            </div>
-          </div>
-
-          <div class="trend-chart-embed">
-            <app-bar-chart
-              [data]="monthlyBarData()"
-              [targetValue]="targetValueRupees()"
-            />
-          </div>
-        </div>
+        <app-monthly-payments-audit-chart />
       </section>
 
       <!-- 5. Section: Recent Payments -->
@@ -2129,60 +2107,11 @@ export class HomeComponent {
     return this.monthlyTargetPaise() / 100;
   });
 
-  readonly totalDepositedPast6Months = computed<Paise>(() => {
-    const data = this.monthlyBarData();
-    const sumRupees = data.reduce((acc, item) => acc + item.value, 0);
-    return toPaise(sumRupees);
-  });
-
   readonly thisMonthPacingPercent = computed(() => {
     const target = this.monthlyTargetPaise();
     if (target <= 0) return 0;
     const paid = this.summary().memberContributions;
     return Math.min(100, (paid / target) * 100);
-  });
-
-  readonly monthlyBarData = computed(() => {
-    const txs = this.ledgerStore
-      .transactions()
-      .filter((t): t is ContributionTransaction => t.type === 'contribution' && !t.deletedAt);
-    const monthsMap = new Map<string, { value: number; count: number }>();
-
-    const now = new Date();
-    for (let k = 5; k >= 0; k--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - k, 1);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      monthsMap.set(key, { value: 0, count: 0 });
-    }
-
-    for (const t of txs) {
-      if (monthsMap.has(t.forMonth)) {
-        const entry = monthsMap.get(t.forMonth)!;
-        entry.value += t.amount / 100;
-        entry.count += 1;
-      }
-    }
-
-    const curMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const targetRupees = this.targetValueRupees();
-
-    return Array.from(monthsMap.entries()).map(([monthKey, entry]) => {
-      const parts = monthKey.split('-');
-      const y = parseInt(parts[0]!, 10);
-      const m = parseInt(parts[1]!, 10);
-      const d = new Date(y, m - 1, 1);
-      const label = d.toLocaleDateString('en-IN', { month: 'short' });
-      const fullLabel = d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
-      return {
-        label,
-        value: Math.round(entry.value),
-        monthKey,
-        fullLabel,
-        isCurrent: monthKey === curMonthKey,
-        target: targetRupees,
-        depositCount: entry.count,
-      };
-    });
   });
 
   readonly baselineSimResult = computed(() => {
