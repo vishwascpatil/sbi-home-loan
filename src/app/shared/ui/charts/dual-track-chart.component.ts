@@ -459,13 +459,29 @@ export class DualTrackChartComponent {
 
   // Trajectory points loaded dynamically from Cloud Firestore
   readonly points = input<DualTrackPoint[]>([]);
-  readonly historyPoints = computed<DualTrackPoint[]>(() => this.points());
+  readonly historyPoints = computed<DualTrackPoint[]>(() => {
+    const rawPts = this.points();
+    if (rawPts.length === 0) return rawPts;
+    const curOut = this.currentOutstanding();
+    const sanctioned = this.sanctionedLimit();
+    const lastIdx = rawPts.length - 1;
+    return rawPts.map((p, i) =>
+      i === lastIdx
+        ? {
+            ...p,
+            actualOutstandingPaise: curOut,
+            drawingPowerPaise: sanctioned,
+          }
+        : p
+    );
+  });
 
   // Map amount in Paise to SVG Y-coordinate (18 to 194)
   private scaleY(amountPaise: Paise): number {
-    const minPaise = toPaise(11500000); // 1.15 Cr
-    const maxPaise = toPaise(13500000); // 1.35 Cr
-    const fraction = (amountPaise - minPaise) / (maxPaise - minPaise);
+    const curOut = this.currentOutstanding();
+    const minPaise = Math.min(toPaise(11500000), Math.max(0, curOut - toPaise(500000)));
+    const maxPaise = toPaise(13500000);
+    const fraction = maxPaise > minPaise ? (amountPaise - minPaise) / (maxPaise - minPaise) : 0;
     const clamped = Math.max(0, Math.min(1, fraction));
     return 194 - clamped * 176;
   }

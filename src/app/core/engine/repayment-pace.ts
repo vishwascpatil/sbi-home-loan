@@ -101,7 +101,12 @@ export function getRepaymentPaceAnalysis(
     ? withdrawalsList.reduce((acc, r) => acc + r.amount, 0)
     : 104803900;
 
-  const grossPaid = paise(auditPaymentsTotal + liveBankDeposits);
+  // If options.paymentsAudit is explicitly supplied (e.g. dynamicPaymentsAudit from LedgerStore),
+  // it already aggregates all liveBankDeposits into the monthly records.
+  // Otherwise, add liveBankDeposits onto the base payments total.
+  const grossPaid = options?.paymentsAudit
+    ? paise(auditPaymentsTotal)
+    : paise(auditPaymentsTotal + liveBankDeposits);
   const totalWithdrawn = paise(auditWithdrawalsTotal + liveWithdrawals);
   const netPaid = paise(grossPaid - totalWithdrawn);
 

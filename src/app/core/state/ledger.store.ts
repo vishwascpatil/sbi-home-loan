@@ -1,4 +1,4 @@
-import { computed, inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal, Signal } from '@angular/core';
 import {
   addPaise,
   AuditEntry,
@@ -95,9 +95,139 @@ export class LedgerStore {
 
   readonly statementRecords = signal<SbiPassbookRow[]>([]);
   readonly odWithdrawals = signal<OdWithdrawalRecord[]>([]);
-  readonly interestAudit = signal<SbiMonthlyAuditRecord[]>([]);
-  readonly paymentsAudit = signal<SbiMonthlyPaymentRecord[]>([]);
-  readonly balanceTrajectory = signal<DualTrackPoint[]>([]);
+  readonly baseInterestAudit = signal<SbiMonthlyAuditRecord[]>([]);
+  readonly basePaymentsAudit = signal<SbiMonthlyPaymentRecord[]>([]);
+  readonly baseBalanceTrajectory = signal<DualTrackPoint[]>([]);
+
+  readonly balanceTrajectory: Signal<DualTrackPoint[]> = computed<DualTrackPoint[]>(() => {
+    const base = this.baseBalanceTrajectory();
+    if (base.length === 0) return base;
+
+    const today = this.currentDate();
+    const currentMonthPeriod = today.slice(0, 7);
+    const curOut = this.currentOutstanding();
+    const sanctionedLimit = this.loan().sanctionedLimit;
+
+    const [yStr, mStr] = currentMonthPeriod.split('-');
+    const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthIdx = parseInt(mStr || '11', 10) - 1;
+    const currentLabel = `${shortMonths[monthIdx]} '${(yStr || '2026').slice(2)}`;
+
+    const lastIdx = base.length - 1;
+    const lastPt = base[lastIdx];
+
+    if (lastPt.month === currentLabel || lastPt.month === "Nov '26") {
+      return base.map((pt, i) =>
+        i === lastIdx
+          ? {
+              ...pt,
+              actualOutstandingPaise: curOut,
+              drawingPowerPaise: sanctionedLimit,
+            }
+          : pt
+      );
+    }
+
+    return [
+      ...base,
+      {
+        id: `traj-${currentMonthPeriod}`,
+        order: base.length + 1,
+        month: currentLabel,
+        drawingPowerPaise: sanctionedLimit,
+        actualOutstandingPaise: curOut,
+      },
+    ];
+  });
+
+  readonly dynamicPaymentsAudit: Signal<SbiMonthlyPaymentRecord[]> = computed<SbiMonthlyPaymentRecord[]>(() => {
+    const baseRecords = this.basePaymentsAudit();
+    const liveTxs = this.transactions().filter(
+      (t): t is BankPaymentTransaction => !t.deletedAt && t.type === 'bankPayment' && !t.id.startsWith('tx-sbi-')
+    );
+
+    if (liveTxs.length === 0) return baseRecords;
+
+    const liveByMonth = new Map<string, { amount: Paise; count: number }>();
+    for (const tx of liveTxs) {
+      const m = tx.forMonth || tx.date.slice(0, 7);
+      const curr = liveByMonth.get(m) || { amount: paise(0), count: 0 };
+      liveByMonth.set(m, {
+        amount: addPaise(curr.amount, tx.amount),
+        count: curr.count + 1,
+      });
+    }
+
+    const updated = baseRecords.map((r) => {
+      const live = liveByMonth.get(r.period);
+      if (live && live.amount > 0) {
+        liveByMonth.delete(r.period);
+        return {
+          ...r,
+          totalPaid: addPaise(r.totalPaid, live.amount),
+          prepayPaid: addPaise(r.prepayPaid, live.amount),
+          txCount: r.txCount + live.count,
+        };
+      }
+      return r;
+    });
+
+    for (const [period, live] of liveByMonth.entries()) {
+      const [yStr, mStr] = period.split('-');
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const mIdx = parseInt(mStr || '11', 10) - 1;
+      const label = `${monthNames[mIdx]} ${yStr}`;
+      updated.push({
+        id: `payment-${period}`,
+        month: label,
+        period,
+        totalPaid: live.amount,
+        emiPaid: paise(0),
+        prepayPaid: live.amount,
+        txCount: live.count,
+      });
+    }
+
+    return updated.sort((a, b) => a.period.localeCompare(b.period));
+  });
+
+  readonly paymentsAudit: Signal<SbiMonthlyPaymentRecord[]> = computed<SbiMonthlyPaymentRecord[]>(() => this.dynamicPaymentsAudit());
+
+  readonly dynamicInterestAudit: Signal<SbiMonthlyAuditRecord[]> = computed<SbiMonthlyAuditRecord[]>(() => {
+    const baseRecords = this.baseInterestAudit();
+    const today = this.currentDate();
+    const currentPeriod = today.slice(0, 7);
+
+    const existingIdx = baseRecords.findIndex((r) => r.period === currentPeriod);
+    const dailyLedger = getSbiDailyLedger(currentPeriod, this.transactions(), this.effectiveStatementRecords());
+    const monthInterest = dailyLedger.totalInterestAccrued;
+
+    const [yStr, mStr] = currentPeriod.split('-');
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const mIdx = parseInt(mStr || '11', 10) - 1;
+    const label = `${monthNames[mIdx]} ${yStr}`;
+
+    const currentRecord: SbiMonthlyAuditRecord = {
+      id: `audit-${currentPeriod}`,
+      month: label,
+      period: currentPeriod,
+      days: dailyLedger.daysCount,
+      sbiInterest: monthInterest,
+      avgBalance: dailyLedger.closingBalance,
+      effectiveRate: dailyLedger.effectiveRate,
+      rateEra: `${dailyLedger.effectiveRate.toFixed(2)}% Era`,
+      isVerified: false,
+      variancePaise: paise(0),
+    };
+
+    if (existingIdx !== -1) {
+      return baseRecords.map((r, i) => (i === existingIdx ? currentRecord : r));
+    } else {
+      return [...baseRecords, currentRecord];
+    }
+  });
+
+  readonly interestAudit: Signal<SbiMonthlyAuditRecord[]> = computed<SbiMonthlyAuditRecord[]>(() => this.dynamicInterestAudit());
 
   readonly odWithdrawalsSummary = computed<OdWithdrawalsSummary>(() =>
     getOdWithdrawalsSummary(this.odWithdrawals())
@@ -146,8 +276,55 @@ export class LedgerStore {
    * if no bank interest debit has been posted yet, calculates the month's interest and injects
    * an authentic closing debit row into the passbook statement.
    */
-  readonly effectiveStatementRecords = computed<SbiPassbookRow[]>(() => {
-    const records = this.statementRecords();
+  readonly effectiveStatementRecords: Signal<SbiPassbookRow[]> = computed<SbiPassbookRow[]>(() => {
+    const rawRecords = this.statementRecords();
+
+    // 1. Dynamic live user-recorded bank payments (Direct Statement Deposit)
+    const liveTxs = this.transactions().filter(
+      (t): t is BankPaymentTransaction => !t.deletedAt && t.type === 'bankPayment' && !t.id.startsWith('tx-sbi-')
+    );
+
+    const baseState: LedgerState = {
+      loan: this.loan(),
+      members: this.members(),
+      transactions: this.transactions(),
+      rateChanges: this.rateChanges(),
+      snapshots: this.snapshots(),
+      interestEntries: this.interestEntries(),
+      statements: this.statements(),
+      settings: { theme: 'light', dateFormat: 'DD/MM/YYYY', maskAccountNumber: false, defaultPaymentMode: 'UPI' },
+      auditLog: this.auditLog(),
+      statementRecords: rawRecords,
+      odWithdrawals: this.odWithdrawals(),
+    };
+
+    const dynamicRows: SbiPassbookRow[] = liveTxs.map((t) => {
+      const parts = (t.valueDate || t.date).split('-');
+      const y = parts[0] || '2026';
+      const m = parts[1] || '11';
+      const d = parts[2] || '01';
+      const postDate = `${d}/${m}/${y}`;
+      const creditPaise = t.amount;
+      const balancePaise = outstandingAt(t.date, baseState, rawRecords);
+      return {
+        id: t.id,
+        postDate,
+        valueDate: postDate,
+        isoDate: t.date,
+        desc: t.notes || 'Direct Statement Deposit',
+        refNo: t.reference || '',
+        type: 'credit' as const,
+        category: 'prepayment' as const,
+        debitPaise: paise(0),
+        creditPaise,
+        balancePaise,
+        rawDebit: '',
+        rawCredit: (creditPaise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+        rawBalance: (balancePaise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+      };
+    });
+
+    const records = [...dynamicRows, ...rawRecords].sort((a, b) => b.isoDate.localeCompare(a.isoDate));
     if (records.length === 0) return records;
 
     const today = this.currentDate();
@@ -225,7 +402,7 @@ export class LedgerStore {
   });
 
   // Full derived LedgerState object for pure engine functions
-  readonly ledgerState = computed<LedgerState>(() => ({
+  readonly ledgerState: Signal<LedgerState> = computed<LedgerState>(() => ({
     loan: this.loan(),
     members: this.members(),
     transactions: this.transactions(),
@@ -242,18 +419,18 @@ export class LedgerStore {
     auditLog: this.auditLog(),
     statementRecords: this.effectiveStatementRecords(),
     odWithdrawals: this.odWithdrawals(),
-    interestAudit: this.interestAudit(),
-    paymentsAudit: this.paymentsAudit(),
-    balanceTrajectory: this.balanceTrajectory(),
+    interestAudit: this.baseInterestAudit(),
+    paymentsAudit: this.basePaymentsAudit(),
+    balanceTrajectory: this.baseBalanceTrajectory(),
   }));
 
   // Computed Projections
-  readonly currentPrincipal = computed<Paise>(() => {
+  readonly currentPrincipal: Signal<Paise> = computed<Paise>(() => {
     const today = this.currentDate();
     return outstandingAt(today, this.ledgerState(), this.effectiveStatementRecords());
   });
 
-  readonly currentOutstanding = computed<Paise>(() => {
+  readonly currentOutstanding: Signal<Paise> = computed<Paise>(() => {
     const today = this.currentDate();
     const effectiveRows = this.effectiveStatementRecords();
     const baseOutstanding = outstandingAt(today, this.ledgerState(), effectiveRows);
@@ -286,7 +463,7 @@ export class LedgerStore {
   /**
    * Upcoming Payment due on the 1st of next month, incorporating calculated month-end interest.
    */
-  readonly upcomingPayment = computed<UpcomingPaymentInfo>(() => {
+  readonly upcomingPayment: Signal<UpcomingPaymentInfo> = computed<UpcomingPaymentInfo>(() => {
     const today = this.currentDate();
     const isSimulated = this.simulatedDate() !== null;
     const [yStr, mStr, dStr] = today.split('-');
@@ -382,7 +559,7 @@ export class LedgerStore {
     };
   });
 
-  readonly thisMonthSummary = computed<MonthlySummary>(() => {
+  readonly thisMonthSummary: Signal<MonthlySummary> = computed<MonthlySummary>(() => {
     const currentMonth = this.currentDate().slice(0, 7);
     return monthlySummary(currentMonth, this.ledgerState(), undefined, {
       paymentsAudit: this.paymentsAudit(),
@@ -391,7 +568,7 @@ export class LedgerStore {
     });
   });
 
-  readonly repaymentPace = computed<RepaymentPaceAnalysis>(() => {
+  readonly repaymentPace: Signal<RepaymentPaceAnalysis> = computed<RepaymentPaceAnalysis>(() => {
     return getRepaymentPaceAnalysis(this.ledgerState(), {
       odWithdrawals: this.odWithdrawals(),
       interestAudit: this.interestAudit(),
@@ -452,9 +629,9 @@ export class LedgerStore {
       this.syncState(state);
       this.statementRecords.set(this.repo.getStatementRecords());
       this.odWithdrawals.set(this.repo.getOdWithdrawals());
-      this.interestAudit.set(this.repo.getInterestAudit());
-      this.paymentsAudit.set(this.repo.getPaymentsAudit());
-      this.balanceTrajectory.set(this.repo.getBalanceTrajectory());
+      this.baseInterestAudit.set(this.repo.getInterestAudit());
+      this.basePaymentsAudit.set(this.repo.getPaymentsAudit());
+      this.baseBalanceTrajectory.set(this.repo.getBalanceTrajectory());
       this.settingsStore.initFromState(state.settings);
     } finally {
       this.isLoading.set(false);
@@ -726,11 +903,11 @@ export class LedgerStore {
   }
 
   getDailyBreakdown(period: string): DailyLedgerRecord[] {
-    return getSbiDailyLedger(period, this.transactions(), this.statementRecords()).records;
+    return getSbiDailyLedger(period, this.transactions(), this.effectiveStatementRecords()).records;
   }
 
   getSbiDailyMonthSummary(period: string): SbiDailyMonthSummary {
-    return getSbiDailyLedger(period, this.transactions(), this.statementRecords());
+    return getSbiDailyLedger(period, this.transactions(), this.effectiveStatementRecords());
   }
 
   isPeriodLocked(dateOrMonth: string): boolean {
@@ -982,9 +1159,9 @@ export class LedgerStore {
     this.auditLog.set(state.auditLog || []);
     if (state.statementRecords) this.statementRecords.set(state.statementRecords);
     if (state.odWithdrawals) this.odWithdrawals.set(state.odWithdrawals);
-    if (state.interestAudit) this.interestAudit.set(state.interestAudit);
-    if (state.paymentsAudit) this.paymentsAudit.set(state.paymentsAudit);
-    if (state.balanceTrajectory) this.balanceTrajectory.set(state.balanceTrajectory);
+    if (state.interestAudit) this.baseInterestAudit.set(state.interestAudit);
+    if (state.paymentsAudit) this.basePaymentsAudit.set(state.paymentsAudit);
+    if (state.balanceTrajectory) this.baseBalanceTrajectory.set(state.balanceTrajectory);
   }
 
   private async logAuditAndSave(

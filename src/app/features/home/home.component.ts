@@ -335,7 +335,7 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
               <!-- Box 3: Total Principal -->
               <div class="sim-stat-box">
                 <span class="sim-stat-number tabular-nums text-cyan">
-                  {{ formatCompactPaise(payoffSimulation().principal) }}
+                  {{ formatPaise(payoffSimulation().principal) }}
                 </span>
                 <span class="sim-stat-lbl">Loan Principal</span>
                 <span class="sim-stat-badge text-muted">100% Cleared</span>
@@ -435,13 +435,13 @@ import { DailyLedgerSheetComponent } from '../daily-ledger/daily-ledger-sheet.co
           <div class="clean-metric-card" aria-label="Loan Payoff Target">
             <div class="card-header-line">
               <span class="card-tag tag-neutral">Debt Free</span>
-              <span class="badge-mini">{{ baselineSimResult()?.closureDate || 'Active' }}</span>
+              <span class="badge-mini">{{ ledgerStore.currentOutstanding() === 0 ? 'Debt Free!' : (baselineSimResult()?.closureDate || 'Active') }}</span>
             </div>
             <div class="card-metric-val tabular-nums">
-              {{ ((baselineSimResult()?.months || 62) / 12).toFixed(1) }} yrs
+              {{ ledgerStore.currentOutstanding() === 0 ? '0.0 yrs' : (((baselineSimResult()?.months ?? 61)) / 12).toFixed(1) + ' yrs' }}
             </div>
             <span class="card-metric-sub">
-              {{ baselineSimResult()?.months || 62 }} mos remaining
+              {{ ledgerStore.currentOutstanding() === 0 ? 'Loan 100% Cleared!' : ((baselineSimResult()?.months ?? 61) + ' mos remaining') }}
             </span>
             <div class="metric-split-row">
               <div class="split-side">

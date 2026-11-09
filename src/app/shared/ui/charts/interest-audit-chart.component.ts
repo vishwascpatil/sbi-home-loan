@@ -10,8 +10,10 @@ import {
   formatCompactPaise,
   formatPaise,
   getSbiAuditSummary,
+  Paise,
   SbiAuditSummary,
   SbiMonthlyAuditRecord,
+  toPaise,
   triggerHaptic,
 } from '../../../core/engine';
 
@@ -49,10 +51,10 @@ import {
         <div class="wow-stat-tile tile-emerald">
           <span class="wow-stat-lbl">Monthly Drop</span>
           <div class="wow-stat-val text-emerald tabular-nums">
-            −₹22.5K <span class="val-unit">/mo</span>
+            −{{ formatCompactPaise(monthlyDrop()) }} <span class="val-unit">/mo</span>
           </div>
           <span class="wow-stat-sub tabular-nums">
-            Peak ₹98.9K → ₹76.5K
+            Peak {{ formatCompactPaise(peakInterest()) }} → {{ formatCompactPaise(latestInterest()) }}
           </span>
         </div>
 
@@ -126,7 +128,7 @@ import {
           <span>Jun '24 (₹61.6K · 19d)</span>
           <span>Jul '24 (₹98.9K Peak)</span>
           <span>Jan '26 (7.65% Cut)</span>
-          <span>Oct '26 (₹79.7K)</span>
+          <span>{{ latestMonthLabel() }}</span>
         </div>
       </div>
 
@@ -410,6 +412,33 @@ export class InterestAuditChartComponent {
   readonly auditData = computed<SbiAuditSummary>(() => this.auditSummary() ?? getSbiAuditSummary());
   readonly selectedRecord = signal<SbiMonthlyAuditRecord | null>(null);
 
+  readonly peakInterest = computed<Paise>(() => {
+    const recs = this.auditData().records;
+    if (recs.length === 0) return toPaise(98900);
+    return Math.max(...recs.map((r) => r.sbiInterest)) as Paise;
+  });
+
+  readonly latestInterest = computed<Paise>(() => {
+    const recs = this.auditData().records;
+    if (recs.length === 0) return toPaise(76500);
+    return recs[recs.length - 1].sbiInterest;
+  });
+
+  readonly monthlyDrop = computed<Paise>(() => {
+    return Math.max(0, this.peakInterest() - this.latestInterest()) as Paise;
+  });
+
+  readonly latestMonthLabel = computed<string>(() => {
+    const recs = this.auditData().records;
+    if (recs.length === 0) return "Nov '26";
+    const last = recs[recs.length - 1];
+    return `${last.month.slice(0, 3)} '${last.period.slice(2, 4)} (${formatCompactPaise(last.sbiInterest)})`;
+  });
+
+  readonly activeDetails = computed(() => {
+    return this.selectedRecord() ?? (this.auditData().records[this.auditData().records.length - 1] || null);
+  });
+
   constructor() {
     const recs = this.auditData().records;
     if (recs && recs.length > 0) {
@@ -419,8 +448,6 @@ export class InterestAuditChartComponent {
 
   readonly formatPaise = formatPaise;
   readonly formatCompactPaise = formatCompactPaise;
-
-  readonly activeDetails = computed(() => this.selectedRecord());
 
   selectRecord(rec: SbiMonthlyAuditRecord): void {
     triggerHaptic('light');

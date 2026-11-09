@@ -1,5 +1,5 @@
 import { divideHalfUp, Paise, paise } from './money';
-import { DailyLedgerRecord, Transaction } from './models';
+import { DailyLedgerRecord, Transaction, BankPaymentTransaction } from './models';
 import { SbiPassbookRow } from '../data/sbi-statement-records';
 
 export interface SbiDailyRecord extends DailyLedgerRecord {
@@ -156,6 +156,21 @@ export function getSbiDailyLedger(
     currentBalance = paise(0); // Before June 12 disbursement
   }
 
+  // Account for any live user-recorded bank payments in prior months not in priorStatementTxs
+  const priorProcessedIds = new Set(priorStatementTxs.map((t) => t.id));
+  const priorLiveBankPayments = liveTransactions
+    .filter(
+      (t): t is BankPaymentTransaction =>
+        !t.deletedAt &&
+        t.type === 'bankPayment' &&
+        !t.id.startsWith('tx-sbi-') &&
+        !priorProcessedIds.has(t.id) &&
+        (t.valueDate || t.date) < `${period}-01`
+    )
+    .reduce((sum, t) => sum + t.principalPortion, 0);
+
+  currentBalance = paise(Math.max(0, currentBalance - priorLiveBankPayments));
+
   const openingBalance = currentBalance;
   let cumulativeInterestBigInt = 0n;
   let totalDebits = 0;
@@ -198,17 +213,20 @@ export function getSbiDailyLedger(
       });
     }
 
-    // Apply live user-recorded direct statement deposits
+    // Apply live user-recorded direct statement deposits (if not already present in dayStatementTxs)
     if (dayLiveTxs.length > 0) {
+      const alreadyProcessedIds = new Set(dayStatementTxs.map((st) => st.id));
       for (const lt of dayLiveTxs) {
+        if (alreadyProcessedIds.has(lt.id)) continue;
         if (lt.type === 'bankPayment' && !lt.id.startsWith('tx-sbi-')) {
+          txsCount++;
           dayMovements -= lt.principalPortion;
           totalCredits += lt.amount;
           currentBalance = paise(Math.max(0, currentBalance - lt.principalPortion));
           txDetails.push({
             desc: lt.notes || 'Direct Statement Deposit',
             type: 'credit',
-            amount: `+₹${(lt.amount / 100).toLocaleString('en-IN')}`,
+            amount: `+₹${(lt.amount / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
             category: 'prepayment',
           });
         }

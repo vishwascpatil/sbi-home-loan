@@ -1258,42 +1258,7 @@ export class StatementsComponent {
 
   // 1. Passbook Explorer State (Cloud Firestore statement records + user-recorded direct statement deposits)
   readonly allStatementRows = computed<SbiPassbookRow[]>(() => {
-    const cloudRows = this.ledgerStore.effectiveStatementRecords();
-    const liveTxs = this.ledgerStore
-      .transactions()
-      .filter((t): t is BankPaymentTransaction => !t.deletedAt && t.type === 'bankPayment' && !t.id.startsWith('tx-sbi-'));
-
-    if (liveTxs.length === 0) {
-      return cloudRows;
-    }
-
-    const dynamicRows: SbiPassbookRow[] = liveTxs.map((t) => {
-      const parts = (t.valueDate || t.date).split('-');
-      const y = parts[0] || '2026';
-      const m = parts[1] || '11';
-      const d = parts[2] || '01';
-      const postDate = `${d}/${m}/${y}`;
-      const creditPaise = t.amount;
-      const balancePaise = outstandingAt(t.date, this.ledgerStore.ledgerState());
-      return {
-        id: t.id,
-        postDate,
-        valueDate: postDate,
-        isoDate: t.date,
-        desc: t.notes || 'Direct Statement Deposit',
-        refNo: t.reference || '',
-        type: 'credit' as const,
-        category: 'prepayment' as const,
-        debitPaise: paise(0),
-        creditPaise,
-        balancePaise,
-        rawDebit: '',
-        rawCredit: (creditPaise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 }),
-        rawBalance: (balancePaise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 }),
-      };
-    });
-
-    return [...dynamicRows, ...cloudRows].sort((a, b) => b.isoDate.localeCompare(a.isoDate));
+    return this.ledgerStore.effectiveStatementRecords();
   });
 
   readonly selectedCategory = signal<string>('all');

@@ -166,8 +166,9 @@ export function outstandingAt(
     }
 
     // Apply any live user-recorded bank transactions (not in authentic PDF statement)
+    const existingRowIds = new Set(chronoRows.map((r) => r.id));
     const liveTx = activeOnly(ledger.transactions)
-      .filter((tx) => !tx.id.startsWith('tx-sbi-') && tx.date <= targetDate)
+      .filter((tx) => !tx.id.startsWith('tx-sbi-') && !existingRowIds.has(tx.id) && tx.date <= targetDate)
       .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt));
 
     for (const tx of liveTx) {
