@@ -1,5 +1,5 @@
-import { computed, inject, Injectable, signal } from '@angular/core';
-import { BrowserDeviceStorageAdapter } from '../data';
+import { computed, effect, inject, Injectable, signal } from '@angular/core';
+import { AppAnalyticsService, BrowserDeviceStorageAdapter } from '../data';
 import { LedgerStore } from './ledger.store';
 import { Member } from '../engine';
 
@@ -9,6 +9,7 @@ import { Member } from '../engine';
 export class UserProfileStore {
   private readonly storage = inject(BrowserDeviceStorageAdapter);
   private readonly ledgerStore = inject(LedgerStore);
+  private readonly analytics = inject(AppAnalyticsService);
 
   readonly currentMemberId = signal<string | null>(this.storage.getDeviceMemberId());
 
@@ -33,14 +34,33 @@ export class UserProfileStore {
     return this.currentMember()?.avatarUrl;
   });
 
+  constructor() {
+    // Synchronize member profile with Google Analytics whenever currentMember changes
+    effect(() => {
+      const name = this.currentMemberName();
+      const id = this.currentMemberId();
+      if (id && name) {
+        this.analytics.setMember(name, id);
+      }
+    });
+  }
+
   setProfile(memberId: string): void {
     this.currentMemberId.set(memberId);
     this.storage.setDeviceMemberId(memberId);
     this.isWelcomeBoardOpen.set(false);
+    const member = this.currentMember();
+    if (member) {
+      this.analytics.setMember(member.name, member.id);
+      this.analytics.logAction('select_profile', {
+        member_name: member.name,
+      });
+    }
   }
 
   openProfilePicker(): void {
     this.isWelcomeBoardOpen.set(true);
+    this.analytics.logAction('open_profile_picker');
   }
 
   closeProfilePicker(): void {
@@ -53,6 +73,7 @@ export class UserProfileStore {
     this.currentMemberId.set(null);
     this.storage.clearDeviceMemberId();
     this.isWelcomeBoardOpen.set(true);
+    this.analytics.setMember('Anonymous', '');
   }
 }
 

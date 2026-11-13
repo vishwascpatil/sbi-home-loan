@@ -116,7 +116,7 @@ import { FirestoreLedgerRepository } from '../../core/data/firestore-ledger.repo
         <div class="hero-left-content">
           <div class="hero-badge-pill">
             <span class="lightning-bolt">⚡</span>
-            <span>Active on this Device · Auto-Saved</span>
+            <span>Active on this Device · GA4 Tracking as {{ userProfile.currentMemberName() }}</span>
           </div>
           <div class="hero-profile-cluster">
             <app-avatar [name]="userProfile.currentMemberName()" [avatarUrl]="userProfile.currentMemberAvatar()" [size]="52" [circular]="true" />

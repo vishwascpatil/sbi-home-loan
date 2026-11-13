@@ -17,6 +17,7 @@ import {
   ConfirmSheetComponent,
 } from '../../shared/ui';
 import { LedgerStore, UiStore, UserProfileStore } from '../../core/state';
+import { AppAnalyticsService } from '../../core/data';
 import {
   getTransactionAmount,
   Member,
@@ -771,6 +772,7 @@ export class AddEditTransactionSheetComponent implements OnChanges, OnDestroy {
   readonly ledgerStore = inject(LedgerStore);
   readonly userProfile = inject(UserProfileStore);
   private readonly uiStore = inject(UiStore);
+  private readonly analytics = inject(AppAnalyticsService);
   private readonly instanceId = 'sheet-' + Math.random().toString(36).substring(2, 9);
 
   readonly isOpen = input<boolean>(false);
@@ -928,6 +930,11 @@ export class AddEditTransactionSheetComponent implements OnChanges, OnDestroy {
       }
 
       triggerHaptic('success');
+      this.analytics.logAction('save_payment', {
+        amount_paise: amt,
+        is_direct_deposit: this.isDirectStatement(),
+        payment_mode: mode,
+      });
       this.uiStore.registerAddPaymentClosed(this.instanceId);
       this.dismissed.emit();
     } catch {
