@@ -5,6 +5,7 @@ import {
   input,
   output,
 } from '@angular/core';
+import { triggerHaptic } from '../../../core/engine';
 
 @Component({
   selector: 'app-bottom-sheet',
@@ -13,9 +14,10 @@ import {
     @if (isOpen()) {
       <div
         class="sheet-backdrop"
+        [style.z-index]="zIndex()"
         tabindex="-1"
-        (click)="backdropClicked()"
-        (keydown.escape)="backdropClicked()"
+        (click)="backdropClicked($event)"
+        (keydown.escape)="backdropClicked($event)"
       >
         <div
           class="sheet-container"
@@ -33,11 +35,13 @@ import {
               <button
                 type="button"
                 class="close-btn"
-                (click)="dismissed.emit()"
+                (pointerdown)="onButtonPointerDown($event)"
+                (touchstart)="onButtonPointerDown($event)"
+                (click)="onClose($event)"
                 aria-label="Close"
                 title="Close"
               >
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
@@ -56,10 +60,9 @@ import {
     .sheet-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.32);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      z-index: 1000;
+      background: rgba(0, 0, 0, 0.36);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
@@ -68,6 +71,7 @@ import {
     }
 
     .sheet-container {
+      position: relative;
       width: 100%;
       max-width: 560px;
       max-height: 88vh;
@@ -75,7 +79,7 @@ import {
       background: #ffffff;
       border: 1px solid rgba(0, 0, 0, 0.08);
       border-radius: 28px 28px 0 0;
-      box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.16);
+      box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.18);
       display: flex;
       flex-direction: column;
       padding: 12px 22px calc(24px + env(safe-area-inset-bottom, 0px));
@@ -90,16 +94,19 @@ import {
       height: 5px;
       border-radius: 9999px;
       background: rgba(0, 0, 0, 0.14);
-      margin: 4px auto 16px;
+      margin: 4px auto 14px;
       flex-shrink: 0;
       transition: background 0.2s ease, width 0.2s ease;
     }
 
     .sheet-header {
+      position: relative;
+      z-index: 50;
       display: flex;
       align-items: center;
       justify-content: space-between;
       margin-bottom: 18px;
+      flex-shrink: 0;
     }
 
     .sheet-title {
@@ -111,26 +118,45 @@ import {
     }
 
     .close-btn {
-      width: 30px;
-      height: 30px;
-      min-width: 30px;
-      min-height: 30px;
+      position: relative;
+      z-index: 60;
+      width: 44px;
+      height: 44px;
+      min-width: 44px;
+      min-height: 44px;
       border-radius: 50%;
-      border: none;
+      border: 1px solid rgba(0, 0, 0, 0.06);
       background: #ededf2;
-      color: #6a6a75;
+      color: #3d3e4b;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       padding: 0;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      margin: -6px -6px -6px 0;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
       -webkit-tap-highlight-color: transparent;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+      /* Extended 56px touch target hitbox for thumb taps */
+      &::after {
+        content: '';
+        position: absolute;
+        inset: -6px;
+        border-radius: 50%;
+      }
 
       svg {
-        width: 12px;
-        height: 12px;
+        width: 16px;
+        height: 16px;
         display: block;
+        pointer-events: none;
+      }
+
+      line {
+        pointer-events: none;
       }
 
       &:hover {
@@ -146,6 +172,8 @@ import {
     }
 
     .sheet-content {
+      position: relative;
+      z-index: 10;
       flex: 1;
       overflow-y: auto;
     }
@@ -154,16 +182,33 @@ import {
 export class BottomSheetComponent {
   readonly isOpen = input<boolean>(false);
   readonly title = input<string | undefined>(undefined);
+  readonly zIndex = input<number>(1000);
   readonly dismissed = output<void>();
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
     if (this.isOpen()) {
+      triggerHaptic('light');
       this.dismissed.emit();
     }
   }
 
-  backdropClicked(): void {
+  onButtonPointerDown(event: Event): void {
+    event.stopPropagation();
+  }
+
+  onClose(event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    triggerHaptic('light');
+    this.dismissed.emit();
+  }
+
+  backdropClicked(event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    triggerHaptic('light');
     this.dismissed.emit();
   }
 }

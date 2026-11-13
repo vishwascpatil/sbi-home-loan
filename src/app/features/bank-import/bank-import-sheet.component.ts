@@ -18,6 +18,7 @@ import {
   parseCsvToRecords,
   ParsedStatementRow,
   parseSbiPdfStatement,
+  triggerHaptic,
 } from '../../core/engine';
 
 @Component({
@@ -42,8 +43,19 @@ import {
             <span class="badge">BANK RECONCILIATION</span>
             <h2 id="import-title" class="sheet-title">Import Bank Statement</h2>
           </div>
-          <button type="button" class="close-btn" (click)="closed.emit()" aria-label="Close">
-            ✕
+          <button
+            type="button"
+            class="close-btn"
+            (pointerdown)="$event.stopPropagation()"
+            (touchstart)="$event.stopPropagation()"
+            (click)="onClose($event)"
+            aria-label="Close"
+            title="Close"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
           </button>
         </header>
 
@@ -307,18 +319,66 @@ import {
       margin: 0;
     }
 
+    .sheet-header {
+      position: relative;
+      z-index: 30;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      background: #fafafc;
+      flex-shrink: 0;
+    }
+
     .close-btn {
+      position: relative;
+      z-index: 40;
       background: rgba(0, 0, 0, 0.05);
-      border: none;
-      width: 34px;
-      height: 34px;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      width: 44px;
+      height: 44px;
+      min-width: 44px;
+      min-height: 44px;
       border-radius: 50%;
-      font-size: 1rem;
       cursor: pointer;
-      display: grid;
-      place-items: center;
-      color: var(--color-muted, #767a90);
-      &:hover { background: rgba(0, 0, 0, 0.1); color: var(--color-ink, #15172b); }
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      color: var(--color-ink, #15172b);
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: -6px;
+        border-radius: 50%;
+      }
+
+      svg {
+        display: block;
+        pointer-events: none;
+      }
+
+      line {
+        pointer-events: none;
+      }
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.1);
+        color: var(--color-ink, #15172b);
+        transform: scale(1.06);
+      }
+
+      &:active {
+        transform: scale(0.92);
+        background: rgba(0, 0, 0, 0.14);
+      }
     }
 
     .sheet-body {
@@ -696,6 +756,13 @@ import {
 })
 export class BankImportSheetComponent {
   readonly closed = output<void>();
+
+  onClose(event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    triggerHaptic('light');
+    this.closed.emit();
+  }
 
   readonly ledgerStore = inject(LedgerStore);
 

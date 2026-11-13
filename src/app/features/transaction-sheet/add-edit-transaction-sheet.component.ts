@@ -193,6 +193,7 @@ const PAYMENT_MODES: PaymentMode[] = [
     <app-bottom-sheet
       [isOpen]="isUnlockPromptOpen()"
       title="Unlock Month"
+      [zIndex]="1100"
       (dismissed)="isUnlockPromptOpen.set(false)"
     >
       <div class="unlock-body">

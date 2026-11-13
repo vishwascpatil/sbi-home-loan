@@ -1,12 +1,18 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { BottomSheetComponent } from './bottom-sheet.component';
+import { triggerHaptic } from '../../../core/engine';
 
 @Component({
   selector: 'app-confirm-sheet',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [BottomSheetComponent],
   template: `
-    <app-bottom-sheet [isOpen]="isOpen()" [title]="title()" (dismissed)="cancelled.emit()">
+    <app-bottom-sheet
+      [isOpen]="isOpen()"
+      [title]="title()"
+      [zIndex]="zIndex()"
+      (dismissed)="onCancel()"
+    >
       <div class="confirm-body">
         <p class="confirm-message">{{ message() }}</p>
 
@@ -15,14 +21,16 @@ import { BottomSheetComponent } from './bottom-sheet.component';
             type="button"
             class="action-btn confirm-btn"
             [class.danger]="isDanger()"
-            (click)="confirmed.emit()"
+            (pointerdown)="$event.stopPropagation()"
+            (click)="onConfirm()"
           >
             {{ confirmText() }}
           </button>
           <button
             type="button"
             class="action-btn cancel-btn"
-            (click)="cancelled.emit()"
+            (pointerdown)="$event.stopPropagation()"
+            (click)="onCancel()"
           >
             {{ cancelText() }}
           </button>
@@ -60,6 +68,9 @@ import { BottomSheetComponent } from './bottom-sheet.component';
       place-items: center;
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       border: 1px solid var(--line);
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .action-btn:active {
@@ -100,7 +111,18 @@ export class ConfirmSheetComponent {
   readonly confirmText = input<string>('Confirm');
   readonly cancelText = input<string>('Cancel');
   readonly isDanger = input<boolean>(false);
+  readonly zIndex = input<number>(1100);
 
   readonly confirmed = output<void>();
   readonly cancelled = output<void>();
+
+  onConfirm(): void {
+    triggerHaptic('medium');
+    this.confirmed.emit();
+  }
+
+  onCancel(): void {
+    triggerHaptic('light');
+    this.cancelled.emit();
+  }
 }

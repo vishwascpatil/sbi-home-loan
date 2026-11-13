@@ -6,6 +6,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { NotificationsStore } from '../../../core/state';
+import { triggerHaptic } from '../../../core/engine';
 
 @Component({
   selector: 'app-notification-center',
@@ -51,10 +52,16 @@ import { NotificationsStore } from '../../../core/state';
               <button
                 type="button"
                 class="close-btn"
-                (click)="store.closeTray()"
-                aria-label="Close"
+                (pointerdown)="$event.stopPropagation()"
+                (touchstart)="$event.stopPropagation()"
+                (click)="onClose($event)"
+                aria-label="Close notifications"
+                title="Close"
               >
-                ✕
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
               </button>
             </div>
           </header>
@@ -186,16 +193,54 @@ import { NotificationsStore } from '../../../core/state';
     }
 
     .close-btn {
+      position: relative;
+      z-index: 50;
       background: rgba(0, 0, 0, 0.05);
-      border: none;
-      width: 30px;
-      height: 30px;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      width: 44px;
+      height: 44px;
+      min-width: 44px;
+      min-height: 44px;
       border-radius: 50%;
-      display: grid;
-      place-items: center;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      margin: -6px -6px -6px 0;
       cursor: pointer;
       color: var(--color-muted, #767a90);
-      &:hover { background: rgba(0, 0, 0, 0.1); }
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: -6px;
+        border-radius: 50%;
+      }
+
+      svg {
+        display: block;
+        pointer-events: none;
+      }
+
+      line {
+        pointer-events: none;
+      }
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.1);
+        color: #111216;
+        transform: scale(1.06);
+      }
+
+      &:active {
+        transform: scale(0.92);
+        background: rgba(0, 0, 0, 0.14);
+      }
     }
 
     .tray-body {
@@ -339,6 +384,13 @@ import { NotificationsStore } from '../../../core/state';
 export class NotificationCenterComponent {
   readonly store = inject(NotificationsStore);
   private readonly router = inject(Router);
+
+  onClose(event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    triggerHaptic('light');
+    this.store.closeTray();
+  }
 
   navigateToAction(route: string): void {
     this.store.closeTray();

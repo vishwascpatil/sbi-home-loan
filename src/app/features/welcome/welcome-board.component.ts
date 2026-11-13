@@ -26,10 +26,16 @@ import { formatPaise, Member, triggerHaptic } from '../../core/engine';
             <button
               type="button"
               class="close-board-btn"
-              (click)="userProfile.closeProfilePicker()"
+              (pointerdown)="$event.stopPropagation()"
+              (touchstart)="$event.stopPropagation()"
+              (click)="onClose($event)"
               aria-label="Close profile switcher"
+              title="Close"
             >
-              ✕
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
             </button>
           </div>
         }
@@ -180,24 +186,52 @@ import { formatPaise, Member, triggerHaptic } from '../../core/engine';
     }
 
     .close-board-btn {
-      width: 36px;
-      height: 36px;
+      position: relative;
+      z-index: 50;
+      width: 44px;
+      height: 44px;
+      min-width: 44px;
+      min-height: 44px;
       border-radius: 50%;
       border: 1px solid rgba(0, 0, 0, 0.08);
       background: #ffffff;
       color: #15172b;
-      font-size: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-      transition: all 0.15s ease;
-    }
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
-    .close-board-btn:hover {
-      transform: scale(1.08);
-      background: #f4f1ec;
+      &::after {
+        content: '';
+        position: absolute;
+        inset: -6px;
+        border-radius: 50%;
+      }
+
+      svg {
+        display: block;
+        pointer-events: none;
+      }
+
+      line {
+        pointer-events: none;
+      }
+
+      &:hover {
+        transform: scale(1.08);
+        background: #f4f1ec;
+      }
+
+      &:active {
+        transform: scale(0.92);
+        background: #e5e2db;
+      }
     }
 
     .welcome-header {
@@ -424,6 +458,13 @@ export class WelcomeBoardComponent {
 
   isCoBorrower(m: Member): boolean {
     return m.name.toLowerCase() === 'vishwas' || m.name.toLowerCase() === 'vikas';
+  }
+
+  onClose(event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    triggerHaptic('light');
+    this.userProfile.closeProfilePicker();
   }
 
   selectMember(m: Member): void {
