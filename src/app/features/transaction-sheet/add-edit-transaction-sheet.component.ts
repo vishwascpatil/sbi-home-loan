@@ -5,6 +5,7 @@ import {
   inject,
   input,
   OnChanges,
+  OnDestroy,
   output,
   signal,
   SimpleChanges,
@@ -15,7 +16,7 @@ import {
   BottomSheetComponent,
   ConfirmSheetComponent,
 } from '../../shared/ui';
-import { LedgerStore, UserProfileStore } from '../../core/state';
+import { LedgerStore, UiStore, UserProfileStore } from '../../core/state';
 import {
   getTransactionAmount,
   Member,
@@ -542,6 +543,7 @@ const PAYMENT_MODES: PaymentMode[] = [
       flex-direction: column;
       gap: 10px;
       margin-top: 10px;
+      padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
       animation: fieldCascade 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
@@ -765,9 +767,11 @@ const PAYMENT_MODES: PaymentMode[] = [
     }
   `,
 })
-export class AddEditTransactionSheetComponent implements OnChanges {
+export class AddEditTransactionSheetComponent implements OnChanges, OnDestroy {
   readonly ledgerStore = inject(LedgerStore);
   readonly userProfile = inject(UserProfileStore);
+  private readonly uiStore = inject(UiStore);
+  private readonly instanceId = 'sheet-' + Math.random().toString(36).substring(2, 9);
 
   readonly isOpen = input<boolean>(false);
   readonly editTransaction = input<Transaction | null>(null);
@@ -813,11 +817,22 @@ export class AddEditTransactionSheetComponent implements OnChanges {
   });
 
   ngOnChanges(changes: SimpleChanges): void {
+    if (changes['isOpen']) {
+      if (this.isOpen()) {
+        this.uiStore.registerAddPaymentOpen(this.instanceId);
+      } else {
+        this.uiStore.registerAddPaymentClosed(this.instanceId);
+      }
+    }
     if (changes['editTransaction'] && this.editTransaction()) {
       this.populateForEdit(this.editTransaction()!);
     } else if (changes['isOpen'] && this.isOpen() && !this.editTransaction()) {
       this.resetForm();
     }
+  }
+
+  ngOnDestroy(): void {
+    this.uiStore.registerAddPaymentClosed(this.instanceId);
   }
 
   selectMember(m: Member): void {
@@ -913,6 +928,7 @@ export class AddEditTransactionSheetComponent implements OnChanges {
       }
 
       triggerHaptic('success');
+      this.uiStore.registerAddPaymentClosed(this.instanceId);
       this.dismissed.emit();
     } catch {
       // Ignore or log error silently
@@ -933,10 +949,12 @@ export class AddEditTransactionSheetComponent implements OnChanges {
     if (!this.editTransaction() || this.isLocked()) return;
     await this.ledgerStore.deleteTransaction(this.editTransaction()!.id);
     this.isConfirmDeleteOpen.set(false);
+    this.uiStore.registerAddPaymentClosed(this.instanceId);
     this.dismissed.emit();
   }
 
   cancelSheet(): void {
+    this.uiStore.registerAddPaymentClosed(this.instanceId);
     this.dismissed.emit();
   }
 

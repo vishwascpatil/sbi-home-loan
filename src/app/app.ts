@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { SwUpdate } from '@angular/service-worker';
 import {
@@ -6,7 +6,7 @@ import {
   SideRailComponent,
   TabBarComponent,
 } from './shared/ui';
-import { LedgerStore, UserProfileStore } from './core/state';
+import { LedgerStore, UiStore, UserProfileStore } from './core/state';
 import { AddEditTransactionSheetComponent } from './features/transaction-sheet/add-edit-transaction-sheet.component';
 import { WelcomeBoardComponent } from './features/welcome/welcome-board.component';
 
@@ -27,10 +27,15 @@ import { WelcomeBoardComponent } from './features/welcome/welcome-board.componen
 export class App {
   readonly ledgerStore = inject(LedgerStore);
   readonly userProfile = inject(UserProfileStore);
+  readonly uiStore = inject(UiStore);
   private readonly swUpdate = inject(SwUpdate, { optional: true });
 
   readonly isAddSheetOpen = signal<boolean>(false);
   readonly updateAvailable = signal<boolean>(false);
+
+  readonly isTabBarVisible = computed<boolean>(() => {
+    return !this.isAddSheetOpen() && !this.uiStore.isAddPaymentOpen();
+  });
 
   constructor() {
     if (this.swUpdate?.isEnabled) {

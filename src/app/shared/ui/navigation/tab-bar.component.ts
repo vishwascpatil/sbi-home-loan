@@ -102,7 +102,7 @@ import { triggerHaptic } from '../../../core/engine';
       bottom: max(20px, env(safe-area-inset-bottom, 20px));
       left: 50%;
       transform: translateX(-50%);
-      z-index: 1200;
+      z-index: 800;
       display: flex;
       align-items: center;
       gap: clamp(4px, 1.2vw, 8px);
@@ -123,6 +123,24 @@ import { triggerHaptic } from '../../../core/engine';
       box-sizing: border-box;
       touch-action: manipulation;
       transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      animation: dockFadeSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes dockFadeSlideUp {
+      from {
+        opacity: 0;
+        transform: translate(-50%, 14px);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .floating-glass-dock {
+        animation: none !important;
+      }
     }
 
     @media (min-width: 900px) {

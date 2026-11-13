@@ -8,7 +8,9 @@
   </main>
 
   <!-- Mobile Bottom Tab Bar (< 900px) -->
-  <app-tab-bar (openAdd)="openAddTransaction()" />
+  @if (isTabBarVisible()) {
+    <app-tab-bar (openAdd)="openAddTransaction()" />
+  }
 
   <!-- Global In-App Notification Center -->
   <app-notification-center />
