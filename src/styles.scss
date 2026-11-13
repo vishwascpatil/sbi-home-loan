@@ -184,8 +184,8 @@ button:active, .interactive-item:active {
 }
 
 .stagger-in {
-  animation: appleCardEntrance 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
-  animation-delay: calc(var(--stagger-index, 0) * 65ms);
+  animation: appleCardEntrance 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--stagger-index, 0) * 16ms);
 }
 
 /* Apple TV Floating Card Hover Class */
@@ -196,6 +196,12 @@ button:active, .interactive-item:active {
 .apple-tv-hover:hover {
   transform: translateY(-3px) scale(1.012);
   box-shadow: var(--shadow-tv-hover);
+}
+
+/* Fixed Navigation Bars: Isolate from View Transition GPU Snapshotting */
+.floating-glass-dock,
+.desktop-side-rail {
+  view-transition-name: none !important;
 }
 
 /* Respect Reduced Motion */
@@ -214,19 +220,20 @@ button:active, .interactive-item:active {
   }
 }
 
-/* Ultra-Fast Responsive Route Transitions (Zero Click Loss) */
+/* Ultra-Fast Responsive Route Transitions (Zero Click Loss, 0ms Instant Native Feel) */
 ::view-transition,
 ::view-transition-group(*),
 ::view-transition-image-pair(*),
 ::view-transition-old(*),
 ::view-transition-new(*) {
   pointer-events: none !important;
+  animation-duration: 0.01ms !important;
+  animation-timing-function: linear !important;
 }
 
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  animation-duration: 0.14s !important;
-  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1) !important;
+  animation-duration: 0.01ms !important;
 }
 
 /* Visible focus indicators for accessibility (WCAG AA) */

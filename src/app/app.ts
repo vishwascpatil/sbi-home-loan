@@ -38,6 +38,15 @@ export class App {
   });
 
   constructor() {
+    // Pre-warm the 4 primary lazy-loaded routes in memory on boot so switching between
+    // Home, Statements, Family/Members, and Settings is 100% instantaneous (0ms chunk delay).
+    if (typeof window !== 'undefined') {
+      void import('./features/home/home.component');
+      void import('./features/statements/statements.component');
+      void import('./features/members/members.component');
+      void import('./features/settings/settings.component');
+    }
+
     if (this.swUpdate?.isEnabled) {
       this.swUpdate.versionUpdates.subscribe((event) => {
         if (event.type === 'VERSION_READY') {

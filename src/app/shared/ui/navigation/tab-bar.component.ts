@@ -1,23 +1,24 @@
-import { ChangeDetectionStrategy, Component, inject, output } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { triggerHaptic } from '../../../core/engine';
 
 @Component({
   selector: 'app-tab-bar',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink],
   template: `
     <!-- Floating Glass Capsule Dock (Screenshot Matched) -->
     <nav class="floating-glass-dock" aria-label="Main Navigation">
       <!-- 1. Home Tab -->
       <a
         routerLink="/home"
-        routerLinkActive="active"
-        [routerLinkActiveOptions]="{ exact: true }"
         class="dock-item"
+        [class.active]="isTabActive('/home')"
         aria-label="Home"
-        (pointerdown)="triggerFeedback()"
+        (pointerenter)="onPrefetch('/home')"
+        (touchstart)="onPrefetch('/home')"
+        (pointerdown)="onPointerDown('/home', $event)"
         (click)="onNavigate('/home', $event)"
       >
         <svg class="dock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -30,10 +31,12 @@ import { triggerHaptic } from '../../../core/engine';
       <!-- 2. Statement Tab (After Home) -->
       <a
         routerLink="/statements"
-        routerLinkActive="active"
         class="dock-item"
+        [class.active]="isTabActive('/statements')"
         aria-label="Statement"
-        (pointerdown)="triggerFeedback()"
+        (pointerenter)="onPrefetch('/statements')"
+        (touchstart)="onPrefetch('/statements')"
+        (pointerdown)="onPointerDown('/statements', $event)"
         (click)="onNavigate('/statements', $event)"
       >
         <svg class="dock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -64,10 +67,12 @@ import { triggerHaptic } from '../../../core/engine';
       <!-- 4. Members / Family Tab -->
       <a
         routerLink="/members"
-        routerLinkActive="active"
         class="dock-item"
+        [class.active]="isTabActive('/members')"
         aria-label="Members"
-        (pointerdown)="triggerFeedback()"
+        (pointerenter)="onPrefetch('/members')"
+        (touchstart)="onPrefetch('/members')"
+        (pointerdown)="onPointerDown('/members', $event)"
         (click)="onNavigate('/members', $event)"
       >
         <svg class="dock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -82,10 +87,12 @@ import { triggerHaptic } from '../../../core/engine';
       <!-- 5. Settings Tab (Next to Family Right Side) -->
       <a
         routerLink="/settings"
-        routerLinkActive="active"
         class="dock-item"
+        [class.active]="isTabActive('/settings')"
         aria-label="Settings"
-        (pointerdown)="triggerFeedback()"
+        (pointerenter)="onPrefetch('/settings')"
+        (touchstart)="onPrefetch('/settings')"
+        (pointerdown)="onPointerDown('/settings', $event)"
         (click)="onNavigate('/settings', $event)"
       >
         <svg class="dock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -124,6 +131,8 @@ import { triggerHaptic } from '../../../core/engine';
       touch-action: manipulation;
       transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
       animation: dockFadeSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      view-transition-name: none !important;
+      contain: layout style;
     }
 
     @keyframes dockFadeSlideUp {
@@ -166,7 +175,7 @@ import { triggerHaptic } from '../../../core/engine';
       -webkit-user-select: none;
       -webkit-touch-callout: none;
       cursor: pointer;
-      transition: color 0.15s ease, background-color 0.15s ease;
+      transition: color 0.12s ease, background-color 0.12s ease;
       -webkit-tap-highlight-color: transparent;
 
       &:hover {
@@ -174,9 +183,8 @@ import { triggerHaptic } from '../../../core/engine';
       }
 
       &:active {
-        // Crucial: Keep the parent hitbox fixed at 48px so touch events are never dropped!
         .dock-icon {
-          transform: scale(0.88);
+          transform: scale(0.90);
         }
         .dock-label {
           opacity: 0.7;
@@ -190,7 +198,7 @@ import { triggerHaptic } from '../../../core/engine';
         box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
 
         .dock-icon {
-          animation: appStoreTabBounce 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+          animation: appStoreTabBounce 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
           stroke-width: 2.4;
         }
 
@@ -204,7 +212,7 @@ import { triggerHaptic } from '../../../core/engine';
     .dock-icon {
       width: 24px;
       height: 24px;
-      transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .dock-label {
@@ -213,28 +221,40 @@ import { triggerHaptic } from '../../../core/engine';
       letter-spacing: -0.01em;
       margin-top: 3px;
       color: inherit;
-      transition: color 0.15s ease, font-weight 0.15s ease, opacity 0.15s ease;
+      transition: color 0.12s ease, font-weight 0.12s ease, opacity 0.12s ease;
     }
 
     /* Center Action Button (Matte Obsidian Black Orb) */
     .dock-action-btn {
-      width: 52px;
-      height: 52px;
+      width: 48px;
+      height: 48px;
+      min-width: 48px;
+      min-height: 48px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #181b24 0%, #0d0f17 100%);
-      border: 1.5px solid rgba(255, 255, 255, 0.22);
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35), 0 0 0 3px rgba(108, 76, 255, 0.16);
+      background: #000000;
+      color: #ffffff;
+      border: none;
       display: grid;
       place-items: center;
       cursor: pointer;
-      margin: 0 6px;
-      flex-shrink: 0;
-      transition: transform 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.22s ease;
+      box-shadow: 
+        0 6px 18px rgba(0, 0, 0, 0.32),
+        inset 0 1px 1px rgba(255, 255, 255, 0.25);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
       -webkit-tap-highlight-color: transparent;
+      padding: 0;
+
+      svg {
+        display: block;
+        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
 
       &:hover {
-        transform: scale(1.08);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.42), 0 0 0 4px rgba(108, 76, 255, 0.25);
+        transform: scale(1.06);
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4);
       }
 
       &:active {
@@ -247,13 +267,43 @@ export class TabBarComponent {
   private readonly router = inject(Router);
   readonly openAdd = output<void>();
 
+  // Optimistic active tab override for instant 0ms visual feedback on tap
+  readonly activeTabOverride = signal<string | null>(null);
+
   private lastHaptic = 0;
+
+  isTabActive(path: string): boolean {
+    const override = this.activeTabOverride();
+    if (override !== null) {
+      return override === path;
+    }
+    const currentUrl = this.router.url;
+    if (path === '/home') {
+      return currentUrl === '/home' || currentUrl === '/';
+    }
+    return currentUrl.startsWith(path);
+  }
+
+  onPrefetch(path: string): void {
+    if (path === '/statements') void import('../../../features/statements/statements.component');
+    else if (path === '/members') void import('../../../features/members/members.component');
+    else if (path === '/settings') void import('../../../features/settings/settings.component');
+    else if (path === '/home') void import('../../../features/home/home.component');
+  }
+
+  onPointerDown(path: string, event: Event): void {
+    this.triggerFeedback();
+    this.onPrefetch(path);
+    if (this.router.url !== path && !(path === '/home' && this.router.url === '/')) {
+      this.activeTabOverride.set(path);
+    }
+  }
 
   triggerFeedback(): void {
     const now = Date.now();
     if (now - this.lastHaptic > 50) {
       this.lastHaptic = now;
-      triggerHaptic('light');
+      triggerHaptic('selection');
     }
   }
 
@@ -261,12 +311,16 @@ export class TabBarComponent {
     this.triggerFeedback();
     event.preventDefault();
     if (this.router.url === path || (path === '/home' && this.router.url === '/')) {
+      this.activeTabOverride.set(null);
       if (typeof window !== 'undefined') {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
       return;
     }
-    void this.router.navigateByUrl(path);
+    this.activeTabOverride.set(path);
+    void this.router.navigateByUrl(path).finally(() => {
+      this.activeTabOverride.set(null);
+    });
   }
 
   onActionClick(): void {
